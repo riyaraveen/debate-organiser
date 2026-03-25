@@ -58,7 +58,12 @@ export default function NewSession() {
       const res = await createSession(payload)
       navigate(`/sessions/${res.data.id}`)
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to create session')
+      const detail = err.response?.data?.detail
+      if (Array.isArray(detail)) {
+        setError(detail.map((e) => e.msg).join(', '))
+      } else {
+        setError(detail || 'Failed to create session')
+      }
     }
   }
 
@@ -89,6 +94,7 @@ export default function NewSession() {
         {step === 0 && (
           <div>
             <h3>Choose a debate format</h3>
+            <p className="step-subtitle">Select the style of debate for this session.</p>
             <div className="format-cards">
               {formats.map((f) => (
                 <button
@@ -109,6 +115,7 @@ export default function NewSession() {
         {step === 1 && (
           <div>
             <h3>Choose a topic</h3>
+            <p className="step-subtitle">Type a custom motion, pick from the bank, or hit Random.</p>
             <div className="topic-input-row">
               <input
                 className="input"
@@ -136,6 +143,7 @@ export default function NewSession() {
         {step === 2 && (
           <div>
             <h3>Select participants</h3>
+            <p className="step-subtitle">Choose who's debating. Roles will be assigned automatically.</p>
             {selectedFormat && (
               <p className="text-muted">
                 {selectedFormat.name} needs {selectedFormat.min_participants}–{selectedFormat.max_participants} participants.

@@ -76,6 +76,26 @@ export default function Dashboard() {
         )}
       </div>
 
+      {!loading && (
+        <div className="stats-bar">
+          <div className="stat-card">
+            <span className="stat-label">Upcoming</span>
+            <span className="stat-value">{upcoming.length}</span>
+            <span className="stat-sub">sessions scheduled</span>
+          </div>
+          <div className="stat-card">
+            <span className="stat-label">Completed</span>
+            <span className="stat-value">{past.length}</span>
+            <span className="stat-sub">sessions run</span>
+          </div>
+          <div className="stat-card">
+            <span className="stat-label">Total</span>
+            <span className="stat-value">{sessions.length}</span>
+            <span className="stat-sub">sessions total</span>
+          </div>
+        </div>
+      )}
+
       {loading ? (
         <div className="loading">Loading sessions…</div>
       ) : (
@@ -83,7 +103,15 @@ export default function Dashboard() {
           <section>
             <h3 className="section-title">Upcoming Sessions ({upcoming.length})</h3>
             {upcoming.length === 0 ? (
-              <p className="empty-state">No upcoming sessions scheduled.</p>
+              <div className="empty-state-card">
+                <span className="empty-icon">📅</span>
+                <p>No upcoming sessions scheduled yet.</p>
+                {user?.role === 'admin' && (
+                  <Link to="/sessions/new" className="btn btn-primary">
+                    <Plus size={15} /> Schedule your first session
+                  </Link>
+                )}
+              </div>
             ) : (
               <div className="sessions-grid">
                 {upcoming.map((s) => <SessionCard key={s.id} session={s} />)}

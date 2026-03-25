@@ -5,6 +5,7 @@ import Header from './Header'
 const PAGE_TITLES = {
   '/': 'Dashboard',
   '/sessions': 'Sessions',
+  '/sessions/new': 'New Session',
   '/calendar': 'Calendar',
   '/topics': 'Topics',
   '/members': 'Members',
@@ -14,7 +15,10 @@ const PAGE_TITLES = {
 
 export default function AppLayout() {
   const { pathname } = useLocation()
-  const title = PAGE_TITLES[pathname] ?? 'Debate Organiser'
+  // Match exact first, then check for dynamic segments like /sessions/:id
+  const title =
+    PAGE_TITLES[pathname] ??
+    (pathname.startsWith('/sessions/') ? 'Session Detail' : 'Debate Organiser')
 
   return (
     <div className="app-shell">
