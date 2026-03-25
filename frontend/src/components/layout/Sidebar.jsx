@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import {
   LayoutDashboard, CalendarDays, MessageSquare, BookOpen,
-  Users, ListTodo, LogOut, GraduationCap
+  Users, ListTodo, LogOut, GraduationCap, Settings, Layers, User
 } from 'lucide-react'
 
 const navItems = [
@@ -11,10 +11,13 @@ const navItems = [
   { to: '/calendar', label: 'Calendar', icon: CalendarDays },
   { to: '/topics', label: 'Topics', icon: ListTodo },
   { to: '/learn', label: 'Learn', icon: GraduationCap },
+  { to: '/profile', label: 'My Profile', icon: User },
 ]
 
 const adminItems = [
   { to: '/members', label: 'Members', icon: Users },
+  { to: '/formats', label: 'Formats', icon: Layers },
+  { to: '/settings', label: 'Club Settings', icon: Settings },
 ]
 
 export default function Sidebar() {

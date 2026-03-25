@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getTopics, createTopic, updateTopic, deleteTopic } from '../api'
+import { getTopics, createTopic, updateTopic, deleteTopic, generateTopic } from '../api'
 import { useAuth } from '../context/AuthContext'
 import { Plus, Trash2, CheckCircle, XCircle } from 'lucide-react'
 
@@ -44,6 +44,17 @@ export default function Topics() {
     setTopics(topics.filter((t) => t.id !== id))
   }
 
+  const handleGenerate = async () => {
+    try {
+      const res = await generateTopic()
+      const { text, category, proficiency } = res.data
+      setNewTopic({ text, category: category || '', is_go: true, proficiency: proficiency || '' })
+      setShowAdd(true)
+    } catch {
+      alert('Failed to generate topic')
+    }
+  }
+
   const isAdmin = user?.role === 'admin'
 
   return (
@@ -65,9 +76,14 @@ export default function Topics() {
           </select>
         </div>
         {isAdmin && (
-          <button className="btn btn-primary" onClick={() => setShowAdd(!showAdd)}>
-            <Plus size={15} /> Add Topic
-          </button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn btn-ghost" onClick={handleGenerate} title="Generate a topic with AI">
+              ✦ Generate
+            </button>
+            <button className="btn btn-primary" onClick={() => setShowAdd(!showAdd)}>
+              <Plus size={15} /> Add Topic
+            </button>
+          </div>
         )}
       </div>
 

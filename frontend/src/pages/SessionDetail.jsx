@@ -13,6 +13,8 @@ export default function SessionDetail() {
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(false)
   const [editForm, setEditForm] = useState({})
+  const [recordingResult, setRecordingResult] = useState(false)
+  const [resultForm, setResultForm] = useState({ winner_team: '', result_notes: '' })
 
   useEffect(() => {
     getSession(id)
@@ -41,6 +43,17 @@ export default function SessionDetail() {
       setEditing(false)
     } catch (err) {
       alert(err.response?.data?.detail || 'Update failed')
+    }
+  }
+
+  const handleRecordResult = async () => {
+    try {
+      const payload = { status: 'completed', ...resultForm }
+      const res = await updateSession(id, payload)
+      setSession(res.data)
+      setRecordingResult(false)
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to record result')
     }
   }
 
@@ -164,8 +177,48 @@ export default function SessionDetail() {
       {session.winner_team && (
         <div className="result-banner">
           <Trophy size={18} />
-          <strong>Winner:</strong> {session.winner_team}
-          {session.result_notes && <p>{session.result_notes}</p>}
+          <div>
+            <strong>Winner: {session.winner_team}</strong>
+            {session.result_notes && <p style={{ marginTop: 4, fontWeight: 400 }}>{session.result_notes}</p>}
+          </div>
+        </div>
+      )}
+
+      {isAdmin && session.status !== 'completed' && !recordingResult && (
+        <div style={{ marginBottom: 24 }}>
+          <button className="btn btn-yellow" onClick={() => setRecordingResult(true)}>
+            <Trophy size={15} /> Record Result
+          </button>
+        </div>
+      )}
+
+      {recordingResult && (
+        <div className="result-form-panel">
+          <h4>Record Debate Result</h4>
+          <div className="result-form-fields">
+            <label>
+              Winning Side
+              <select value={resultForm.winner_team} onChange={(e) => setResultForm({ ...resultForm, winner_team: e.target.value })}>
+                <option value="">Select winner…</option>
+                <option value="Proposition">Proposition</option>
+                <option value="Opposition">Opposition</option>
+                <option value="Draw">Draw</option>
+              </select>
+            </label>
+            <label>
+              Result Notes
+              <textarea rows={2} value={resultForm.result_notes}
+                onChange={(e) => setResultForm({ ...resultForm, result_notes: e.target.value })}
+                placeholder="e.g. Proposition won by unanimous decision…"
+                style={{ border: '2px solid #121212', padding: '8px 12px', font: 'inherit', width: '100%', outline: 'none', resize: 'vertical' }} />
+            </label>
+          </div>
+          <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+            <button className="btn btn-primary" onClick={handleRecordResult} disabled={!resultForm.winner_team}>
+              Submit Result
+            </button>
+            <button className="btn btn-ghost" onClick={() => setRecordingResult(false)}>Cancel</button>
+          </div>
         </div>
       )}
 

@@ -52,6 +52,33 @@ def random_topic(
     return random.choice(topics)
 
 
+_AI_TOPICS = [
+    ("This house would ban algorithmic content recommendation on social media", "Technology & Society", "intermediate"),
+    ("This house believes gene editing of human embryos should be permitted", "Science & Ethics", "advanced"),
+    ("This house would introduce a four-day working week by law", "Economics", "intermediate"),
+    ("This house believes space exploration is a poor use of public funds", "Science & Ethics", "beginner"),
+    ("This house would make mental health days a statutory right for students", "Education", "beginner"),
+    ("This house believes the gig economy does more harm than good", "Economics", "intermediate"),
+    ("This house would lower the voting age to 16", "Politics", "beginner"),
+    ("This house believes nuclear energy is essential for a sustainable future", "Environment", "advanced"),
+    ("This house would require wealthy nations to open their borders to climate refugees", "Politics", "advanced"),
+    ("This house believes corporations have a moral duty to prioritise sustainability over profit", "Economics", "intermediate"),
+]
+
+
+@router.get("/generate")
+def generate_topic(_: User = Depends(require_admin)):
+    """Mocked AI topic generation — returns a curated topic as if AI-generated."""
+    text, category, proficiency = random.choice(_AI_TOPICS)
+    return {
+        "text": text,
+        "category": category,
+        "proficiency": proficiency,
+        "source": "ai_generated",
+        "is_go": True,
+    }
+
+
 @router.post("/", response_model=TopicOut, status_code=201)
 def create_topic(body: TopicCreate, db: Session = Depends(get_db), _: User = Depends(require_admin)):
     topic = Topic(**body.model_dump())

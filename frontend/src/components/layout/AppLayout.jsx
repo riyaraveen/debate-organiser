@@ -11,6 +11,8 @@ const PAGE_TITLES = {
   '/members': 'Members',
   '/learn': 'Learn to Debate',
   '/profile': 'My Profile',
+  '/formats': 'Debate Formats',
+  '/settings': 'Club Settings',
 }
 
 export default function AppLayout() {

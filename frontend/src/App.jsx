@@ -11,6 +11,9 @@ import CalendarPage from './pages/CalendarPage'
 import Topics from './pages/Topics'
 import Members from './pages/Members'
 import Learn from './pages/Learn'
+import Profile from './pages/Profile'
+import ClubSettings from './pages/ClubSettings'
+import Formats from './pages/Formats'
 
 export default function App() {
   return (
@@ -42,6 +45,17 @@ export default function App() {
           </ProtectedRoute>
         } />
         <Route path="learn" element={<Learn />} />
+        <Route path="profile" element={<Profile />} />
+        <Route path="formats" element={
+          <ProtectedRoute adminOnly>
+            <Formats />
+          </ProtectedRoute>
+        } />
+        <Route path="settings" element={
+          <ProtectedRoute adminOnly>
+            <ClubSettings />
+          </ProtectedRoute>
+        } />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

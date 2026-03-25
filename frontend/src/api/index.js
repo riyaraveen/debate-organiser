@@ -35,3 +35,10 @@ export const deleteSession = (id) => api.delete(`/api/sessions/${id}`)
 export const getNotifications = () => api.get('/api/notifications/')
 export const markAllRead = () => api.post('/api/notifications/read-all')
 export const markRead = (id) => api.post(`/api/notifications/${id}/read`)
+
+// Settings
+export const getSettings = () => api.get('/api/settings/')
+export const updateSettings = (data) => api.patch('/api/settings/', data)
+
+// Topics — AI generate
+export const generateTopic = () => api.get('/api/topics/generate')
