@@ -23,7 +23,10 @@ export default function AppLayout() {
   // Match exact first, then check for dynamic segments like /sessions/:id
   const title =
     PAGE_TITLES[pathname] ??
-    (pathname.startsWith('/sessions/') ? 'Session Detail' : 'Debate Organiser')
+    (pathname.match(/^\/sessions\/[^/]+\/notes$/) ? 'Session Notes'
+    : pathname.match(/^\/sessions\/[^/]+\/ai$/) ? 'AI Debate Assistant'
+    : pathname.startsWith('/sessions/') ? 'Session Detail'
+    : 'Debate Organiser')
 
   return (
     <div className="app-shell">

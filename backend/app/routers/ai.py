@@ -86,29 +86,50 @@ class PracticeResponse(BaseModel):
     feedback: Optional[str] = None
 
 
+@router.get("/web-sources")
+def get_web_sources(topic: str, _: User = Depends(get_current_user)):
+    """Search the web for real articles and sources related to the debate topic."""
+    try:
+        from duckduckgo_search import DDGS
+        results = []
+        with DDGS() as ddgs:
+            for r in ddgs.text(f"{topic} debate arguments evidence", max_results=8):
+                results.append({
+                    "title": r.get("title", ""),
+                    "url": r.get("href", ""),
+                    "snippet": r.get("body", ""),
+                })
+        return {"sources": results}
+    except Exception as e:
+        # Fallback: return curated placeholder sources
+        return {"sources": [
+            {"title": "Search unavailable", "url": "", "snippet": f"Could not fetch sources: {str(e)}. Try searching manually."}
+        ]}
+
+
 @router.post("/counterargument", response_model=CounterargumentResponse)
 def generate_counterargument(body: CounterargumentRequest, _: User = Depends(get_current_user)):
     client = _get_client()
     if not client:
-        # Graceful mock fallback when no API key configured
         return CounterargumentResponse(
-            counterargument=f"[AI unavailable] Counter to: \"{body.argument[:80]}\" — Configure ANTHROPIC_API_KEY to enable.",
+            counterargument=f"[AI unavailable] An opponent might argue: the premises of \"{body.argument[:80]}\" rely on assumptions that are not universally accepted. Configure ANTHROPIC_API_KEY to enable real AI responses.",
             rebuttal_tips=[
-                "Challenge the underlying assumption",
-                "Ask for empirical evidence",
-                "Offer an alternative framework",
+                "Pre-empt this by addressing the assumption directly in your argument",
+                "Have a concrete statistic or study ready to back your claim",
+                "Prepare a real-world example that illustrates your point",
             ]
         )
 
-    side_context = f" You are arguing from the {body.side} side." if body.side else ""
+    side_context = f" The debater is arguing from the {body.side} side." if body.side else ""
     topic_context = f" The debate topic is: \"{body.topic}\"." if body.topic else ""
 
     prompt = (
-        f"You are a debate coach.{topic_context}{side_context}\n\n"
-        f"The opponent has made this argument:\n\"{body.argument}\"\n\n"
+        f"You are a debate coach helping a debater prepare.{topic_context}{side_context}\n\n"
+        f"The debater has made this argument:\n\"{body.argument}\"\n\n"
+        "Your job is to show them what OPPONENTS might say against their argument, so they can prepare.\n"
         "Provide:\n"
-        "1. A strong counterargument (2-3 sentences)\n"
-        "2. Three specific rebuttal tips (bullet points)\n\n"
+        "1. The strongest counterargument an opponent could make against this (2-3 sentences)\n"
+        "2. Three specific tips for how the debater can pre-empt or rebut this counterargument\n\n"
         "Format as JSON: {\"counterargument\": \"...\", \"rebuttal_tips\": [\"...\", \"...\", \"...\"]}"
     )
 

@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { getSession, updateSession, deleteSession, getFormat, getMyNote, saveMyNote, getTeamNotes, notifyCalendar } from '../api'
+import { getSession, updateSession, deleteSession, getFormat, notifyCalendar } from '../api'
 import { useAuth } from '../context/AuthContext'
-import { Calendar, Clock, MapPin, Users, Edit2, Trash2, Trophy, Link as LinkIcon } from 'lucide-react'
-import AIPanel from '../components/ui/AIPanel'
+import { Calendar, MapPin, Users, Edit2, Trash2, Trophy, Link as LinkIcon, FileText, Sparkles } from 'lucide-react'
 
 export default function SessionDetail() {
   const { id } = useParams()
@@ -16,9 +15,6 @@ export default function SessionDetail() {
   const [editForm, setEditForm] = useState({})
   const [recordingResult, setRecordingResult] = useState(false)
   const [resultForm, setResultForm] = useState({ winner_team: '', result_notes: '' })
-  const [noteContent, setNoteContent] = useState('')
-  const [noteSaved, setNoteSaved] = useState(false)
-  const [noteSaving, setNoteSaving] = useState(false)
   const [teamNotes, setTeamNotes] = useState([])
   const [showTeamNotes, setShowTeamNotes] = useState(false)
 
@@ -39,7 +35,6 @@ export default function SessionDetail() {
       .catch(() => {})
       .finally(() => setLoading(false))
 
-    getMyNote(id).then((res) => setNoteContent(res.data.content)).catch(() => {})
     getTeamNotes(id).then((res) => setTeamNotes(res.data)).catch(() => {})
   }, [id])
 
@@ -52,17 +47,6 @@ export default function SessionDetail() {
       setEditing(false)
     } catch (err) {
       alert(err.response?.data?.detail || 'Update failed')
-    }
-  }
-
-  const handleSaveNote = async () => {
-    setNoteSaving(true)
-    try {
-      await saveMyNote(id, noteContent)
-      setNoteSaved(true)
-      setTimeout(() => setNoteSaved(false), 2500)
-    } catch { /* silent */ } finally {
-      setNoteSaving(false)
     }
   }
 
@@ -285,47 +269,30 @@ export default function SessionDetail() {
         </div>
       )}
 
-      {teamNotes.filter((n) => n.content).length > 0 && (
-        <div className="team-workspace">
-          <button className="team-workspace-toggle" onClick={() => setShowTeamNotes(!showTeamNotes)}>
-            <Users size={14} /> Team Workspace ({teamNotes.filter(n => n.content).length} shared notes)
-            <span style={{ marginLeft: 'auto' }}>{showTeamNotes ? '▲' : '▼'}</span>
-          </button>
-          {showTeamNotes && (
-            <div className="team-notes-list">
-              {teamNotes.filter(n => n.content).map((n, i) => (
-                <div key={i} className="team-note-item">
-                  <div className="team-note-author">
-                    <span className="avatar sm">{n.user_name[0]}</span>
-                    <strong>{n.user_name}</strong>
-                    <span className="text-muted" style={{ fontSize: 11 }}>{new Date(n.updated_at).toLocaleDateString()}</span>
-                  </div>
-                  <p className="team-note-content">{n.content}</p>
-                </div>
-              ))}
+      {/* Quick-access cards to sub-pages */}
+      <div className="session-subpage-cards">
+        <Link to={`/sessions/${id}/notes`} className="session-subpage-card">
+          <div className="session-subpage-card-icon" style={{ background: 'var(--blue)' }}>
+            <FileText size={22} color="white" />
+          </div>
+          <div>
+            <div className="session-subpage-card-title">My Notes</div>
+            <div className="session-subpage-card-desc">
+              Write your arguments, rebuttals, and key points. Includes live web research sources for this topic.
             </div>
-          )}
-        </div>
-      )}
-
-      <AIPanel topic={session.topic_text} />
-
-      <div className="notes-panel">
-        <h3 className="notes-title">My Argument Notes</h3>
-        <p className="notes-subtitle">Private notes visible only to you — use for arguments, rebuttals, or research.</p>
-        <textarea
-          className="notes-textarea"
-          rows={6}
-          value={noteContent}
-          onChange={(e) => setNoteContent(e.target.value)}
-          placeholder="Write your arguments, rebuttals, and research notes here…"
-        />
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8 }}>
-          <button className="btn btn-primary" onClick={handleSaveNote} disabled={noteSaving}>
-            {noteSaving ? 'Saving…' : 'Save Notes'}
-          </button>
-          {noteSaved && <span style={{ fontSize: 12, fontWeight: 700, color: '#1A6030' }}>✓ Saved</span>}
-        </div>
+          </div>
+        </Link>
+        <Link to={`/sessions/${id}/ai`} className="session-subpage-card">
+          <div className="session-subpage-card-icon" style={{ background: 'var(--red)' }}>
+            <Sparkles size={22} color="white" />
+          </div>
+          <div>
+            <div className="session-subpage-card-title">AI Debate Assistant</div>
+            <div className="session-subpage-card-desc">
+              Generate counterarguments, evaluate your arguments, get research tips, and detect fallacies.
+            </div>
+          </div>
+        </Link>
       </div>
 
       {session.status === 'completed' && (

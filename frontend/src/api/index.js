@@ -47,6 +47,7 @@ export const getCounterargument = (data) => api.post('/api/ai/counterargument', 
 export const evaluateArgument = (data) => api.post('/api/ai/evaluate', data)
 export const getResearchSuggestions = (data) => api.post('/api/ai/research', data)
 export const detectFallacies = (data) => api.post('/api/ai/detect-fallacies', data)
+export const getWebSources = (topic) => api.get('/api/ai/web-sources', { params: { topic } })
 
 // Settings
 export const getSettings = () => api.get('/api/settings/')
