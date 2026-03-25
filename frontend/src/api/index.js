@@ -49,6 +49,9 @@ export const getResearchSuggestions = (data) => api.post('/api/ai/research', dat
 export const detectFallacies = (data) => api.post('/api/ai/detect-fallacies', data)
 export const getWebSources = (topic) => api.get('/api/ai/web-sources', { params: { topic } })
 
+// Team chat
+export const getChatHistory = (sessionId) => api.get(`/api/sessions/${sessionId}/chat/history`)
+
 // Settings
 export const getSettings = () => api.get('/api/settings/')
 export const updateSettings = (data) => api.patch('/api/settings/', data)

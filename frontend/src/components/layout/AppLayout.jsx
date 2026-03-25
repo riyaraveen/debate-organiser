@@ -25,6 +25,7 @@ export default function AppLayout() {
     PAGE_TITLES[pathname] ??
     (pathname.match(/^\/sessions\/[^/]+\/notes$/) ? 'Session Notes'
     : pathname.match(/^\/sessions\/[^/]+\/ai$/) ? 'AI Debate Assistant'
+    : pathname.match(/^\/sessions\/[^/]+\/chat$/) ? 'Team Chat'
     : pathname.startsWith('/sessions/') ? 'Session Detail'
     : 'Debate Organiser')
 

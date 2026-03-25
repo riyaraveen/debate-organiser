@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { getSession, updateSession, deleteSession, getFormat, notifyCalendar } from '../api'
 import { useAuth } from '../context/AuthContext'
-import { Calendar, MapPin, Users, Edit2, Trash2, Trophy, Link as LinkIcon, FileText, Sparkles } from 'lucide-react'
+import { Calendar, MapPin, Users, Edit2, Trash2, Trophy, Link as LinkIcon, FileText, Sparkles, MessageCircle } from 'lucide-react'
 
 export default function SessionDetail() {
   const { id } = useParams()
@@ -15,8 +15,6 @@ export default function SessionDetail() {
   const [editForm, setEditForm] = useState({})
   const [recordingResult, setRecordingResult] = useState(false)
   const [resultForm, setResultForm] = useState({ winner_team: '', result_notes: '' })
-  const [teamNotes, setTeamNotes] = useState([])
-  const [showTeamNotes, setShowTeamNotes] = useState(false)
 
   useEffect(() => {
     getSession(id)
@@ -35,7 +33,6 @@ export default function SessionDetail() {
       .catch(() => {})
       .finally(() => setLoading(false))
 
-    getTeamNotes(id).then((res) => setTeamNotes(res.data)).catch(() => {})
   }, [id])
 
   const handleSave = async () => {
@@ -270,7 +267,7 @@ export default function SessionDetail() {
       )}
 
       {/* Quick-access cards to sub-pages */}
-      <div className="session-subpage-cards">
+      <div className="session-subpage-cards" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
         <Link to={`/sessions/${id}/notes`} className="session-subpage-card">
           <div className="session-subpage-card-icon" style={{ background: 'var(--blue)' }}>
             <FileText size={22} color="white" />
@@ -290,6 +287,17 @@ export default function SessionDetail() {
             <div className="session-subpage-card-title">AI Debate Assistant</div>
             <div className="session-subpage-card-desc">
               Generate counterarguments, evaluate your arguments, get research tips, and detect fallacies.
+            </div>
+          </div>
+        </Link>
+        <Link to={`/sessions/${id}/chat`} className="session-subpage-card">
+          <div className="session-subpage-card-icon" style={{ background: 'var(--yellow)' }}>
+            <MessageCircle size={22} color="var(--black)" />
+          </div>
+          <div>
+            <div className="session-subpage-card-title">Team Chat</div>
+            <div className="session-subpage-card-desc">
+              Real-time chat with your side only. Proposition and opposition have separate rooms.
             </div>
           </div>
         </Link>

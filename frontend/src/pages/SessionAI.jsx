@@ -53,9 +53,9 @@ export default function SessionAI() {
 
   const placeholder = {
     counter:  'Enter YOUR argument — the AI will show you what opponents could say against it, so you can prepare…',
-    eval:     'Paste your argument to get a score and detailed feedback from a judge's perspective…',
+    eval:     "Paste your argument to get a score and detailed feedback from a judge's perspective…",
     research: 'Enter the debate topic to get AI-curated argument frameworks, evidence types, and research angles…',
-    fallacy:  'Paste an argument (yours or an opponent's) to detect logical fallacies…',
+    fallacy:  "Paste an argument (yours or an opponent's) to detect logical fallacies…",
   }[tab]
 
   const btnLabel = {

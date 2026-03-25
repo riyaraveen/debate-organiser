@@ -10,6 +10,7 @@ from app.schemas.session import SessionCreate, SessionUpdate, SessionOut, Partic
 from app.services.auth import get_current_user, require_admin
 from app.services.role_assignment import assign_roles
 from app.services.notifications import notify_users
+from app.models.team_message import TeamMessage
 
 router = APIRouter(prefix="/api/sessions", tags=["sessions"])
 
@@ -106,11 +107,18 @@ def update_session(
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 
+    was_completed = session.status == "completed"
     changed_fields = []
     for field, value in body.model_dump(exclude_none=True).items():
         if getattr(session, field) != value:
             changed_fields.append(field)
             setattr(session, field, value)
+
+    # Delete all team chat messages when a session is marked completed
+    now_completed = session.status == "completed"
+    if not was_completed and now_completed:
+        db.query(TeamMessage).filter(TeamMessage.session_id == session_id).delete()
+
     db.commit()
     db.refresh(session)
 
