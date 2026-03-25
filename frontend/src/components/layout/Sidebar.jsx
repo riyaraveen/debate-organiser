@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import {
   LayoutDashboard, CalendarDays, MessageSquare, BookOpen,
-  Users, ListTodo, LogOut, GraduationCap, Settings, Layers, User, Swords
+  Users, ListTodo, LogOut, GraduationCap, Settings, Layers, User, Swords, Trophy, School
 } from 'lucide-react'
 
 const navItems = [
@@ -18,6 +18,8 @@ const navItems = [
 const adminItems = [
   { to: '/members', label: 'Members', icon: Users },
   { to: '/formats', label: 'Formats', icon: Layers },
+  { to: '/schools', label: 'Schools', icon: School },
+  { to: '/tournaments', label: 'Tournaments', icon: Trophy },
   { to: '/settings', label: 'Club Settings', icon: Settings },
 ]
 

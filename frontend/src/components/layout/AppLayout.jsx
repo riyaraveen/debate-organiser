@@ -14,6 +14,8 @@ const PAGE_TITLES = {
   '/formats': 'Debate Formats',
   '/settings': 'Club Settings',
   '/practice': 'AI Practice Mode',
+  '/tournaments': 'Tournaments',
+  '/schools': 'Schools',
 }
 
 export default function AppLayout() {

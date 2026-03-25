@@ -15,6 +15,8 @@ import Profile from './pages/Profile'
 import ClubSettings from './pages/ClubSettings'
 import Formats from './pages/Formats'
 import Practice from './pages/Practice'
+import Tournaments from './pages/Tournaments'
+import Schools from './pages/Schools'
 
 export default function App() {
   return (
@@ -47,6 +49,16 @@ export default function App() {
         } />
         <Route path="learn" element={<Learn />} />
         <Route path="practice" element={<Practice />} />
+        <Route path="tournaments" element={
+          <ProtectedRoute adminOnly>
+            <Tournaments />
+          </ProtectedRoute>
+        } />
+        <Route path="schools" element={
+          <ProtectedRoute adminOnly>
+            <Schools />
+          </ProtectedRoute>
+        } />
         <Route path="profile" element={<Profile />} />
         <Route path="formats" element={
           <ProtectedRoute adminOnly>
