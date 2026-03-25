@@ -1,9 +1,13 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import auth, users, topics, formats, sessions, notifications, settings
+from app.routers import auth, users, topics, formats, sessions, notifications, settings, notes, ai
 from app.db.database import engine
 from app.db import database
 import app.models  # noqa: F401 — registers all models with Base
+from app.db.database import Base, engine
+
+# Create any new tables that don't exist yet (non-destructive)
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Debate Organiser API", version="1.0.0")
 
@@ -22,6 +26,8 @@ app.include_router(formats.router)
 app.include_router(sessions.router)
 app.include_router(notifications.router)
 app.include_router(settings.router)
+app.include_router(notes.router)
+app.include_router(ai.router)
 
 
 @app.get("/api/health")

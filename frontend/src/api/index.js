@@ -36,6 +36,14 @@ export const getNotifications = () => api.get('/api/notifications/')
 export const markAllRead = () => api.post('/api/notifications/read-all')
 export const markRead = (id) => api.post(`/api/notifications/${id}/read`)
 
+// Notes
+export const getMyNote = (sessionId) => api.get(`/api/sessions/${sessionId}/notes/me`)
+export const saveMyNote = (sessionId, content) => api.put(`/api/sessions/${sessionId}/notes/me`, { content })
+
+// AI
+export const getCounterargument = (data) => api.post('/api/ai/counterargument', data)
+export const evaluateArgument = (data) => api.post('/api/ai/evaluate', data)
+
 // Settings
 export const getSettings = () => api.get('/api/settings/')
 export const updateSettings = (data) => api.patch('/api/settings/', data)

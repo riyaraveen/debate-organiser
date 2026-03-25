@@ -939,6 +939,140 @@ label > span,
 .result-form-fields { display: flex; flex-direction: column; gap: 12px; }
 .result-form-fields label { display: flex; flex-direction: column; gap: 5px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; }
 
+/* ── AI Panel ─────────────────────────────────────── */
+.ai-panel {
+  background: var(--black);
+  border: var(--border-w) solid var(--black);
+  box-shadow: var(--shadow);
+  padding: 20px 24px;
+  margin-bottom: 24px;
+  color: white;
+}
+.ai-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 14px;
+  color: var(--yellow);
+}
+.ai-badge {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: var(--blue);
+  color: white;
+  padding: 2px 8px;
+  border: 1px solid rgba(255,255,255,0.2);
+}
+.ai-tabs {
+  display: flex;
+  margin-bottom: 12px;
+  border: 1.5px solid rgba(255,255,255,0.2);
+  overflow: hidden;
+}
+.ai-tab {
+  flex: 1;
+  background: none;
+  border: none;
+  border-right: 1.5px solid rgba(255,255,255,0.2);
+  padding: 8px 14px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(255,255,255,0.55);
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+}
+.ai-tab:last-child { border-right: none; }
+.ai-tab:hover:not(.active) { background: rgba(255,255,255,0.07); color: white; }
+.ai-tab.active { background: var(--yellow); color: var(--black); }
+.ai-panel .notes-textarea { background: rgba(255,255,255,0.07); color: white; border-color: rgba(255,255,255,0.2); }
+.ai-panel .notes-textarea::placeholder { color: rgba(255,255,255,0.4); }
+.ai-panel .notes-textarea:focus { box-shadow: 2px 2px 0 0 var(--yellow); border-color: var(--yellow); }
+.ai-result {
+  margin-top: 14px;
+  background: rgba(255,255,255,0.05);
+  border: 1.5px solid rgba(255,255,255,0.15);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ai-result-section { display: flex; flex-direction: column; gap: 6px; }
+.ai-result-label { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: var(--yellow); }
+.ai-result p { font-size: 13px; line-height: 1.6; color: rgba(255,255,255,0.9); }
+.ai-tips-list { list-style: none; display: flex; flex-direction: column; gap: 5px; }
+.ai-tips-list li { font-size: 13px; color: rgba(255,255,255,0.85); padding-left: 14px; position: relative; line-height: 1.4; }
+.ai-tips-list li::before { content: '→'; position: absolute; left: 0; color: var(--yellow); font-weight: 700; }
+.ai-score-row { display: flex; align-items: flex-start; gap: 12px; }
+.ai-score-badge {
+  font-size: 18px;
+  font-weight: 900;
+  padding: 8px 14px;
+  border: var(--border-w) solid rgba(255,255,255,0.3);
+  flex-shrink: 0;
+  text-align: center;
+  min-width: 60px;
+}
+
+/* ── Argument notes ───────────────────────────────── */
+.notes-panel {
+  background: white;
+  border: var(--border-w) solid var(--black);
+  box-shadow: var(--shadow-sm);
+  padding: 20px 24px;
+  margin-bottom: 24px;
+}
+.notes-title { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+.notes-subtitle { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; }
+.notes-textarea {
+  width: 100%;
+  border: var(--border-w) solid var(--black);
+  padding: 12px;
+  font: inherit;
+  font-size: 13px;
+  resize: vertical;
+  outline: none;
+  line-height: 1.6;
+  transition: box-shadow 0.1s;
+}
+.notes-textarea:focus { box-shadow: var(--shadow-sm); }
+
+/* ── Post-debate summary ──────────────────────────── */
+.summary-panel {
+  background: #FFFCE8;
+  border: var(--border-w) solid var(--black);
+  box-shadow: var(--shadow);
+  padding: 24px;
+  margin-top: 8px;
+}
+.summary-title { font-size: 14px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+.summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.summary-block { display: flex; flex-direction: column; gap: 4px; }
+.summary-block-label { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); }
+.summary-block-value { font-size: 15px; font-weight: 700; }
+.summary-notes { margin-bottom: 16px; display: flex; flex-direction: column; gap: 6px; }
+.summary-notes p { font-size: 14px; line-height: 1.5; color: var(--text-muted); font-style: italic; }
+.summary-participants { display: flex; flex-direction: column; gap: 8px; }
+.summary-participant-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.summary-participant-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: white;
+  border: var(--border-w) solid var(--black);
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
 /* ── react-big-calendar Bauhaus overrides ─────────── */
 .rbc-calendar { font-family: 'Outfit', system-ui, sans-serif !important; }
 .rbc-toolbar { margin-bottom: 16px; flex-wrap: wrap; gap: 8px; }

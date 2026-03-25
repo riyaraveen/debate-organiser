@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { getSession, updateSession, deleteSession, getFormat } from '../api'
+import { getSession, updateSession, deleteSession, getFormat, getMyNote, saveMyNote } from '../api'
 import { useAuth } from '../context/AuthContext'
 import { Calendar, Clock, MapPin, Users, Edit2, Trash2, Trophy, Link as LinkIcon } from 'lucide-react'
+import AIPanel from '../components/ui/AIPanel'
 
 export default function SessionDetail() {
   const { id } = useParams()
@@ -15,6 +16,9 @@ export default function SessionDetail() {
   const [editForm, setEditForm] = useState({})
   const [recordingResult, setRecordingResult] = useState(false)
   const [resultForm, setResultForm] = useState({ winner_team: '', result_notes: '' })
+  const [noteContent, setNoteContent] = useState('')
+  const [noteSaved, setNoteSaved] = useState(false)
+  const [noteSaving, setNoteSaving] = useState(false)
 
   useEffect(() => {
     getSession(id)
@@ -32,6 +36,8 @@ export default function SessionDetail() {
       .then((res) => setFormat(res.data))
       .catch(() => {})
       .finally(() => setLoading(false))
+
+    getMyNote(id).then((res) => setNoteContent(res.data.content)).catch(() => {})
   }, [id])
 
   const handleSave = async () => {
@@ -43,6 +49,17 @@ export default function SessionDetail() {
       setEditing(false)
     } catch (err) {
       alert(err.response?.data?.detail || 'Update failed')
+    }
+  }
+
+  const handleSaveNote = async () => {
+    setNoteSaving(true)
+    try {
+      await saveMyNote(id, noteContent)
+      setNoteSaved(true)
+      setTimeout(() => setNoteSaved(false), 2500)
+    } catch { /* silent */ } finally {
+      setNoteSaving(false)
     }
   }
 
@@ -167,7 +184,12 @@ export default function SessionDetail() {
           ) : session.location ? (
             session.mode === 'online'
               ? <a href={session.location} target="_blank" rel="noreferrer" className="meet-link"><LinkIcon size={14} /> Join Meeting</a>
-              : <p>{session.location}</p>
+              : <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <p>{session.location}</p>
+                  <a href={`https://maps.google.com/?q=${encodeURIComponent(session.location)}`} target="_blank" rel="noreferrer" className="meet-link" style={{ fontSize: 12 }}>
+                    <MapPin size={13} /> View on Maps
+                  </a>
+                </div>
           ) : (
             <p className="text-muted">Not set</p>
           )}
@@ -249,6 +271,71 @@ export default function SessionDetail() {
           <a href={gcalUrl} target="_blank" rel="noreferrer" className="btn btn-ghost">
             <Calendar size={15} /> Add to Google Calendar
           </a>
+        </div>
+      )}
+
+      <AIPanel topic={session.topic_text} />
+
+      <div className="notes-panel">
+        <h3 className="notes-title">My Argument Notes</h3>
+        <p className="notes-subtitle">Private notes visible only to you — use for arguments, rebuttals, or research.</p>
+        <textarea
+          className="notes-textarea"
+          rows={6}
+          value={noteContent}
+          onChange={(e) => setNoteContent(e.target.value)}
+          placeholder="Write your arguments, rebuttals, and research notes here…"
+        />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8 }}>
+          <button className="btn btn-primary" onClick={handleSaveNote} disabled={noteSaving}>
+            {noteSaving ? 'Saving…' : 'Save Notes'}
+          </button>
+          {noteSaved && <span style={{ fontSize: 12, fontWeight: 700, color: '#1A6030' }}>✓ Saved</span>}
+        </div>
+      </div>
+
+      {session.status === 'completed' && (
+        <div className="summary-panel">
+          <h3 className="summary-title"><Trophy size={16} /> Post-Debate Summary</h3>
+          <div className="summary-grid">
+            <div className="summary-block">
+              <span className="summary-block-label">Result</span>
+              <span className="summary-block-value" style={{ color: session.winner_team ? 'var(--black)' : 'var(--text-muted)' }}>
+                {session.winner_team ? `${session.winner_team} wins` : 'No result recorded'}
+              </span>
+            </div>
+            <div className="summary-block">
+              <span className="summary-block-label">Format</span>
+              <span className="summary-block-value">{format?.name ?? `Format #${session.format_id}`}</span>
+            </div>
+            <div className="summary-block">
+              <span className="summary-block-label">Debaters</span>
+              <span className="summary-block-value">{session.participants?.length ?? 0}</span>
+            </div>
+            <div className="summary-block">
+              <span className="summary-block-label">Mode</span>
+              <span className="summary-block-value" style={{ textTransform: 'capitalize' }}>{session.mode}</span>
+            </div>
+          </div>
+          {session.result_notes && (
+            <div className="summary-notes">
+              <span className="summary-block-label">Judge's Notes</span>
+              <p>{session.result_notes}</p>
+            </div>
+          )}
+          <div className="summary-participants">
+            <span className="summary-block-label">Participants</span>
+            <div className="summary-participant-list">
+              {session.participants?.map((p) => (
+                <div key={p.id} className="summary-participant-chip">
+                  <span className="avatar sm">{p.user?.name?.[0] ?? '?'}</span>
+                  <span>{p.user?.name}</span>
+                  {p.role_name && <span className="badge badge-gray">{p.role_name}</span>}
+                  {p.side && <span className={`badge ${p.side === 'proposition' ? 'badge-blue' : 'badge-red'}`}>{p.side}</span>}
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       )}
     </div>
