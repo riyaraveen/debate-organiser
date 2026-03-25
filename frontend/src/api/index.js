@@ -39,10 +39,14 @@ export const markRead = (id) => api.post(`/api/notifications/${id}/read`)
 // Notes
 export const getMyNote = (sessionId) => api.get(`/api/sessions/${sessionId}/notes/me`)
 export const saveMyNote = (sessionId, content) => api.put(`/api/sessions/${sessionId}/notes/me`, { content })
+export const getTeamNotes = (sessionId) => api.get(`/api/sessions/${sessionId}/team-notes`)
+export const notifyCalendar = (sessionId) => api.post(`/api/sessions/${sessionId}/notify-calendar`)
 
 // AI
 export const getCounterargument = (data) => api.post('/api/ai/counterargument', data)
 export const evaluateArgument = (data) => api.post('/api/ai/evaluate', data)
+export const getResearchSuggestions = (data) => api.post('/api/ai/research', data)
+export const detectFallacies = (data) => api.post('/api/ai/detect-fallacies', data)
 
 // Settings
 export const getSettings = () => api.get('/api/settings/')

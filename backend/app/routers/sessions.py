@@ -130,6 +130,45 @@ def update_session(
     return _enrich_session(session, db)
 
 
+@router.get("/{session_id}/team-notes")
+def get_team_notes(session_id: int, db: DBSession = Depends(get_db), _: User = Depends(get_current_user)):
+    from app.models.session_note import SessionNote
+    from app.models.user import User as UserModel
+    notes = db.query(SessionNote).filter(
+        SessionNote.session_id == session_id,
+        SessionNote.content != ""
+    ).all()
+    result = []
+    for n in notes:
+        u = db.query(UserModel).filter(UserModel.id == n.user_id).first()
+        result.append({
+            "user_id": n.user_id,
+            "user_name": u.name if u else f"User #{n.user_id}",
+            "content": n.content,
+            "updated_at": str(n.updated_at),
+        })
+    return result
+
+
+@router.post("/{session_id}/notify-calendar", status_code=200)
+def notify_calendar(session_id: int, db: DBSession = Depends(get_db), _: User = Depends(require_admin)):
+    """Send all participants a notification with the Google Calendar link."""
+    session = db.query(Session).filter(Session.id == session_id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    if not session.scheduled_at:
+        raise HTTPException(status_code=400, detail="Session has no scheduled date")
+    participants = db.query(SessionParticipant).filter(SessionParticipant.session_id == session_id).all()
+    participant_ids = [p.user_id for p in participants]
+    if participant_ids:
+        notify_users(
+            db, participant_ids,
+            f"📅 Calendar invite: '{session.title}' — add it to your Google Calendar",
+            link=f"/sessions/{session_id}",
+        )
+    return {"notified": len(participant_ids)}
+
+
 @router.delete("/{session_id}", status_code=204)
 def delete_session(session_id: int, db: DBSession = Depends(get_db), _: User = Depends(require_admin)):
     session = db.query(Session).filter(Session.id == session_id).first()

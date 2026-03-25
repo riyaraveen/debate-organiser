@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { getSession, updateSession, deleteSession, getFormat, getMyNote, saveMyNote } from '../api'
+import { getSession, updateSession, deleteSession, getFormat, getMyNote, saveMyNote, getTeamNotes, notifyCalendar } from '../api'
 import { useAuth } from '../context/AuthContext'
 import { Calendar, Clock, MapPin, Users, Edit2, Trash2, Trophy, Link as LinkIcon } from 'lucide-react'
 import AIPanel from '../components/ui/AIPanel'
@@ -19,6 +19,8 @@ export default function SessionDetail() {
   const [noteContent, setNoteContent] = useState('')
   const [noteSaved, setNoteSaved] = useState(false)
   const [noteSaving, setNoteSaving] = useState(false)
+  const [teamNotes, setTeamNotes] = useState([])
+  const [showTeamNotes, setShowTeamNotes] = useState(false)
 
   useEffect(() => {
     getSession(id)
@@ -38,6 +40,7 @@ export default function SessionDetail() {
       .finally(() => setLoading(false))
 
     getMyNote(id).then((res) => setNoteContent(res.data.content)).catch(() => {})
+    getTeamNotes(id).then((res) => setTeamNotes(res.data)).catch(() => {})
   }, [id])
 
   const handleSave = async () => {
@@ -267,10 +270,41 @@ export default function SessionDetail() {
       </div>
 
       {gcalUrl && (
-        <div className="gcal-section">
+        <div className="gcal-section" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 24 }}>
           <a href={gcalUrl} target="_blank" rel="noreferrer" className="btn btn-ghost">
             <Calendar size={15} /> Add to Google Calendar
           </a>
+          {isAdmin && (
+            <button className="btn btn-ghost" onClick={async () => {
+              await notifyCalendar(id)
+              alert('Calendar notifications sent to all participants.')
+            }}>
+              <Calendar size={15} /> Notify All Participants
+            </button>
+          )}
+        </div>
+      )}
+
+      {teamNotes.filter((n) => n.content).length > 0 && (
+        <div className="team-workspace">
+          <button className="team-workspace-toggle" onClick={() => setShowTeamNotes(!showTeamNotes)}>
+            <Users size={14} /> Team Workspace ({teamNotes.filter(n => n.content).length} shared notes)
+            <span style={{ marginLeft: 'auto' }}>{showTeamNotes ? '▲' : '▼'}</span>
+          </button>
+          {showTeamNotes && (
+            <div className="team-notes-list">
+              {teamNotes.filter(n => n.content).map((n, i) => (
+                <div key={i} className="team-note-item">
+                  <div className="team-note-author">
+                    <span className="avatar sm">{n.user_name[0]}</span>
+                    <strong>{n.user_name}</strong>
+                    <span className="text-muted" style={{ fontSize: 11 }}>{new Date(n.updated_at).toLocaleDateString()}</span>
+                  </div>
+                  <p className="team-note-content">{n.content}</p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

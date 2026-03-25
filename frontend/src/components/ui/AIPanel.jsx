@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { getCounterargument, evaluateArgument } from '../../api'
+import { getCounterargument, evaluateArgument, getResearchSuggestions, detectFallacies } from '../../api'
 import { Sparkles } from 'lucide-react'
 
 export default function AIPanel({ topic }) {
@@ -18,9 +18,15 @@ export default function AIPanel({ topic }) {
       if (tab === 'counter') {
         const res = await getCounterargument({ argument: input, topic })
         setResult({ type: 'counter', data: res.data })
-      } else {
+      } else if (tab === 'eval') {
         const res = await evaluateArgument({ argument: input, topic })
         setResult({ type: 'eval', data: res.data })
+      } else if (tab === 'research') {
+        const res = await getResearchSuggestions({ topic: input })
+        setResult({ type: 'research', data: res.data })
+      } else if (tab === 'fallacy') {
+        const res = await detectFallacies({ argument: input })
+        setResult({ type: 'fallacy', data: res.data })
       }
     } catch (err) {
       setError(err.response?.data?.detail || 'AI request failed')
@@ -38,12 +44,10 @@ export default function AIPanel({ topic }) {
       </div>
 
       <div className="ai-tabs">
-        <button className={`ai-tab ${tab === 'counter' ? 'active' : ''}`} onClick={() => { setTab('counter'); setResult(null) }}>
-          Counterargument
-        </button>
-        <button className={`ai-tab ${tab === 'eval' ? 'active' : ''}`} onClick={() => { setTab('eval'); setResult(null) }}>
-          Evaluate Argument
-        </button>
+        <button className={`ai-tab ${tab === 'counter' ? 'active' : ''}`} onClick={() => { setTab('counter'); setResult(null) }}>Counterargument</button>
+        <button className={`ai-tab ${tab === 'eval' ? 'active' : ''}`} onClick={() => { setTab('eval'); setResult(null) }}>Evaluate</button>
+        <button className={`ai-tab ${tab === 'research' ? 'active' : ''}`} onClick={() => { setTab('research'); setResult(null) }}>Research</button>
+        <button className={`ai-tab ${tab === 'fallacy' ? 'active' : ''}`} onClick={() => { setTab('fallacy'); setResult(null) }}>Fallacies</button>
       </div>
 
       <textarea
@@ -51,15 +55,22 @@ export default function AIPanel({ topic }) {
         rows={4}
         value={input}
         onChange={(e) => setInput(e.target.value)}
-        placeholder={tab === 'counter'
-          ? "Paste an opponent's argument to generate a counter…"
-          : "Paste your argument to get a score and feedback…"}
+        placeholder={
+        tab === 'counter' ? "Paste an opponent's argument to generate a counter…"
+        : tab === 'research' ? "Enter the debate topic to get research guidance…"
+        : tab === 'fallacy' ? "Paste an argument to detect logical fallacies…"
+        : "Paste your argument to get a score and feedback…"
+      }
       />
 
       {error && <div className="alert alert-error" style={{ marginTop: 8 }}>{error}</div>}
 
       <button className="btn btn-primary" onClick={handleRun} disabled={loading || !input.trim()} style={{ marginTop: 8 }}>
-        {loading ? 'Thinking…' : tab === 'counter' ? '✦ Generate Counterargument' : '✦ Evaluate'}
+        {loading ? 'Thinking…'
+        : tab === 'counter' ? '✦ Generate Counterargument'
+        : tab === 'research' ? '✦ Get Research Tips'
+        : tab === 'fallacy' ? '✦ Detect Fallacies'
+        : '✦ Evaluate'}
       </button>
 
       {result?.type === 'counter' && (
@@ -104,6 +115,47 @@ export default function AIPanel({ topic }) {
             <div className="ai-result-section">
               <span className="ai-result-label">Suggestions</span>
               <ul className="ai-tips-list">{result.data.suggestions.map((s, i) => <li key={i}>{s}</li>)}</ul>
+            </div>
+          )}
+        </div>
+      )}
+      {result?.type === 'research' && (
+        <div className="ai-result">
+          {[
+            { label: 'Key Arguments', key: 'key_arguments' },
+            { label: 'Evidence Types', key: 'evidence_types' },
+            { label: 'Search Queries', key: 'search_queries' },
+            { label: 'Watch Out For', key: 'pitfalls' },
+          ].map(({ label, key }) => result.data[key]?.length > 0 && (
+            <div key={key} className="ai-result-section">
+              <span className="ai-result-label">{label}</span>
+              <ul className="ai-tips-list">{result.data[key].map((item, i) => <li key={i}>{item}</li>)}</ul>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {result?.type === 'fallacy' && (
+        <div className="ai-result">
+          <div className="ai-result-section">
+            <span className="ai-result-label">Overall</span>
+            <p>{result.data.overall}</p>
+          </div>
+          {result.data.fallacies?.length > 0 && (
+            <div className="ai-result-section">
+              <span className="ai-result-label" style={{ color: 'var(--red)' }}>Fallacies Found</span>
+              {result.data.fallacies.map((f, i) => (
+                <div key={i} style={{ marginTop: 8, paddingLeft: 12, borderLeft: '3px solid #D02020' }}>
+                  <div style={{ fontWeight: 800, fontSize: 12, textTransform: 'uppercase', color: 'var(--yellow)', marginBottom: 3 }}>{f.name}</div>
+                  <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.85)' }}>{f.explanation}</p>
+                  {f.quote && <p style={{ fontSize: 12, fontStyle: 'italic', color: 'rgba(255,255,255,0.5)', marginTop: 3 }}>"{f.quote}"</p>}
+                </div>
+              ))}
+            </div>
+          )}
+          {result.data.fallacies?.length === 0 && (
+            <div className="ai-result-section">
+              <span style={{ color: '#4ADE80', fontSize: 13, fontWeight: 700 }}>✓ No fallacies detected</span>
             </div>
           )}
         </div>

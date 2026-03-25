@@ -939,6 +939,33 @@ label > span,
 .result-form-fields { display: flex; flex-direction: column; gap: 12px; }
 .result-form-fields label { display: flex; flex-direction: column; gap: 5px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; }
 
+/* ── Team workspace ───────────────────────────────── */
+.team-workspace {
+  border: var(--border-w) solid var(--black);
+  margin-bottom: 24px;
+  box-shadow: var(--shadow-sm);
+}
+.team-workspace-toggle {
+  width: 100%;
+  background: var(--black);
+  color: var(--yellow);
+  border: none;
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  cursor: pointer;
+}
+.team-notes-list { background: white; }
+.team-note-item { padding: 16px 18px; border-bottom: 1px solid #E8E8E8; }
+.team-note-item:last-child { border-bottom: none; }
+.team-note-author { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.team-note-content { font-size: 13px; line-height: 1.6; color: var(--text-muted); white-space: pre-wrap; }
+
 /* ── AI Panel ─────────────────────────────────────── */
 .ai-panel {
   background: var(--black);

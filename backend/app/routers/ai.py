@@ -48,6 +48,27 @@ class EvaluationResponse(BaseModel):
     summary: str
 
 
+class ResearchRequest(BaseModel):
+    topic: str
+    side: Optional[str] = None
+
+
+class ResearchResponse(BaseModel):
+    key_arguments: list
+    evidence_types: list
+    search_queries: list
+    pitfalls: list
+
+
+class FallacyRequest(BaseModel):
+    argument: str
+
+
+class FallacyResponse(BaseModel):
+    fallacies: list   # list of {name, explanation, quote}
+    overall: str
+
+
 @router.post("/counterargument", response_model=CounterargumentResponse)
 def generate_counterargument(body: CounterargumentRequest, _: User = Depends(get_current_user)):
     client = _get_client()
@@ -124,5 +145,57 @@ def evaluate_argument(body: EvaluationRequest, _: User = Depends(get_current_use
         end = text.rfind("}") + 1
         data = json.loads(text[start:end])
         return EvaluationResponse(**data)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"AI error: {str(e)}")
+
+
+@router.post("/research", response_model=ResearchResponse)
+def research_suggestions(body: ResearchRequest, _: User = Depends(get_current_user)):
+    client = _get_client()
+    side_ctx = f" You are helping the {body.side} side." if body.side else ""
+    if not client:
+        return ResearchResponse(
+            key_arguments=["Economic impact argument", "Rights-based argument", "Historical precedent"],
+            evidence_types=["Academic studies", "Government statistics", "Expert testimony"],
+            search_queries=[f'"{body.topic}" evidence', f'"{body.topic}" research study', f'arguments for {body.topic}'],
+            pitfalls=["Avoid anecdotal evidence", "Watch for confirmation bias"]
+        )
+    prompt = (
+        f"You are a debate research coach.{side_ctx}\n"
+        f"Topic: \"{body.topic}\"\n\n"
+        "Provide research guidance as JSON:\n"
+        "{\"key_arguments\": [\"...\"], \"evidence_types\": [\"...\"], \"search_queries\": [\"...\"], \"pitfalls\": [\"...\"]}"
+    )
+    try:
+        import json
+        msg = client.messages.create(model="claude-haiku-4-5-20251001", max_tokens=512,
+                                     messages=[{"role": "user", "content": prompt}])
+        text = msg.content[0].text.strip()
+        data = json.loads(text[text.find("{"):text.rfind("}") + 1])
+        return ResearchResponse(**data)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"AI error: {str(e)}")
+
+
+@router.post("/detect-fallacies", response_model=FallacyResponse)
+def detect_fallacies(body: FallacyRequest, _: User = Depends(get_current_user)):
+    client = _get_client()
+    if not client:
+        return FallacyResponse(
+            fallacies=[{"name": "Ad Hominem", "explanation": "Attacks the person rather than the argument.", "quote": body.argument[:60]}],
+            overall="[AI unavailable] Configure ANTHROPIC_API_KEY for real fallacy detection."
+        )
+    prompt = (
+        f"You are a logic expert. Identify logical fallacies in this argument:\n\"{body.argument}\"\n\n"
+        "Return JSON: {\"fallacies\": [{\"name\": \"...\", \"explanation\": \"...\", \"quote\": \"...\"}], \"overall\": \"...\"}\n"
+        "If no fallacies found, return empty fallacies list with overall feedback."
+    )
+    try:
+        import json
+        msg = client.messages.create(model="claude-haiku-4-5-20251001", max_tokens=512,
+                                     messages=[{"role": "user", "content": prompt}])
+        text = msg.content[0].text.strip()
+        data = json.loads(text[text.find("{"):text.rfind("}") + 1])
+        return FallacyResponse(**data)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"AI error: {str(e)}")
