@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import {
   LayoutDashboard, CalendarDays, MessageSquare, BookOpen,
-  Users, ListTodo, LogOut, GraduationCap, Settings, Layers, User
+  Users, ListTodo, LogOut, GraduationCap, Settings, Layers, User, Swords
 } from 'lucide-react'
 
 const navItems = [
@@ -11,6 +11,7 @@ const navItems = [
   { to: '/calendar', label: 'Calendar', icon: CalendarDays },
   { to: '/topics', label: 'Topics', icon: ListTodo },
   { to: '/learn', label: 'Learn', icon: GraduationCap },
+  { to: '/practice', label: 'AI Practice', icon: Swords },
   { to: '/profile', label: 'My Profile', icon: User },
 ]
 

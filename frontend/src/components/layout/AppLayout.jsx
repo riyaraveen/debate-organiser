@@ -13,6 +13,7 @@ const PAGE_TITLES = {
   '/profile': 'My Profile',
   '/formats': 'Debate Formats',
   '/settings': 'Club Settings',
+  '/practice': 'AI Practice Mode',
 }
 
 export default function AppLayout() {

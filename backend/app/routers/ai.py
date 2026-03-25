@@ -69,6 +69,23 @@ class FallacyResponse(BaseModel):
     overall: str
 
 
+class PracticeMessage(BaseModel):
+    role: str    # "user" or "assistant"
+    content: str
+
+
+class PracticeRequest(BaseModel):
+    topic: str
+    side: str           # "proposition" or "opposition" (user's side)
+    messages: list      # list of PracticeMessage dicts
+    format_name: Optional[str] = None
+
+
+class PracticeResponse(BaseModel):
+    reply: str
+    feedback: Optional[str] = None
+
+
 @router.post("/counterargument", response_model=CounterargumentResponse)
 def generate_counterargument(body: CounterargumentRequest, _: User = Depends(get_current_user)):
     client = _get_client()
@@ -197,5 +214,44 @@ def detect_fallacies(body: FallacyRequest, _: User = Depends(get_current_user)):
         text = msg.content[0].text.strip()
         data = json.loads(text[text.find("{"):text.rfind("}") + 1])
         return FallacyResponse(**data)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"AI error: {str(e)}")
+
+
+@router.post("/practice", response_model=PracticeResponse)
+def practice_debate(body: PracticeRequest, _: User = Depends(get_current_user)):
+    """AI debate simulation — Claude plays the opposing side."""
+    client = _get_client()
+    ai_side = "opposition" if body.side == "proposition" else "proposition"
+    format_ctx = f" This is a {body.format_name} debate." if body.format_name else ""
+
+    if not client:
+        return PracticeResponse(
+            reply=f"[AI unavailable] I would argue from the {ai_side} side that this topic deserves deeper analysis. Configure ANTHROPIC_API_KEY to enable real AI debate practice.",
+            feedback="Configure ANTHROPIC_API_KEY to enable live feedback."
+        )
+
+    system = (
+        f"You are a skilled debater arguing from the {ai_side} side.{format_ctx} "
+        f"The motion is: \"{body.topic}\". "
+        f"The human is arguing from the {body.side} side. "
+        "Keep responses concise (2-4 sentences), debate-style. "
+        "After your argument, add a short '---FEEDBACK---' line with one coaching tip for the human's last point."
+    )
+
+    messages = [{"role": m["role"], "content": m["content"]} for m in body.messages]
+
+    try:
+        msg = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=400,
+            system=system,
+            messages=messages,
+        )
+        text = msg.content[0].text.strip()
+        if "---FEEDBACK---" in text:
+            parts = text.split("---FEEDBACK---", 1)
+            return PracticeResponse(reply=parts[0].strip(), feedback=parts[1].strip())
+        return PracticeResponse(reply=text)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"AI error: {str(e)}")
