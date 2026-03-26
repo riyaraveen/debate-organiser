@@ -43,6 +43,7 @@ class SessionUpdate(BaseModel):
     status: Optional[SessionStatus] = None
     winner_team: Optional[str] = None
     result_notes: Optional[str] = None
+    additional_notes: Optional[str] = None
 
 
 class SessionOut(BaseModel):
@@ -58,6 +59,7 @@ class SessionOut(BaseModel):
     created_by: int
     winner_team: Optional[str]
     result_notes: Optional[str]
+    additional_notes: Optional[str]
     participants: List[ParticipantOut] = []
 
     class Config:

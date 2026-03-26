@@ -30,6 +30,7 @@ class Session(Base):
     created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
     winner_team = Column(String, nullable=True)   # proposition / opposition
     result_notes = Column(String, nullable=True)
+    additional_notes = Column(String, nullable=True)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 

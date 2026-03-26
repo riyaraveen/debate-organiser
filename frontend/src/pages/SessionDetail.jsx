@@ -26,6 +26,7 @@ export default function SessionDetail() {
           scheduled_at: res.data.scheduled_at ? res.data.scheduled_at.slice(0, 16) : '',
           location: res.data.location || '',
           status: res.data.status,
+          additional_notes: res.data.additional_notes || '',
         })
         return getFormat(res.data.format_id)
       })
@@ -265,6 +266,26 @@ export default function SessionDetail() {
           )}
         </div>
       )}
+
+      {/* Additional notes */}
+      <div className="additional-notes-section">
+        <h3 className="additional-notes-title">Additional Notes</h3>
+        {editing ? (
+          <textarea
+            className="additional-notes-textarea"
+            rows={4}
+            value={editForm.additional_notes}
+            onChange={(e) => setEditForm({ ...editForm, additional_notes: e.target.value })}
+            placeholder="Add any extra info for participants — reminders, rules, links, context…"
+          />
+        ) : session.additional_notes ? (
+          <p className="additional-notes-body">{session.additional_notes}</p>
+        ) : (
+          <p className="text-muted" style={{ fontSize: 13 }}>
+            {isAdmin ? 'No additional notes yet — click Edit to add some.' : 'No additional notes from the organiser.'}
+          </p>
+        )}
+      </div>
 
       {/* Quick-access cards to sub-pages */}
       <div className="session-subpage-cards" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
