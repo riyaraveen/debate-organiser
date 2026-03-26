@@ -699,10 +699,10 @@ input:focus, select:focus, textarea:focus {
 .learn-page { max-width: 760px; }
 .learn-tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: 0;
   margin-bottom: 28px;
   border: var(--border-w) solid var(--black);
-  overflow: hidden;
   box-shadow: var(--shadow-sm);
 }
 .learn-tab {
@@ -712,17 +712,17 @@ input:focus, select:focus, textarea:focus {
   padding: 13px 20px;
   border: none;
   border-right: var(--border-w) solid var(--black);
+  border-bottom: var(--border-w) solid var(--black);
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.07em;
   background: white;
   color: var(--text-muted);
-  flex: 1;
+  flex: 1 1 auto;
   justify-content: center;
   transition: background 0.1s, color 0.1s;
 }
-.learn-tab:last-child { border-right: none; }
 .learn-tab:hover:not(.active) { background: var(--off-white); color: var(--text); }
 .learn-tab.active { background: var(--red); color: white; }
 .learn-intro { color: var(--text-muted); margin-bottom: 20px; line-height: 1.6; }
