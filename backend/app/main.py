@@ -11,6 +11,16 @@ from app.db.database import Base, engine
 # Create any new tables that don't exist yet (non-destructive)
 Base.metadata.create_all(bind=engine)
 
+# Add any new columns that don't exist yet (non-destructive ALTER TABLE)
+from sqlalchemy import text, inspect as sa_inspect
+def _add_column_if_missing(table: str, column: str, col_type: str):
+    cols = [c["name"] for c in sa_inspect(engine).get_columns(table)]
+    if column not in cols:
+        with engine.connect() as conn:
+            conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {column} {col_type}"))
+
+_add_column_if_missing("sessions", "additional_notes", "VARCHAR")
+
 app = FastAPI(title="Debate Organiser API", version="1.0.0")
 
 app.add_middleware(
