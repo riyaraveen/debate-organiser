@@ -5,7 +5,35 @@ from app.db.database import Base
 from app.models.debate_format import DebateFormat
 from app.models.user import User, UserRole
 from app.models.club_settings import ClubSettings
+from app.models.topic import Topic, ProficiencyLevel, TopicSource
 from app.services.auth import hash_password
+
+TOPICS = [
+    # Beginner — Politics & Society
+    {"text": "Social media does more harm than good", "category": "Technology", "is_go": True, "proficiency": ProficiencyLevel.beginner, "min_age": 11, "max_age": 14, "source": TopicSource.admin},
+    {"text": "School uniforms should be mandatory", "category": "Education", "is_go": True, "proficiency": ProficiencyLevel.beginner, "min_age": 11, "max_age": 14, "source": TopicSource.admin},
+    {"text": "Homework should be abolished", "category": "Education", "is_go": True, "proficiency": ProficiencyLevel.beginner, "min_age": 11, "max_age": 14, "source": TopicSource.admin},
+    {"text": "Zoos should be banned", "category": "Environment", "is_go": True, "proficiency": ProficiencyLevel.beginner, "min_age": 11, "max_age": 16, "source": TopicSource.admin},
+    {"text": "The voting age should be lowered to 16", "category": "Politics", "is_go": True, "proficiency": ProficiencyLevel.beginner, "min_age": 13, "max_age": 16, "source": TopicSource.admin},
+    {"text": "Junk food should be banned in schools", "category": "Health", "is_go": True, "proficiency": ProficiencyLevel.beginner, "min_age": 11, "max_age": 14, "source": TopicSource.admin},
+    # Intermediate — Ethics & Policy
+    {"text": "Artificial intelligence poses a greater threat than opportunity to humanity", "category": "Technology", "is_go": True, "proficiency": ProficiencyLevel.intermediate, "min_age": 14, "max_age": 18, "source": TopicSource.admin},
+    {"text": "Developed nations have a moral obligation to accept climate refugees", "category": "Environment", "is_go": True, "proficiency": ProficiencyLevel.intermediate, "min_age": 14, "max_age": 18, "source": TopicSource.admin},
+    {"text": "Capital punishment should be abolished worldwide", "category": "Ethics", "is_go": True, "proficiency": ProficiencyLevel.intermediate, "min_age": 14, "max_age": 18, "source": TopicSource.admin},
+    {"text": "Universal basic income should be introduced", "category": "Economics", "is_go": True, "proficiency": ProficiencyLevel.intermediate, "min_age": 15, "max_age": 18, "source": TopicSource.admin},
+    {"text": "Online privacy should take priority over national security", "category": "Technology", "is_go": True, "proficiency": ProficiencyLevel.intermediate, "min_age": 14, "max_age": 18, "source": TopicSource.admin},
+    {"text": "Animal testing for medical research should be banned", "category": "Ethics", "is_go": True, "proficiency": ProficiencyLevel.intermediate, "min_age": 13, "max_age": 18, "source": TopicSource.admin},
+    {"text": "Compulsory voting undermines democracy", "category": "Politics", "is_go": True, "proficiency": ProficiencyLevel.intermediate, "min_age": 15, "max_age": 18, "source": TopicSource.admin},
+    # Advanced — Complex Policy & Philosophy
+    {"text": "The United Nations has failed in its primary mission of maintaining world peace", "category": "International Relations", "is_go": True, "proficiency": ProficiencyLevel.advanced, "min_age": 16, "max_age": None, "source": TopicSource.admin},
+    {"text": "Free market capitalism is incompatible with environmental sustainability", "category": "Economics", "is_go": True, "proficiency": ProficiencyLevel.advanced, "min_age": 16, "max_age": None, "source": TopicSource.admin},
+    {"text": "Whistleblowers who leak classified information in the public interest should be granted immunity", "category": "Ethics", "is_go": True, "proficiency": ProficiencyLevel.advanced, "min_age": 16, "max_age": None, "source": TopicSource.admin},
+    {"text": "Gene editing of human embryos should be permitted for disease prevention", "category": "Science", "is_go": True, "proficiency": ProficiencyLevel.advanced, "min_age": 16, "max_age": None, "source": TopicSource.admin},
+    {"text": "Affirmative action policies do more harm than good", "category": "Social Justice", "is_go": True, "proficiency": ProficiencyLevel.advanced, "min_age": 16, "max_age": None, "source": TopicSource.admin},
+    # No-go topics (for testing the go/no-go filter)
+    {"text": "Legalisation of all recreational drugs", "category": "Health", "is_go": False, "proficiency": ProficiencyLevel.advanced, "min_age": 18, "max_age": None, "source": TopicSource.admin},
+    {"text": "The existence of God", "category": "Philosophy", "is_go": False, "proficiency": ProficiencyLevel.intermediate, "min_age": None, "max_age": None, "source": TopicSource.admin},
+]
 
 FORMATS = [
     {
@@ -205,6 +233,11 @@ def seed():
         # Seed club settings
         if not db.query(ClubSettings).first():
             db.add(ClubSettings(club_name="Debate Club", school_name="Your School"))
+
+        # Seed sample topics
+        if not db.query(Topic).first():
+            for t in TOPICS:
+                db.add(Topic(**t))
 
         db.commit()
         print("Database seeded successfully.")
