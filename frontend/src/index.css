@@ -1416,6 +1416,136 @@ label > span,
 .ai-tip-card strong { display: block; font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
 .ai-tip-card p { font-size: 12px; color: var(--text-muted); margin: 0; line-height: 1.5; }
 
+/* ── Rich Text Editor (TipTap) ──────────────────────── */
+.re-wrapper {
+  border: var(--border-w) solid var(--black);
+  background: white;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+.re-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 8px;
+  border-bottom: var(--border-w) solid var(--black);
+  background: var(--off-white);
+}
+.re-group { display: flex; align-items: center; gap: 1px; }
+.re-divider { width: 1px; height: 22px; background: #ccc; margin: 0 4px; }
+
+.re-btn {
+  display: flex; align-items: center; justify-content: center;
+  min-width: 28px; height: 28px;
+  padding: 0 6px;
+  border: 1.5px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: 0;
+  color: var(--black);
+  transition: background 0.08s, border-color 0.08s;
+}
+.re-btn:hover { background: #e0e0e0; border-color: var(--black); }
+.re-btn-active { background: var(--black) !important; color: white !important; border-color: var(--black) !important; }
+
+.re-select {
+  height: 28px;
+  border: 1.5px solid #ccc;
+  border-radius: 0;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 0 6px;
+  background: white;
+  cursor: pointer;
+  outline: none;
+}
+.re-select:focus { border-color: var(--black); }
+
+/* Colour picker dropdown */
+.re-color-group { position: relative; }
+.re-color-picker {
+  display: none;
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 100;
+  background: white;
+  border: var(--border-w) solid var(--black);
+  box-shadow: var(--shadow);
+  padding: 8px;
+  gap: 6px;
+  flex-wrap: wrap;
+  width: 148px;
+}
+.re-color-group.open .re-color-picker { display: flex; }
+.re-color-swatch {
+  width: 24px; height: 24px;
+  border: 1.5px solid var(--black);
+  cursor: pointer;
+  border-radius: 0;
+  flex-shrink: 0;
+}
+.re-color-swatch:hover { transform: scale(1.15); }
+.re-color-reset {
+  background: white !important;
+  font-size: 11px;
+  font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* Editor content area */
+.re-editor-area {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 380px;
+}
+.re-editor-area .ProseMirror {
+  min-height: 380px;
+  padding: 16px 20px;
+  outline: none;
+  font-size: 14px;
+  line-height: 1.75;
+  color: var(--black);
+}
+.re-editor-area .ProseMirror p { margin: 0 0 8px; }
+.re-editor-area .ProseMirror h1 { font-size: 22px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.05em; margin: 16px 0 8px; border-bottom: 3px solid var(--black); padding-bottom: 4px; }
+.re-editor-area .ProseMirror h2 { font-size: 17px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; margin: 14px 0 6px; }
+.re-editor-area .ProseMirror h3 { font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; margin: 12px 0 4px; }
+.re-editor-area .ProseMirror ul { padding-left: 20px; margin: 0 0 8px; }
+.re-editor-area .ProseMirror ol { padding-left: 20px; margin: 0 0 8px; }
+.re-editor-area .ProseMirror li { margin-bottom: 4px; }
+.re-editor-area .ProseMirror blockquote {
+  border-left: 4px solid var(--black);
+  padding: 8px 16px;
+  background: var(--off-white);
+  margin: 8px 0;
+  font-style: italic;
+}
+.re-editor-area .ProseMirror mark { border-radius: 0; padding: 0 2px; }
+.re-editor-area .ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: #aaa;
+  pointer-events: none;
+  position: absolute;
+}
+.re-editor-area .ProseMirror { position: relative; }
+
+/* Read-only rich content (team notes) */
+.re-content-readonly { font-size: 13px; line-height: 1.6; }
+.re-content-readonly h1 { font-size: 16px; font-weight: 900; text-transform: uppercase; margin: 8px 0 4px; }
+.re-content-readonly h2 { font-size: 14px; font-weight: 800; text-transform: uppercase; margin: 6px 0 4px; }
+.re-content-readonly h3 { font-size: 13px; font-weight: 800; text-transform: uppercase; margin: 6px 0 4px; }
+.re-content-readonly ul, .re-content-readonly ol { padding-left: 18px; margin: 4px 0; }
+.re-content-readonly blockquote { border-left: 3px solid var(--black); padding-left: 10px; margin: 6px 0; font-style: italic; }
+.re-content-readonly mark { padding: 0 2px; }
+.re-content-readonly p { margin: 0 0 6px; }
+
 /* Spin animation for refresh icon */
 @keyframes spin { to { transform: rotate(360deg); } }
 .spin { animation: spin 1s linear infinite; }

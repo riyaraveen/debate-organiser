@@ -1,8 +1,15 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { getSession, getMyNote, saveMyNote, getTeamNotes, getWebSources } from '../api'
 import { useAuth } from '../context/AuthContext'
 import { ArrowLeft, Search, ExternalLink, Users, RefreshCw, FileText } from 'lucide-react'
+import RichEditor from '../components/ui/RichEditor'
+
+function wordCount(html) {
+  if (!html) return 0
+  const text = html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+  return text ? text.split(' ').length : 0
+}
 
 export default function SessionNotes() {
   const { id } = useParams()
@@ -20,7 +27,7 @@ export default function SessionNotes() {
 
   useEffect(() => {
     getSession(id).then((r) => setSession(r.data)).catch(() => {})
-    getMyNote(id).then((r) => setNoteContent(r.data.content)).catch(() => {})
+    getMyNote(id).then((r) => setNoteContent(r.data.content || '')).catch(() => {})
     getTeamNotes(id).then((r) => setTeamNotes(r.data)).catch(() => {})
   }, [id])
 
@@ -50,7 +57,7 @@ export default function SessionNotes() {
     }
   }
 
-  const wordCount = noteContent.trim() ? noteContent.trim().split(/\s+/).length : 0
+  const handleEditorChange = useCallback((html) => setNoteContent(html), [])
 
   return (
     <div className="page-container">
@@ -75,7 +82,7 @@ export default function SessionNotes() {
                 My Argument Notes
               </h3>
             </div>
-            <span className="text-muted" style={{ fontSize: 12 }}>{wordCount} words</span>
+            <span className="text-muted" style={{ fontSize: 12 }}>{wordCount(noteContent)} words</span>
           </div>
 
           {session?.topic_text && (
@@ -85,11 +92,10 @@ export default function SessionNotes() {
             </div>
           )}
 
-          <textarea
-            className="notes-textarea notes-textarea-full"
+          <RichEditor
             value={noteContent}
-            onChange={(e) => setNoteContent(e.target.value)}
-            placeholder={`Write your arguments, rebuttals, evidence, and key points here…\n\nTips:\n• Proposition arguments at the top\n• Anticipated opposition points below\n• Evidence and statistics last`}
+            onChange={handleEditorChange}
+            placeholder="Write your arguments, rebuttals, evidence, and key points here…"
           />
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 12 }}>
@@ -130,37 +136,25 @@ export default function SessionNotes() {
             </div>
 
             {!session?.topic_text && (
-              <p className="text-muted" style={{ fontSize: 13, padding: '12px 0' }}>
-                No topic set for this session yet.
-              </p>
+              <p className="text-muted" style={{ fontSize: 13, padding: '12px 0' }}>No topic set for this session yet.</p>
             )}
-
             {session?.topic_text && !sourcesLoaded && !sourcesLoading && (
               <p className="text-muted" style={{ fontSize: 13, padding: '12px 0' }}>
-                Click <strong>Find Sources</strong> to search for real articles and research related to this topic.
+                Click <strong>Find Sources</strong> to search for real articles related to this topic.
               </p>
             )}
-
             {sourcesError && (
               <div className="alert alert-error" style={{ fontSize: 13, marginTop: 8 }}>{sourcesError}</div>
             )}
-
             {sources.length > 0 && (
               <div className="sources-list">
                 {sources.map((s, i) => (
                   <div key={i} className="source-card">
-                    <a
-                      href={s.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="source-title"
-                    >
+                    <a href={s.url} target="_blank" rel="noreferrer" className="source-title">
                       {s.title}
                       {s.url && <ExternalLink size={11} style={{ marginLeft: 4, flexShrink: 0 }} />}
                     </a>
-                    {s.snippet && (
-                      <p className="source-snippet">{s.snippet}</p>
-                    )}
+                    {s.snippet && <p className="source-snippet">{s.snippet}</p>}
                   </div>
                 ))}
               </div>
@@ -188,14 +182,22 @@ export default function SessionNotes() {
                 <div className="sources-list" style={{ marginTop: 12 }}>
                   {teamNotes.filter((n) => n.content && n.user_name !== user?.name).map((n, i) => (
                     <div key={i} className="source-card">
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                         <span className="avatar sm">{n.user_name[0]}</span>
                         <strong style={{ fontSize: 13 }}>{n.user_name}</strong>
                         <span className="text-muted" style={{ fontSize: 11 }}>
                           {new Date(n.updated_at).toLocaleDateString()}
                         </span>
                       </div>
-                      <p style={{ fontSize: 13, margin: 0, whiteSpace: 'pre-wrap' }}>{n.content}</p>
+                      {/* Render HTML from rich editor, or plain text fallback */}
+                      {n.content.startsWith('<') ? (
+                        <div
+                          className="re-content-readonly"
+                          dangerouslySetInnerHTML={{ __html: n.content }}
+                        />
+                      ) : (
+                        <p style={{ fontSize: 13, margin: 0, whiteSpace: 'pre-wrap' }}>{n.content}</p>
+                      )}
                     </div>
                   ))}
                 </div>
