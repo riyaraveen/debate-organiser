@@ -2203,6 +2203,189 @@ label > span,
 .ai-tip-card strong { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; }
 .ai-tip-card p { font-size: 12px; color: var(--text-muted); margin: 0; line-height: 1.5; }
 
+/* ── Formats page ───────────────────────────────────── */
+.formats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(480px, 1fr));
+  gap: 20px;
+}
+.format-card {
+  background: white;
+  border: var(--border-w) solid var(--black);
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  overflow: hidden;
+}
+.format-card-inactive { opacity: 0.6; }
+.format-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 18px 20px 14px;
+  border-bottom: var(--border-w) solid var(--black);
+  background: var(--off-white);
+}
+.format-card-icon {
+  width: 42px; height: 42px;
+  background: var(--black);
+  color: var(--yellow);
+  font-size: 13px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  letter-spacing: 0.04em;
+}
+.format-card-name {
+  font-size: 15px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 0;
+  line-height: 1.2;
+}
+.format-meta-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  background: white;
+  border: 1.5px solid #D8D8D8;
+  padding: 2px 8px;
+  color: var(--text-muted);
+}
+.format-card-desc {
+  font-size: 13px;
+  color: var(--text-muted);
+  padding: 12px 20px;
+  margin: 0;
+  border-bottom: 1.5px solid #F0F0F0;
+  line-height: 1.6;
+}
+.format-roles-section {
+  padding: 12px 20px;
+  border-bottom: 1.5px solid #F0F0F0;
+}
+.format-section-label {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+.format-roles-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.format-role-chip {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 7px 10px;
+  background: var(--off-white);
+  border-left: 3px solid;
+}
+.format-role-badge {
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  padding: 2px 5px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.format-role-name {
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+.format-role-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+  display: block;
+  margin-top: 1px;
+}
+.format-support-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.format-support-chip {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 12px;
+  padding: 4px 0;
+}
+.format-support-dot {
+  width: 7px; height: 7px;
+  background: var(--black);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.format-speaking-section {
+  border-top: 1.5px solid #F0F0F0;
+}
+.format-expand-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 10px 20px;
+  background: none;
+  border: none;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  cursor: pointer;
+  color: var(--text-muted);
+  text-align: left;
+}
+.format-expand-btn:hover { background: var(--off-white); color: var(--black); }
+.format-speaking-list {
+  padding: 4px 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.format-speech-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid #F4F4F4;
+}
+.format-speech-row:last-child { border-bottom: none; }
+.format-speech-num {
+  width: 22px; height: 22px;
+  color: white;
+  font-size: 10px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.format-speech-info { flex: 1; min-width: 0; }
+.format-speech-role { font-size: 12px; font-weight: 700; display: block; }
+.format-speech-desc { font-size: 11px; color: var(--text-muted); }
+.format-speech-time {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--text-muted);
+  background: var(--off-white);
+  border: 1.5px solid #E0E0E0;
+  padding: 2px 7px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 /* ── Additional Notes (session-level) ──────────────── */
 .additional-notes-section {
   border: var(--border-w) solid var(--black);
