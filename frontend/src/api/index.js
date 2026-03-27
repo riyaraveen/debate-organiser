@@ -32,9 +32,10 @@ export const updateSession = (id, data) => api.patch(`/api/sessions/${id}`, data
 export const deleteSession = (id) => api.delete(`/api/sessions/${id}`)
 
 // Notifications
-export const getNotifications = () => api.get('/api/notifications/')
-export const markAllRead = () => api.post('/api/notifications/read-all')
-export const markRead = (id) => api.post(`/api/notifications/${id}/read`)
+export const getNotifications  = ()  => api.get('/api/notifications/')
+export const markAllRead       = ()  => api.post('/api/notifications/read-all')
+export const markRead          = (id) => api.post(`/api/notifications/${id}/read`)
+export const checkReminders    = ()  => api.post('/api/notifications/check-reminders')
 
 // Notes
 export const getMyNote = (sessionId) => api.get(`/api/sessions/${sessionId}/notes/me`)

@@ -19,7 +19,9 @@ def _add_column_if_missing(table: str, column: str, col_type: str):
         with engine.connect() as conn:
             conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {column} {col_type}"))
 
-_add_column_if_missing("sessions", "additional_notes", "VARCHAR")
+_add_column_if_missing("sessions",      "additional_notes",  "VARCHAR")
+_add_column_if_missing("notifications", "notification_type", "VARCHAR")
+_add_column_if_missing("notifications", "ref_key",           "VARCHAR")
 
 app = FastAPI(title="Debate Organiser API", version="1.0.0")
 

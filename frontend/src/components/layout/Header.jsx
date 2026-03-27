@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
 import { Bell } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { getNotifications, markAllRead } from '../../api'
+import { getNotifications, markAllRead, checkReminders } from '../../api'
 
 export default function Header({ title }) {
   const [notifications, setNotifications] = useState([])
-  const [open, setOpen]           = useState(false)
-  const [toast, setToast]         = useState(null)   // latest new notification to show in bar
+  const [open, setOpen]     = useState(false)
+  const [toast, setToast]   = useState(null)
   const dropdownRef   = useRef(null)
   const prevIdsRef    = useRef(new Set())
   const firstFetchRef = useRef(true)
@@ -15,7 +15,6 @@ export default function Header({ title }) {
   const fetchNotifications = () => {
     getNotifications().then((res) => {
       const data = res.data
-      // Only show toast for notifications that arrive after the initial load
       if (!firstFetchRef.current) {
         const newUnread = data.filter(n => !prevIdsRef.current.has(n.id) && !n.is_read)
         if (newUnread.length > 0) setToast(newUnread[0])
@@ -27,7 +26,10 @@ export default function Header({ title }) {
   }
 
   useEffect(() => {
-    fetchNotifications()
+    // Check for upcoming session reminders, then load notifications
+    checkReminders().catch(() => {}).finally(() => {
+      fetchNotifications()
+    })
     const interval = setInterval(fetchNotifications, 30000)
     return () => clearInterval(interval)
   }, [])
@@ -59,18 +61,20 @@ export default function Header({ title }) {
     setOpen(false)
   }
 
+  const isReminder = (n) => n?.notification_type === 'session_reminder'
+
   return (
     <header className="app-header">
-
-      {/* Toast — shows on the left until the dropdown is opened */}
-      {toast && !open && (
-        <div className="header-toast">
-          <span className="header-toast-dot"/>
-          <span className="header-toast-msg">{toast.message}</span>
-        </div>
-      )}
-
       <div className="header-actions" ref={dropdownRef}>
+
+        {/* Toast — sits to the left of the bell, disappears when dropdown opens */}
+        {toast && !open && (
+          <div className={`header-toast ${isReminder(toast) ? 'header-toast-reminder' : ''}`}>
+            <span className="header-toast-dot"/>
+            <span className="header-toast-msg">{toast.message}</span>
+          </div>
+        )}
+
         <button className="bell-btn" onClick={handleBellClick}>
           <Bell size={20}/>
           {unread > 0 && <span className="bell-dot" aria-label={`${unread} unread`}/>}
@@ -86,7 +90,8 @@ export default function Header({ title }) {
             ) : (
               <ul className="notifications-list">
                 {notifications.map((n) => (
-                  <li key={n.id} className="notification-item"
+                  <li key={n.id}
+                    className={`notification-item ${isReminder(n) ? 'notification-item-reminder' : ''}`}
                     onClick={() => handleNotificationClick(n)}>
                     {n.message}
                   </li>

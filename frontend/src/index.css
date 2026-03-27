@@ -163,7 +163,13 @@ input:focus, select:focus, textarea:focus {
 .page-content { padding: 28px; }
 
 /* ── Header notifications ─────────────────────────── */
-.header-actions { position: relative; margin-left: auto; }
+.header-actions {
+  position: relative;
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
 .bell-btn {
   background: none;
   border: var(--border-w) solid var(--black);
@@ -186,16 +192,24 @@ input:focus, select:focus, textarea:focus {
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.02em;
-  max-width: 420px;
+  max-width: 380px;
   border: var(--border-w) solid var(--black);
   box-shadow: var(--shadow-sm);
   animation: toast-in 0.15s ease;
 }
+/* Session reminder variant — blue */
+.header-toast-reminder {
+  background: var(--blue);
+  border-color: var(--blue);
+}
 .header-toast-dot {
   width: 8px; height: 8px;
-  background: var(--red);
+  background: var(--yellow);
   border-radius: 50%;
   flex-shrink: 0;
+}
+.header-toast-reminder .header-toast-dot {
+  background: var(--yellow);
 }
 .header-toast-msg {
   white-space: nowrap;
@@ -203,7 +217,7 @@ input:focus, select:focus, textarea:focus {
   text-overflow: ellipsis;
 }
 @keyframes toast-in {
-  from { opacity: 0; transform: translateX(-8px); }
+  from { opacity: 0; transform: translateX(8px); }
   to   { opacity: 1; transform: translateX(0); }
 }
 
@@ -257,6 +271,11 @@ input:focus, select:focus, textarea:focus {
 }
 .notification-item:hover { background: var(--off-white); }
 .notification-item.unread { background: #FFF8DC; font-weight: 600; }
+.notification-item-reminder {
+  border-left: 3px solid var(--blue);
+  background: #EEF3FF;
+}
+.notification-item-reminder:hover { background: #D8E4FF; }
 .notifications-empty { padding: 20px 16px; color: var(--text-muted); text-align: center; }
 
 /* ── Avatars ──────────────────────────────────────── */
