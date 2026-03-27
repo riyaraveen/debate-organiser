@@ -6,36 +6,90 @@ import { Calendar, Clock, MapPin, Plus, Users, BookOpen, Zap, Star, ArrowRight }
 
 /* ── Illustrations ───────────────────────────────────────────────────────── */
 
-/* Chess-pawn debate figures — ref Image 1
-   Render order: pedestals → bubbles (lighter shades) → pawn figures on top */
+/* Two faceless Bauhaus debaters facing each other — Oskar Schlemmer style.
+   Blue figure (left) vs Red figure (right), yellow stage floor, black outlines.
+   Speech bubbles match each figure's colour. */
 function EmptyDebateIllustration() {
   return (
-    <svg viewBox="0 0 200 100" preserveAspectRatio="xMidYMid slice"
+    <svg viewBox="0 0 560 260" preserveAspectRatio="xMidYMid meet"
       xmlns="http://www.w3.org/2000/svg" className="dash-empty-bg">
-      {/* Blue circle — bottom-left, large enough to fill that corner */}
-      <circle cx="-20" cy="160" r="150" fill="#1040C0" opacity="0.17"/>
-      {/* Yellow triangle — bottom-right, fills that corner */}
-      <polygon points="200,-10 200,180 30,180" fill="#F0C020" opacity="0.30"/>
-      {/* Red rotated square — top-right, partially off */}
-      <rect x="162" y="-30" width="56" height="56" fill="#D02020" opacity="0.22"
-        transform="rotate(18 190 0)"/>
-      {/* Red accent circle — top-left */}
-      <circle cx="18" cy="16" r="20" fill="#D02020" opacity="0.13"/>
+
+      {/* ── Background ── */}
+      <rect x="0" y="0" width="560" height="260" fill="#F5F5F5"/>
+
+      {/* Yellow stage floor */}
+      <rect x="0" y="206" width="560" height="54" fill="#F0C020"/>
+      <rect x="0" y="203" width="560" height="5" fill="#121212"/>
+
+      {/* ── Blue debater (left, facing right) ── */}
+      {/* Head */}
+      <circle cx="138" cy="78" r="34" fill="#1040C0" stroke="#121212" strokeWidth="3"/>
+      {/* Torso */}
+      <rect x="110" y="112" width="56" height="88" fill="#1040C0" stroke="#121212" strokeWidth="3"/>
+      {/* Back arm (left) */}
+      <rect x="68"  y="120" width="44" height="14" fill="#1040C0" stroke="#121212" strokeWidth="3"/>
+      {/* Forward arm (right — extended toward center, slightly raised) */}
+      <rect x="164" y="114" width="66" height="14" fill="#1040C0" stroke="#121212" strokeWidth="3"/>
+      {/* Legs */}
+      <rect x="112" y="198" width="24" height="18" fill="#1040C0" stroke="#121212" strokeWidth="3"/>
+      <rect x="140" y="198" width="24" height="18" fill="#1040C0" stroke="#121212" strokeWidth="3"/>
+
+      {/* Blue speech bubble (upper-left) */}
+      <rect x="14"  y="8"  width="172" height="58" fill="#1040C0" stroke="#121212" strokeWidth="3"/>
+      {/* Bubble tail pointing toward head */}
+      <polygon points="90,64 115,64 100,90" fill="#1040C0"/>
+      <line x1="90" y1="64" x2="100" y2="90" stroke="#121212" strokeWidth="3"/>
+      <line x1="115" y1="64" x2="100" y2="90" stroke="#121212" strokeWidth="3"/>
+      {/* Text lines inside bubble */}
+      <rect x="26" y="22" width="148" height="6" fill="white" opacity="0.75"/>
+      <rect x="26" y="36" width="108" height="6" fill="white" opacity="0.75"/>
+      <rect x="26" y="50" width="128" height="6" fill="white" opacity="0.75"/>
+
+      {/* ── Red debater (right, facing left — mirror of blue) ── */}
+      {/* Head */}
+      <circle cx="422" cy="78" r="34" fill="#D02020" stroke="#121212" strokeWidth="3"/>
+      {/* Torso */}
+      <rect x="394" y="112" width="56" height="88" fill="#D02020" stroke="#121212" strokeWidth="3"/>
+      {/* Back arm (right) */}
+      <rect x="448" y="120" width="44" height="14" fill="#D02020" stroke="#121212" strokeWidth="3"/>
+      {/* Forward arm (left — extended toward center) */}
+      <rect x="330" y="114" width="66" height="14" fill="#D02020" stroke="#121212" strokeWidth="3"/>
+      {/* Legs */}
+      <rect x="396" y="198" width="24" height="18" fill="#D02020" stroke="#121212" strokeWidth="3"/>
+      <rect x="424" y="198" width="24" height="18" fill="#D02020" stroke="#121212" strokeWidth="3"/>
+
+      {/* Red speech bubble (upper-right) */}
+      <rect x="374" y="8" width="172" height="58" fill="#D02020" stroke="#121212" strokeWidth="3"/>
+      {/* Bubble tail */}
+      <polygon points="445,64 470,64 460,90" fill="#D02020"/>
+      <line x1="445" y1="64" x2="460" y2="90" stroke="#121212" strokeWidth="3"/>
+      <line x1="470" y1="64" x2="460" y2="90" stroke="#121212" strokeWidth="3"/>
+      {/* Text lines inside bubble */}
+      <rect x="386" y="22" width="148" height="6" fill="white" opacity="0.75"/>
+      <rect x="386" y="36" width="108" height="6" fill="white" opacity="0.75"/>
+      <rect x="386" y="50" width="128" height="6" fill="white" opacity="0.75"/>
+
+      {/* ── Centre VS marker — rotated yellow square ── */}
+      <rect x="261" y="131" width="38" height="38" fill="#F0C020" stroke="#121212" strokeWidth="3"
+        transform="rotate(45 280 150)"/>
+
     </svg>
   )
 }
 
-/* Bauhaus primary shapes motif — circle, square, triangle (ref Image 5) */
-function TopicLightbulbIllustration() {
+/* Bauhaus constructivist spotlight / lightbulb motif for the topic card */
+function TopicSpotlightIllustration() {
   return (
-    <svg width="100" height="48" viewBox="0 0 200 96" fill="none" xmlns="http://www.w3.org/2000/svg"
+    <svg width="110" height="52" viewBox="0 0 220 104" fill="none" xmlns="http://www.w3.org/2000/svg"
       style={{ flexShrink: 0 }}>
-      {/* Yellow circle — 40px diameter */}
-      <circle cx="22" cy="52" r="20" fill="#F0C020" stroke="#121212" strokeWidth="3"/>
-      {/* Blue square — 40×40 */}
-      <rect x="72" y="32" width="40" height="40" fill="#1040C0" stroke="#121212" strokeWidth="3"/>
-      {/* Red triangle — shifted right so gap matches circle→square gap (~30px) */}
-      <polygon points="166,24 190,72 142,72" fill="#D02020" stroke="#121212" strokeWidth="3" strokeLinejoin="round"/>
+      {/* Large yellow circle — the "idea" */}
+      <circle cx="28" cy="52" r="26" fill="#F0C020" stroke="#121212" strokeWidth="3"/>
+      {/* Inner concentric ring */}
+      <circle cx="28" cy="52" r="14" fill="none" stroke="#121212" strokeWidth="2.5"/>
+      {/* Blue square — bold primary form */}
+      <rect x="76" y="28" width="48" height="48" fill="#1040C0" stroke="#121212" strokeWidth="3"/>
+      {/* Red triangle */}
+      <polygon points="176,16 208,88 144,88" fill="#D02020" stroke="#121212" strokeWidth="3" strokeLinejoin="round"/>
     </svg>
   )
 }
@@ -121,9 +175,9 @@ function SessionCard({ session }) {
   )
 }
 
-function DashStatCell({ label, value, numColor, barColor }) {
+function DashStatCell({ label, value, numColor, barColor, accent }) {
   return (
-    <div className="dash-stat-cell">
+    <div className="dash-stat-cell" style={accent ? { background: accent } : {}}>
       <div className="dash-stat-bar" style={{ background: barColor }}/>
       <div className="dash-stat-cell-text">
         <span className="dash-stat-num" style={{ color: numColor }}>{value}</span>
@@ -159,7 +213,7 @@ export default function Dashboard() {
     }).catch(() => {}).finally(() => setLoading(false))
   }, [])
 
-  const upcoming    = sessions.filter(s => s.status === 'scheduled')
+  const upcoming    = sessions.filter(s => s.status === 'scheduled' || s.status === 'draft')
   const past        = sessions.filter(s => s.status === 'completed')
   const nextSession = upcoming[0] ?? null
   const countdown   = nextSession?.scheduled_at ? getCountdown(nextSession.scheduled_at) : null
@@ -192,7 +246,7 @@ export default function Dashboard() {
               </Link>
             )}
           </div>
-          {/* Bauhaus geometric decoration — ref Image 2 */}
+          {/* Bauhaus geometric decoration */}
           <svg className="dash-masthead-geo" viewBox="0 0 240 110" fill="none"
             aria-hidden="true"
             style={{ position: 'absolute', right: 0, bottom: 0, width: 240, height: 110, pointerEvents: 'none' }}>
@@ -203,12 +257,12 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ── Stats strip — numbered shape badges (ref Image 4) ────────────── */}
+      {/* ── Stats strip — numbered shape badges ─────────────────────────── */}
       {!loading && (
         <div className="dash-stats">
           <DashStatCell label="Upcoming Sessions"  value={upcoming.length}    numColor="var(--blue)"  barColor="var(--blue)"  />
           <DashStatCell label="Sessions Completed" value={past.length}        numColor="var(--red)"   barColor="var(--red)"   />
-          <DashStatCell label="Club Members"       value={memberCount ?? '—'} numColor="#9A6C00"      barColor="var(--yellow)"/>
+          <DashStatCell label="Club Members"       value={memberCount ?? '—'} numColor="#9A6C00"      barColor="var(--yellow)" accent="#FFFBE8"/>
           <DashStatCell label="Topics Available"   value={topicCount ?? '—'}  numColor="var(--black)" barColor="var(--black)" />
         </div>
       )}
@@ -311,7 +365,7 @@ export default function Dashboard() {
                   Topic Spotlight
                 </div>
                 <div className="dash-topic-card">
-                  <TopicLightbulbIllustration />
+                  <TopicSpotlightIllustration />
                   <p className="dash-topic-text">"{spotlightTopic.text}"</p>
                   <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                     {spotlightTopic.category    && <span className="badge badge-gray">{spotlightTopic.category}</span>}
