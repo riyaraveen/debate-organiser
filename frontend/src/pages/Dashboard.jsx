@@ -196,6 +196,12 @@ export default function Dashboard() {
   const [topicCount,    setTopicCount]    = useState(null)
   const [spotlightTopic, setSpotlightTopic] = useState(null)
   const [loading,       setLoading]       = useState(true)
+  const [now,           setNow]           = useState(new Date())
+
+  useEffect(() => {
+    const tick = setInterval(() => setNow(new Date()), 1000)
+    return () => clearInterval(tick)
+  }, [])
 
   useEffect(() => {
     Promise.all([
@@ -219,9 +225,10 @@ export default function Dashboard() {
   const countdown   = nextSession?.scheduled_at ? getCountdown(nextSession.scheduled_at) : null
   const tipOfDay    = getTipOfDay()
 
-  const formattedDate = new Date().toLocaleDateString('en-GB', {
-    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-  }).toUpperCase()
+  const clockTime = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+  const clockSecs = now.toLocaleTimeString('en-GB', { second: '2-digit' }).slice(-2)
+  const clockDay  = now.toLocaleDateString('en-GB', { weekday: 'long' }).toUpperCase()
+  const clockDate = now.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase()
 
   return (
     <div className="dashboard">
@@ -236,12 +243,18 @@ export default function Dashboard() {
             <span className="dash-masthead-welcome">Welcome back, {user?.name}</span>
           </div>
         </div>
-        {/* Right panel: blue with polka-dot texture + Bauhaus geometry */}
+        {/* Right panel: blue with polka-dot texture + live clock */}
         <div className="dash-masthead-right">
           <div className="dash-masthead-info">
-            <span className="dash-masthead-date">{formattedDate}</span>
+            <div className="dash-clock-block">
+              <span className="dash-clock-time">
+                {clockTime}<span className="dash-clock-secs">:{clockSecs}</span>
+              </span>
+              <span className="dash-clock-day">{clockDay}</span>
+              <span className="dash-clock-date">{clockDate}</span>
+            </div>
             {user?.role === 'admin' && (
-              <Link to="/sessions/new" className="btn dash-masthead-btn">
+              <Link to="/sessions/new" className="btn dash-masthead-btn" style={{ flexShrink: 0 }}>
                 <Plus size={15}/> New Session
               </Link>
             )}

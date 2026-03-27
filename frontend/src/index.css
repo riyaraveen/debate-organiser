@@ -1101,7 +1101,9 @@ input:focus, select:focus, textarea:focus {
   .dash-stats { grid-template-columns: repeat(2, 1fr); }
   .dash-masthead-brand { font-size: 26px; }
   .dash-masthead { grid-template-columns: 1fr; }
-  .dash-masthead-right { min-height: 80px; border-left: none; border-top: var(--border-w) solid var(--black); }
+  .dash-masthead-right { min-height: 100px; border-left: none; border-top: var(--border-w) solid var(--black); }
+  .dash-clock-time { font-size: 40px; }
+  .dash-clock-secs { font-size: 22px; }
 }
 
 /* ═══════════════════════════════════════════════════
@@ -1114,7 +1116,7 @@ input:focus, select:focus, textarea:focus {
   grid-template-columns: 52% 48%;
   margin: -28px -28px 0 -28px;
   border-bottom: var(--border-w) solid var(--black);
-  min-height: 110px;
+  min-height: 140px;
 }
 /* Left panel: black */
 .dash-masthead-left {
@@ -1142,9 +1144,47 @@ input:focus, select:focus, textarea:focus {
 .dash-masthead-info {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 20px;
+  width: 100%;
   position: relative;
   z-index: 1;
+}
+
+/* ── Live clock ───────────────────────────────────── */
+.dash-clock-block {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1;
+}
+.dash-clock-time {
+  font-size: 58px;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  color: white;
+  line-height: 1;
+}
+.dash-clock-secs {
+  font-size: 32px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.5);
+  letter-spacing: -0.02em;
+}
+.dash-clock-day {
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  color: var(--yellow);
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+.dash-clock-date {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: rgba(255,255,255,0.5);
+  text-transform: uppercase;
 }
 .dash-masthead-accent {
   width: 8px;
