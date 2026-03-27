@@ -224,7 +224,7 @@ export default function Dashboard() {
   const countdown   = nextSession?.scheduled_at ? getCountdown(nextSession.scheduled_at) : null
   const tipOfDay    = getTipOfDay()
 
-  const clockTime = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+  const [clockH, clockM] = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }).split(':')
   const clockSecs = now.toLocaleTimeString('en-GB', { second: '2-digit' }).slice(-2)
   const clockDay  = now.toLocaleDateString('en-GB', { weekday: 'long' }).toUpperCase()
   const clockDate = now.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase()
@@ -289,7 +289,7 @@ export default function Dashboard() {
             <div className="dash-clock-cell">
               <div className="dash-clock-inner">
                 <span className="dash-clock-time">
-                  {clockTime}<span className="dash-clock-secs">:{clockSecs}</span>
+                  {clockH}<span className="dash-clock-colon">:</span>{clockM}<span className="dash-clock-secs"><span className="dash-clock-colon">:</span>{clockSecs}</span>
                 </span>
                 <div className="dash-clock-meta">
                   <span className="dash-clock-day">{clockDay}</span>
