@@ -136,10 +136,9 @@ function getCountdown(dateStr) {
 }
 
 const QUICK_ACTIONS = [
-  { label: 'New Session',  sub: 'Schedule a debate',     to: '/sessions/new', icon: Plus,     color: '#F0C020', textColor: '#121212' },
-  { label: 'Add Topic',    sub: 'Grow your topic bank',  to: '/topics',       icon: BookOpen, color: '#D02020', textColor: '#FFFFFF' },
-  { label: 'AI Practice',  sub: 'Practice solo with AI', to: '/practice',     icon: Zap,      color: '#1040C0', textColor: '#FFFFFF' },
-  { label: 'Members',      sub: 'Manage club roster',    to: '/members',      icon: Users,    color: '#121212', textColor: '#FFFFFF' },
+  { label: 'Add Topic',   sub: 'Grow your topic bank',  to: '/topics',    icon: BookOpen, color: '#D02020', textColor: '#FFFFFF' },
+  { label: 'AI Practice', sub: 'Practice solo with AI', to: '/practice',  icon: Zap,      color: '#1040C0', textColor: '#FFFFFF' },
+  { label: 'Members',     sub: 'Manage club roster',    to: '/members',   icon: Users,    color: '#121212', textColor: '#FFFFFF' },
 ]
 
 const STATUS_COLORS = {
@@ -243,30 +242,25 @@ export default function Dashboard() {
             <span className="dash-masthead-welcome">Welcome back, {user?.name}</span>
           </div>
         </div>
-        {/* Right panel: blue with polka-dot texture + live clock */}
+        {/* Right panel: yellow New Session CTA (admin) or Bauhaus geometry */}
         <div className="dash-masthead-right">
-          <div className="dash-masthead-info">
-            <div className="dash-clock-block">
-              <span className="dash-clock-time">
-                {clockTime}<span className="dash-clock-secs">:{clockSecs}</span>
-              </span>
-              <span className="dash-clock-day">{clockDay}</span>
-              <span className="dash-clock-date">{clockDate}</span>
-            </div>
-            {user?.role === 'admin' && (
-              <Link to="/sessions/new" className="btn dash-masthead-btn" style={{ flexShrink: 0 }}>
-                <Plus size={15}/> New Session
-              </Link>
-            )}
-          </div>
-          {/* Bauhaus geometric decoration */}
-          <svg className="dash-masthead-geo" viewBox="0 0 240 110" fill="none"
-            aria-hidden="true"
-            style={{ position: 'absolute', right: 0, bottom: 0, width: 240, height: 110, pointerEvents: 'none' }}>
-            <circle cx="195" cy="98" r="80" fill="#F0C020" opacity="0.32"/>
-            <polygon points="130,8 170,76 90,76" fill="#D02020" opacity="0.75"/>
-            <rect x="152" y="14" width="58" height="58" fill="rgba(255,255,255,0.1)"/>
-          </svg>
+          {user?.role === 'admin' ? (
+            <Link to="/sessions/new" className="dash-masthead-new-session">
+              <div className="dash-masthead-new-icon"><Plus size={22}/></div>
+              <div className="dash-masthead-new-text">
+                <span className="dash-masthead-new-label">New Session</span>
+                <span className="dash-masthead-new-sub">Schedule a debate</span>
+              </div>
+            </Link>
+          ) : (
+            /* Bauhaus geometric decoration for non-admins */
+            <svg viewBox="0 0 240 110" fill="none" aria-hidden="true"
+              style={{ position: 'absolute', right: 0, bottom: 0, width: 240, height: 110, pointerEvents: 'none' }}>
+              <circle cx="195" cy="98" r="80" fill="#F0C020" opacity="0.32"/>
+              <polygon points="130,8 170,76 90,76" fill="#D02020" opacity="0.75"/>
+              <rect x="152" y="14" width="58" height="58" fill="rgba(255,255,255,0.1)"/>
+            </svg>
+          )}
         </div>
       </div>
 
@@ -288,6 +282,19 @@ export default function Dashboard() {
 
           {/* Left — main column */}
           <div className="dash-main">
+
+            {/* Clock panel */}
+            <div className="dash-clock-cell">
+              <div className="dash-clock-inner">
+                <span className="dash-clock-time">
+                  {clockTime}<span className="dash-clock-secs">:{clockSecs}</span>
+                </span>
+                <div className="dash-clock-meta">
+                  <span className="dash-clock-day">{clockDay}</span>
+                  <span className="dash-clock-date">{clockDate}</span>
+                </div>
+              </div>
+            </div>
 
             <div className="dash-cell-header">
               <span>Upcoming Sessions</span>
