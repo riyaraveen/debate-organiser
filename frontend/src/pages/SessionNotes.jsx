@@ -62,7 +62,7 @@ export default function SessionNotes() {
 
   return (
     <div className="page-container">
-      <PageHero title="My Notes" subtitle={session?.title ?? 'Argument notes'} color="#D02020">
+      <PageHero title="My Notes" subtitle={session?.title ?? 'Argument notes'} color="#1040C0">
         <svg viewBox="0 0 400 88" preserveAspectRatio="xMidYMid slice">
           <circle cx="40" cy="44" r="60" fill="white" opacity="0.07"/>
           <circle cx="160" cy="44" r="50" fill="white" opacity="0.06"/>

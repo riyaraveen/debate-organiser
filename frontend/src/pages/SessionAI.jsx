@@ -70,7 +70,7 @@ export default function SessionAI() {
 
   return (
     <div className="page-container">
-      <PageHero title="AI Assistant" subtitle={session?.title ?? 'Debate preparation'} color="#1040C0">
+      <PageHero title="AI Assistant" subtitle={session?.title ?? 'Debate preparation'} color="#D02020">
         <svg viewBox="0 0 400 88" preserveAspectRatio="xMidYMid slice">
           <circle cx="40" cy="44" r="55" fill="white" opacity="0.06"/>
           <polygon points="120,8 148,68 92,68" fill="#F0C020" opacity="0.28"/>
