@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getFormats, toggleFormat, createFormat } from '../api'
-import { Plus, ToggleLeft, ToggleRight, Users, Clock, ChevronDown, ChevronUp, UserCheck } from 'lucide-react'
+import { Plus, ToggleLeft, ToggleRight, Users, Clock, ChevronDown, ChevronUp, UserCheck, Scale } from 'lucide-react'
 import PageHero from '../components/ui/PageHero'
 
 const SIDE_COLORS = {
@@ -34,7 +34,8 @@ function FormatCard({ fmt, onToggle }) {
   const speakingOrder = parseJSON(fmt.speaking_order)
 
   const debaters  = roles.filter(r => r.side !== 'neutral' && r.side !== 'audience')
-  const support   = roles.filter(r => r.side === 'neutral')
+  const support   = roles.filter(r => r.side === 'neutral' && !r.decides)
+  const deciders  = roles.filter(r => r.decides)
   const audience  = roles.filter(r => r.side === 'audience')
 
   return (
@@ -105,11 +106,40 @@ function FormatCard({ fmt, onToggle }) {
                 <span className="format-support-dot" />
                 <div>
                   <span className="format-role-name">{r.name}</span>
+                  {r.min_count && (
+                    <span className="format-count-badge">×{r.min_count}</span>
+                  )}
                   {r.description && <span className="format-role-desc" style={{ marginLeft: 6 }}>— {r.description}</span>}
                 </div>
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* ── Final decision ── */}
+      {deciders.length > 0 && (
+        <div className="format-roles-section format-decision-section">
+          <div className="format-section-label" style={{ color: '#1A6030' }}>
+            <Scale size={11} style={{ display: 'inline', marginRight: 4 }} />
+            Final Decision
+          </div>
+          {deciders.map((r, i) => (
+            <div key={i} className="format-decision-card">
+              <div className="format-decision-icon"><Scale size={15} color="white" /></div>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <span className="format-role-name">{r.name}</span>
+                  {r.min_count && (
+                    <span className="format-decision-count">
+                      <Users size={11} /> {r.min_count === 1 ? '1 person required' : `${r.min_count} people required`}
+                    </span>
+                  )}
+                </div>
+                {r.description && <div className="format-role-desc" style={{ marginTop: 2 }}>{r.description}</div>}
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
