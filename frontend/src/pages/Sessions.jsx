@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { getSessions } from '../api'
 import { useAuth } from '../context/AuthContext'
 import { Plus, Calendar, Clock, MapPin, Trophy } from 'lucide-react'
+import PageHero from '../components/ui/PageHero'
 
 const STATUS_COLORS = {
   scheduled: 'badge-blue',
@@ -28,6 +29,14 @@ export default function Sessions() {
 
   return (
     <div className="page-container">
+      <PageHero title="Sessions" subtitle="All debate sessions" color="#1040C0">
+        <svg viewBox="0 0 400 88" preserveAspectRatio="xMidYMid slice">
+          <circle cx="340" cy="-10" r="90" fill="white" opacity="0.08"/>
+          <circle cx="380" cy="88" r="70" fill="#F0C020" opacity="0.18"/>
+          <rect x="180" y="15" width="58" height="58" fill="white" opacity="0.07" transform="rotate(15 209 44)"/>
+          <circle cx="220" cy="44" r="28" fill="white" opacity="0.07"/>
+        </svg>
+      </PageHero>
       <div className="page-top-bar">
         <div className="filter-tabs">
           {['all', 'scheduled', 'completed', 'draft'].map((f) => (

@@ -4,6 +4,7 @@ import { getSession, getMyNote, saveMyNote, getTeamNotes, getWebSources } from '
 import { useAuth } from '../context/AuthContext'
 import { ArrowLeft, Search, ExternalLink, Users, RefreshCw, FileText } from 'lucide-react'
 import RichEditor from '../components/ui/RichEditor'
+import PageHero from '../components/ui/PageHero'
 
 function wordCount(html) {
   if (!html) return 0
@@ -61,14 +62,23 @@ export default function SessionNotes() {
 
   return (
     <div className="page-container">
-      <div className="page-top-bar">
+      <PageHero title="My Notes" subtitle={session?.title ?? 'Argument notes'} color="#D02020">
+        <svg viewBox="0 0 400 88" preserveAspectRatio="xMidYMid slice">
+          <circle cx="40" cy="44" r="60" fill="white" opacity="0.07"/>
+          <circle cx="160" cy="44" r="50" fill="white" opacity="0.06"/>
+          <polygon points="260,4 296,72 224,72" fill="#F0C020" opacity="0.25"/>
+          <circle cx="340" cy="44" r="55" fill="white" opacity="0.07"/>
+          <circle cx="340" cy="44" r="30" fill="white" opacity="0.06"/>
+          <rect x="370" y="6" width="60" height="70" fill="white" opacity="0.04" transform="rotate(12 400 41)"/>
+        </svg>
+      </PageHero>
+
+      <div className="notes-page-top">
         <Link to={`/sessions/${id}`} className="btn btn-ghost" style={{ gap: 6 }}>
           <ArrowLeft size={15} /> Back to Session
         </Link>
         {session && (
-          <span className="text-muted" style={{ fontSize: 13, fontWeight: 600 }}>
-            {session.title}
-          </span>
+          <span className="text-muted" style={{ fontSize: 13, fontWeight: 600 }}>{session.title}</span>
         )}
       </div>
 
@@ -77,28 +87,30 @@ export default function SessionNotes() {
         <div className="notes-editor-panel">
           <div className="notes-editor-header">
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <FileText size={16} />
-              <h3 style={{ margin: 0, fontSize: 15, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              <FileText size={16} color="white" />
+              <h3 style={{ margin: 0, fontSize: 15, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'white' }}>
                 My Argument Notes
               </h3>
             </div>
-            <span className="text-muted" style={{ fontSize: 12 }}>{wordCount(noteContent)} words</span>
+            <span className="notes-wordcount">{wordCount(noteContent)} words</span>
           </div>
 
           {session?.topic_text && (
             <div className="notes-topic-banner">
-              <span style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', opacity: 0.6 }}>Topic</span>
-              <p style={{ margin: '4px 0 0', fontWeight: 600, fontSize: 14 }}>{session.topic_text}</p>
+              <span style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Topic</span>
+              <p style={{ margin: '4px 0 0', fontWeight: 700, fontSize: 14 }}>{session.topic_text}</p>
             </div>
           )}
 
-          <RichEditor
-            value={noteContent}
-            onChange={handleEditorChange}
-            placeholder="Write your arguments, rebuttals, evidence, and key points here…"
-          />
+          <div style={{ padding: '12px 16px' }}>
+            <RichEditor
+              value={noteContent}
+              onChange={handleEditorChange}
+              placeholder="Write your arguments, rebuttals, evidence, and key points here…"
+            />
+          </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 12 }}>
+          <div className="notes-editor-footer">
             <button className="btn btn-primary" onClick={handleSave} disabled={noteSaving}>
               {noteSaving ? 'Saving…' : 'Save Notes'}
             </button>
@@ -115,8 +127,8 @@ export default function SessionNotes() {
           <div className="sources-panel">
             <div className="sources-panel-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Search size={15} />
-                <span style={{ fontWeight: 800, fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                <Search size={15} color="white" />
+                <span style={{ fontWeight: 800, fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'white' }}>
                   Research Sources
                 </span>
               </div>
@@ -134,17 +146,17 @@ export default function SessionNotes() {
                 }
               </button>
             </div>
-
+            <div className="sources-panel-body">
             {!session?.topic_text && (
-              <p className="text-muted" style={{ fontSize: 13, padding: '12px 0' }}>No topic set for this session yet.</p>
+              <p className="text-muted" style={{ fontSize: 13 }}>No topic set for this session yet.</p>
             )}
             {session?.topic_text && !sourcesLoaded && !sourcesLoading && (
-              <p className="text-muted" style={{ fontSize: 13, padding: '12px 0' }}>
+              <p className="text-muted" style={{ fontSize: 13 }}>
                 Click <strong>Find Sources</strong> to search for real articles related to this topic.
               </p>
             )}
             {sourcesError && (
-              <div className="alert alert-error" style={{ fontSize: 13, marginTop: 8 }}>{sourcesError}</div>
+              <div className="alert alert-error" style={{ fontSize: 13 }}>{sourcesError}</div>
             )}
             {sources.length > 0 && (
               <div className="sources-list">
@@ -159,27 +171,28 @@ export default function SessionNotes() {
                 ))}
               </div>
             )}
+            </div>
           </div>
 
           {/* Team notes */}
           {teamNotes.filter((n) => n.content && n.user_name !== user?.name).length > 0 && (
-            <div className="sources-panel" style={{ marginTop: 16 }}>
+            <div className="sources-panel">
               <button
                 className="sources-panel-header"
-                style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', padding: 0 }}
+                style={{ cursor: 'pointer', width: '100%', border: 'none' }}
                 onClick={() => setShowTeam(!showTeam)}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Users size={15} />
-                  <span style={{ fontWeight: 800, fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                  <Users size={15} color="white" />
+                  <span style={{ fontWeight: 800, fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'white' }}>
                     Team Notes ({teamNotes.filter((n) => n.content && n.user_name !== user?.name).length})
                   </span>
                 </div>
-                <span>{showTeam ? '▲' : '▼'}</span>
+                <span style={{ color: 'white' }}>{showTeam ? '▲' : '▼'}</span>
               </button>
 
               {showTeam && (
-                <div className="sources-list" style={{ marginTop: 12 }}>
+                <div className="sources-panel-body"><div className="sources-list">
                   {teamNotes.filter((n) => n.content && n.user_name !== user?.name).map((n, i) => (
                     <div key={i} className="source-card">
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
@@ -200,7 +213,7 @@ export default function SessionNotes() {
                       )}
                     </div>
                   ))}
-                </div>
+                </div></div>
               )}
             </div>
           )}

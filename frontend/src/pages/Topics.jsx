@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { getTopics, createTopic, updateTopic, deleteTopic, generateTopic } from '../api'
 import { useAuth } from '../context/AuthContext'
 import { Plus, Trash2, CheckCircle, XCircle } from 'lucide-react'
+import PageHero from '../components/ui/PageHero'
 
 export default function Topics() {
   const { user } = useAuth()
@@ -59,6 +60,15 @@ export default function Topics() {
 
   return (
     <div className="page-container">
+      <PageHero title="Topics" subtitle="Debate motion bank" color="#F0C020">
+        <svg viewBox="0 0 400 88" preserveAspectRatio="xMidYMid slice">
+          <rect x="260" y="-8" width="80" height="80" fill="#121212" opacity="0.08" transform="rotate(10 300 32)"/>
+          <rect x="310" y="4" width="120" height="14" rx="3" fill="#121212" opacity="0.08"/>
+          <rect x="310" y="26" width="90" height="14" rx="3" fill="#121212" opacity="0.08"/>
+          <rect x="310" y="48" width="110" height="14" rx="3" fill="#121212" opacity="0.08"/>
+          <circle cx="200" cy="80" r="60" fill="#D02020" opacity="0.12"/>
+        </svg>
+      </PageHero>
       <div className="page-top-bar">
         <div className="filters-row">
           <input className="input search-input" placeholder="Search topics…"

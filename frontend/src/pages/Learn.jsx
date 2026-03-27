@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { BookOpen, AlertTriangle, Search, Mic, RefreshCw, Layers, ExternalLink } from 'lucide-react'
+import PageHero from '../components/ui/PageHero'
 
 const FALLACIES = [
   {
@@ -443,7 +444,17 @@ export default function Learn() {
   ]
 
   return (
-    <div className="learn-page">
+    <div className="page-container">
+      <PageHero title="Learn" subtitle="Debate skills & resources" color="#D02020">
+        <svg viewBox="0 0 400 88" preserveAspectRatio="xMidYMid slice">
+          <circle cx="50" cy="44" r="60" fill="white" opacity="0.08"/>
+          <polygon points="160,2 196,70 124,70" fill="#F0C020" opacity="0.22"/>
+          <rect x="220" y="14" width="50" height="50" fill="white" opacity="0.07" transform="rotate(12 245 39)"/>
+          <circle cx="340" cy="44" r="55" fill="white" opacity="0.08"/>
+          <circle cx="390" cy="-10" r="50" fill="white" opacity="0.06"/>
+        </svg>
+      </PageHero>
+      <div className="learn-body">
       <div className="learn-tabs">
         {tabs.map(({ id, label, icon: Icon }) => (
           <button
@@ -693,6 +704,7 @@ export default function Learn() {
           </div>
         </div>
       )}
+      </div>
     </div>
   )
 }

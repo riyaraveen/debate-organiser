@@ -2,157 +2,100 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { getSessions, getUsers, getTopics } from '../api'
 import { useAuth } from '../context/AuthContext'
-import { Calendar, Clock, MapPin, Plus, Trophy, Users, BookOpen, Zap, Star, ArrowRight } from 'lucide-react'
+import { Calendar, Clock, MapPin, Plus, Users, BookOpen, Zap, Star, ArrowRight } from 'lucide-react'
 
-/* ── Bauhaus SVG Illustrations ─────────────────────────────────────────── */
+/* ── Illustrations ───────────────────────────────────────────────────────── */
 
-/* Welcome banner: pure Bauhaus constructivist composition — circles, rects, triangles */
-function WelcomeBannerIllustration() {
-  return (
-    <svg width="220" height="90" viewBox="0 0 220 90" fill="none" xmlns="http://www.w3.org/2000/svg"
-      style={{ position: 'absolute', right: '60px', top: 0, opacity: 0.28, pointerEvents: 'none' }}>
-      {/* Large white circle, bottom-right anchor */}
-      <circle cx="190" cy="78" r="58" fill="#FFFFFF"/>
-      {/* Yellow square overlapping circle */}
-      <rect x="108" y="8" width="48" height="48" fill="#F0C020"/>
-      {/* Red triangle cutting across */}
-      <polygon points="60,0 108,0 108,56" fill="#D02020"/>
-      {/* Small black square accent */}
-      <rect x="156" y="8" width="20" height="20" fill="#121212"/>
-      {/* Bold yellow horizontal bar at base */}
-      <rect x="0" y="76" width="220" height="8" fill="#F0C020"/>
-      {/* Thin white vertical stripe */}
-      <rect x="60" y="0" width="6" height="76" fill="#FFFFFF"/>
-    </svg>
-  )
-}
-
-/* Debate scene: two FACELESS geometric characters — blue left, red right */
+/* Chess-pawn debate figures — ref Image 1
+   Render order: pedestals → bubbles (lighter shades) → pawn figures on top */
 function EmptyDebateIllustration() {
   return (
-    <svg width="300" height="190" viewBox="0 0 300 190" fill="none" xmlns="http://www.w3.org/2000/svg"
-      style={{ margin: '0 auto 16px', display: 'block' }}>
-
-      {/* ── Floor ── */}
-      <rect x="0" y="168" width="300" height="10" fill="#121212"/>
-
-      {/* ── LEFT PODIUM (yellow) ── */}
-      <rect x="14" y="110" width="68" height="58" fill="#F0C020" stroke="#121212" strokeWidth="3"/>
-      {/* podium detail lines */}
-      <rect x="20" y="118" width="56" height="5" fill="#121212"/>
-      <rect x="20" y="128" width="44" height="3" fill="#121212" opacity="0.25"/>
-      <rect x="20" y="136" width="34" height="3" fill="#121212" opacity="0.25"/>
-
-      {/* ── BLUE CHARACTER (left) ── */}
-      {/* Head — plain blue circle, NO face */}
-      <circle cx="48" cy="60" r="18" fill="#1040C0" stroke="#121212" strokeWidth="3"/>
-      {/* Body — blue rectangle */}
-      <rect x="26" y="76" width="44" height="36" fill="#1040C0" stroke="#121212" strokeWidth="3"/>
-      {/* Left arm — horizontal blue rect */}
-      <rect x="6" y="82" width="22" height="10" fill="#1040C0" stroke="#121212" strokeWidth="3"/>
-      {/* Right arm — angled toward podium */}
-      <rect x="68" y="88" width="22" height="10" fill="#1040C0" stroke="#121212" strokeWidth="3"/>
-
-      {/* ── BLUE SPEECH BUBBLE (left) — rectangular, strict geometry ── */}
-      <rect x="82" y="6" width="80" height="52" fill="#1040C0" stroke="#121212" strokeWidth="3"/>
-      {/* Triangle tail pointing bottom-left toward blue char */}
-      <polygon points="82,46 98,58 82,58" fill="#1040C0" stroke="#121212" strokeWidth="3" strokeLinejoin="miter"/>
-      {/* White lines inside bubble */}
-      <line x1="94" y1="22" x2="150" y2="22" stroke="#FFFFFF" strokeWidth="3" strokeLinecap="square"/>
-      <line x1="94" y1="34" x2="144" y2="34" stroke="#FFFFFF" strokeWidth="3" strokeLinecap="square"/>
-      <line x1="94" y1="46" x2="132" y2="46" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="square" opacity="0.6"/>
-
-      {/* ── VS BADGE ── */}
-      <rect x="130" y="126" width="40" height="28" fill="#121212" stroke="#121212" strokeWidth="2"/>
-      <text x="150" y="145" textAnchor="middle" fill="#F0C020" fontSize="13" fontWeight="900" fontFamily="monospace" letterSpacing="1">VS</text>
-
-      {/* ── RIGHT PODIUM (yellow) ── */}
-      <rect x="218" y="110" width="68" height="58" fill="#F0C020" stroke="#121212" strokeWidth="3"/>
-      <rect x="224" y="118" width="56" height="5" fill="#121212"/>
-      <rect x="224" y="128" width="44" height="3" fill="#121212" opacity="0.25"/>
-      <rect x="224" y="136" width="34" height="3" fill="#121212" opacity="0.25"/>
-
-      {/* ── RED CHARACTER (right) ── */}
-      {/* Head — plain red circle, NO face */}
-      <circle cx="252" cy="60" r="18" fill="#D02020" stroke="#121212" strokeWidth="3"/>
-      {/* Body — red rectangle */}
-      <rect x="230" y="76" width="44" height="36" fill="#D02020" stroke="#121212" strokeWidth="3"/>
-      {/* Left arm */}
-      <rect x="210" y="88" width="22" height="10" fill="#D02020" stroke="#121212" strokeWidth="3"/>
-      {/* Right arm */}
-      <rect x="272" y="82" width="22" height="10" fill="#D02020" stroke="#121212" strokeWidth="3"/>
-
-      {/* ── RED SPEECH BUBBLE (right) — rectangular ── */}
-      <rect x="138" y="6" width="80" height="52" fill="#D02020" stroke="#121212" strokeWidth="3"/>
-      {/* Triangle tail pointing bottom-right toward red char */}
-      <polygon points="218,46 202,58 218,58" fill="#D02020" stroke="#121212" strokeWidth="3" strokeLinejoin="miter"/>
-      {/* White lines inside bubble */}
-      <line x1="150" y1="22" x2="206" y2="22" stroke="#FFFFFF" strokeWidth="3" strokeLinecap="square"/>
-      <line x1="150" y1="34" x2="200" y2="34" stroke="#FFFFFF" strokeWidth="3" strokeLinecap="square"/>
-      <line x1="150" y1="46" x2="188" y2="46" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="square" opacity="0.6"/>
+    <svg viewBox="0 0 200 100" preserveAspectRatio="xMidYMid slice"
+      xmlns="http://www.w3.org/2000/svg" className="dash-empty-bg">
+      {/* Blue circle — bottom-left, large enough to fill that corner */}
+      <circle cx="-20" cy="160" r="150" fill="#1040C0" opacity="0.17"/>
+      {/* Yellow triangle — bottom-right, fills that corner */}
+      <polygon points="200,-10 200,180 30,180" fill="#F0C020" opacity="0.30"/>
+      {/* Red rotated square — top-right, partially off */}
+      <rect x="162" y="-30" width="56" height="56" fill="#D02020" opacity="0.22"
+        transform="rotate(18 190 0)"/>
+      {/* Red accent circle — top-left */}
+      <circle cx="18" cy="16" r="20" fill="#D02020" opacity="0.13"/>
     </svg>
   )
 }
 
-/* Topic spotlight: geometric diamond/idea mark — circles + rects only */
+/* Bauhaus primary shapes motif — circle, square, triangle (ref Image 5) */
 function TopicLightbulbIllustration() {
   return (
-    <svg width="52" height="60" viewBox="0 0 52 60" fill="none" xmlns="http://www.w3.org/2000/svg"
+    <svg width="100" height="48" viewBox="0 0 200 96" fill="none" xmlns="http://www.w3.org/2000/svg"
       style={{ flexShrink: 0 }}>
-      {/* Bulb body — circle */}
-      <circle cx="26" cy="22" r="18" fill="#F0C020" stroke="#121212" strokeWidth="3"/>
-      {/* Inner circle accent */}
-      <circle cx="26" cy="22" r="10" fill="#F0C020" stroke="#121212" strokeWidth="2"/>
-      {/* Vertical line inside */}
-      <line x1="26" y1="14" x2="26" y2="30" stroke="#121212" strokeWidth="2.5" strokeLinecap="square"/>
-      {/* Horizontal line inside */}
-      <line x1="18" y1="22" x2="34" y2="22" stroke="#121212" strokeWidth="2.5" strokeLinecap="square"/>
-      {/* Neck rect */}
-      <rect x="18" y="39" width="16" height="6" fill="#FFFFFF" stroke="#121212" strokeWidth="2.5"/>
-      {/* Base rect */}
-      <rect x="14" y="45" width="24" height="6" fill="#FFFFFF" stroke="#121212" strokeWidth="2.5"/>
-      {/* Diagonal rays — top-left */}
-      <line x1="4" y1="6" x2="12" y2="14" stroke="#121212" strokeWidth="2.5" strokeLinecap="square"/>
-      {/* Top ray */}
-      <line x1="26" y1="0" x2="26" y2="6" stroke="#121212" strokeWidth="2.5" strokeLinecap="square"/>
-      {/* Top-right ray */}
-      <line x1="48" y1="6" x2="40" y2="14" stroke="#121212" strokeWidth="2.5" strokeLinecap="square"/>
-      {/* Left ray */}
-      <line x1="0" y1="22" x2="8" y2="22" stroke="#121212" strokeWidth="2.5" strokeLinecap="square"/>
-      {/* Right ray */}
-      <line x1="52" y1="22" x2="44" y2="22" stroke="#121212" strokeWidth="2.5" strokeLinecap="square"/>
+      {/* Yellow circle — 40px diameter */}
+      <circle cx="22" cy="52" r="20" fill="#F0C020" stroke="#121212" strokeWidth="3"/>
+      {/* Blue square — 40×40 */}
+      <rect x="72" y="32" width="40" height="40" fill="#1040C0" stroke="#121212" strokeWidth="3"/>
+      {/* Red triangle — shifted right so gap matches circle→square gap (~30px) */}
+      <polygon points="166,24 190,72 142,72" fill="#D02020" stroke="#121212" strokeWidth="3" strokeLinejoin="round"/>
     </svg>
   )
 }
 
-/* Getting started trophy: pure rectangles and polygons, no curves */
-function GettingStartedIllustration() {
-  return (
-    <svg width="40" height="36" viewBox="0 0 40 36" fill="none" xmlns="http://www.w3.org/2000/svg"
-      style={{ flexShrink: 0 }}>
-      {/* Cup body — trapezoid */}
-      <polygon points="6,4 34,4 30,28 10,28" fill="#F0C020" stroke="#121212" strokeWidth="2.5" strokeLinejoin="miter"/>
-      {/* Left handle — rect */}
-      <rect x="0" y="8" width="7" height="14" fill="#F0C020" stroke="#121212" strokeWidth="2.5"/>
-      {/* Right handle — rect */}
-      <rect x="33" y="8" width="7" height="14" fill="#F0C020" stroke="#121212" strokeWidth="2.5"/>
-      {/* Stem */}
-      <rect x="16" y="28" width="8" height="4" fill="#F0C020" stroke="#121212" strokeWidth="2.5"/>
-      {/* Base */}
-      <rect x="10" y="32" width="20" height="4" fill="#F0C020" stroke="#121212" strokeWidth="2.5"/>
-      {/* Star in cup */}
-      <polygon points="20,9 21.5,14 26,14 22.5,17 24,22 20,19 16,22 17.5,17 14,14 18.5,14"
-        fill="#FFFFFF" stroke="#121212" strokeWidth="1.5" strokeLinejoin="miter"/>
-    </svg>
-  )
+/* ── Static data ─────────────────────────────────────────────────────────── */
+
+const DEBATE_TIPS = [
+  'Steelman your opponent\'s argument before rebutting — judges notice intellectual honesty.',
+  'The rule of three: three strong arguments always beat five shallow ones.',
+  'Signpost relentlessly: "First… Second… Third…" — clarity wins rounds.',
+  'Slow down on your most important words. Volume isn\'t emphasis.',
+  'Open with a statistic, a story, or a provocative question — never a definition.',
+  'In cross-examination, ask closed questions. Open ones give opponents free air.',
+  'Evidence without analysis is worthless. Always explain WHY it matters.',
+  'The best rebuttals acknowledge what\'s true before dismantling the rest.',
+  'Eye contact with the judge signals confidence far more than a loud voice.',
+  'Running short or long both cost speaker points. Time every practice speech.',
+  'Never apologise mid-speech. Replace hesitation with forward motion.',
+  'Dropped arguments are conceded arguments. Flow your opponent\'s case carefully.',
+  'Concrete examples trump abstract principles every single time.',
+  'The strongest rebuttal attacks the premise, not just the conclusion.',
+  'If you\'re not directly engaging the opposition, you\'re not debating.',
+  'Write your conclusion first — it keeps your whole speech focused.',
+  'Short sentences punch. Longer sentences build cadence. Mix both deliberately.',
+  'Ask "So what?" before every argument. If you can\'t answer, cut it.',
+  'In BP formats, win your role before you try to win the debate.',
+  'Judges vote on the balance of the round. Win the debate, not just five minutes.',
+]
+
+function getTipOfDay() {
+  const start = new Date(new Date().getFullYear(), 0, 0)
+  const dayOfYear = Math.floor((Date.now() - start) / 86400000)
+  return DEBATE_TIPS[dayOfYear % DEBATE_TIPS.length]
 }
+
+function getCountdown(dateStr) {
+  const diff = new Date(dateStr) - Date.now()
+  if (diff <= 0) return null
+  const days = Math.floor(diff / 86400000)
+  const hours = Math.floor((diff % 86400000) / 3600000)
+  const minutes = Math.floor((diff % 3600000) / 60000)
+  const label = days > 0 ? `${days}D` : `${hours}H`
+  return { days, hours, minutes, label }
+}
+
+const QUICK_ACTIONS = [
+  { label: 'New Session',  sub: 'Schedule a debate',     to: '/sessions/new', icon: Plus,     color: '#F0C020', textColor: '#121212' },
+  { label: 'Add Topic',    sub: 'Grow your topic bank',  to: '/topics',       icon: BookOpen, color: '#D02020', textColor: '#FFFFFF' },
+  { label: 'AI Practice',  sub: 'Practice solo with AI', to: '/practice',     icon: Zap,      color: '#1040C0', textColor: '#FFFFFF' },
+  { label: 'Members',      sub: 'Manage club roster',    to: '/members',      icon: Users,    color: '#121212', textColor: '#FFFFFF' },
+]
 
 const STATUS_COLORS = {
   scheduled: 'badge-blue',
-  draft: 'badge-gray',
+  draft:     'badge-gray',
   completed: 'badge-green',
   cancelled: 'badge-red',
 }
+
+/* ── Sub-components ──────────────────────────────────────────────────────── */
 
 function SessionCard({ session }) {
   const date = session.scheduled_at
@@ -161,7 +104,6 @@ function SessionCard({ session }) {
   const time = session.scheduled_at
     ? new Date(session.scheduled_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
     : ''
-
   return (
     <Link to={`/sessions/${session.id}`} className="session-card">
       <div className="session-card-header">
@@ -171,34 +113,35 @@ function SessionCard({ session }) {
       <h3 className="session-card-title">{session.title}</h3>
       {session.topic_text && <p className="session-card-topic">"{session.topic_text}"</p>}
       <div className="session-card-meta">
-        <span><Calendar size={14} /> {date}</span>
-        {time && <span><Clock size={14} /> {time}</span>}
-        {session.location && <span><MapPin size={14} /> {session.location}</span>}
+        <span><Calendar size={14}/> {date}</span>
+        {time && <span><Clock size={14}/> {time}</span>}
+        {session.location && <span><MapPin size={14}/> {session.location}</span>}
       </div>
-      {session.winner_team && (
-        <div className="session-winner"><Trophy size={14} /> Winner: {session.winner_team}</div>
-      )}
     </Link>
   )
 }
 
-function StatCard({ label, value, sub, accent }) {
+function DashStatCell({ label, value, numColor, barColor }) {
   return (
-    <div className="stat-card" style={accent ? { borderLeftColor: accent, borderLeftWidth: '4px' } : {}}>
-      <span className="stat-label">{label}</span>
-      <span className="stat-value">{value}</span>
-      <span className="stat-sub">{sub}</span>
+    <div className="dash-stat-cell">
+      <div className="dash-stat-bar" style={{ background: barColor }}/>
+      <div className="dash-stat-cell-text">
+        <span className="dash-stat-num" style={{ color: numColor }}>{value}</span>
+        <span className="dash-stat-label">{label}</span>
+      </div>
     </div>
   )
 }
 
+/* ── Dashboard ───────────────────────────────────────────────────────────── */
+
 export default function Dashboard() {
   const { user } = useAuth()
-  const [sessions, setSessions] = useState([])
-  const [memberCount, setMemberCount] = useState(null)
-  const [topicCount, setTopicCount] = useState(null)
+  const [sessions,      setSessions]      = useState([])
+  const [memberCount,   setMemberCount]   = useState(null)
+  const [topicCount,    setTopicCount]    = useState(null)
   const [spotlightTopic, setSpotlightTopic] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [loading,       setLoading]       = useState(true)
 
   useEffect(() => {
     Promise.all([
@@ -216,181 +159,175 @@ export default function Dashboard() {
     }).catch(() => {}).finally(() => setLoading(false))
   }, [])
 
-  const upcoming = sessions.filter((s) => s.status === 'scheduled')
-  const past = sessions.filter((s) => s.status === 'completed')
+  const upcoming    = sessions.filter(s => s.status === 'scheduled')
+  const past        = sessions.filter(s => s.status === 'completed')
   const nextSession = upcoming[0] ?? null
+  const countdown   = nextSession?.scheduled_at ? getCountdown(nextSession.scheduled_at) : null
+  const tipOfDay    = getTipOfDay()
 
-  const quickActions = [
-    { label: 'New Session', to: '/sessions/new', icon: Plus, color: '#3B44F6' },
-    { label: 'Add Topic', to: '/topics', icon: BookOpen, color: '#E63946' },
-    { label: 'AI Practice', to: '/practice', icon: Zap, color: '#F4A261' },
-    { label: 'View Members', to: '/members', icon: Users, color: '#2A9D8F' },
-  ]
+  const formattedDate = new Date().toLocaleDateString('en-GB', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+  }).toUpperCase()
 
   return (
     <div className="dashboard">
-      {/* Welcome banner */}
-      <div className="dashboard-welcome" style={{ position: 'relative', overflow: 'hidden' }}>
-        <WelcomeBannerIllustration />
-        <div>
-          <h2>Welcome back, {user?.name}!</h2>
-          <p className="text-muted">Here's what's coming up in your debate club.</p>
+
+      {/* ── Masthead — split black / blue ───────────────────────────────── */}
+      <div className="dash-masthead">
+        {/* Left panel: black with yellow brand */}
+        <div className="dash-masthead-left">
+          <div className="dash-masthead-accent"/>
+          <div className="dash-masthead-brand-block">
+            <span className="dash-masthead-brand">DEBATEORG</span>
+            <span className="dash-masthead-welcome">Welcome back, {user?.name}</span>
+          </div>
         </div>
-        {user?.role === 'admin' && (
-          <Link to="/sessions/new" className="btn btn-primary">
-            <Plus size={16} /> New Session
-          </Link>
-        )}
+        {/* Right panel: blue with polka-dot texture + Bauhaus geometry */}
+        <div className="dash-masthead-right">
+          <div className="dash-masthead-info">
+            <span className="dash-masthead-date">{formattedDate}</span>
+            {user?.role === 'admin' && (
+              <Link to="/sessions/new" className="btn dash-masthead-btn">
+                <Plus size={15}/> New Session
+              </Link>
+            )}
+          </div>
+          {/* Bauhaus geometric decoration — ref Image 2 */}
+          <svg className="dash-masthead-geo" viewBox="0 0 240 110" fill="none"
+            aria-hidden="true"
+            style={{ position: 'absolute', right: 0, bottom: 0, width: 240, height: 110, pointerEvents: 'none' }}>
+            <circle cx="195" cy="98" r="80" fill="#F0C020" opacity="0.32"/>
+            <polygon points="130,8 170,76 90,76" fill="#D02020" opacity="0.75"/>
+            <rect x="152" y="14" width="58" height="58" fill="rgba(255,255,255,0.1)"/>
+          </svg>
+        </div>
       </div>
 
-      {/* Stats bar */}
+      {/* ── Stats strip — numbered shape badges (ref Image 4) ────────────── */}
       {!loading && (
-        <div className="stats-bar">
-          <StatCard label="Upcoming" value={upcoming.length} sub="sessions scheduled" accent="#3B44F6" />
-          <StatCard label="Completed" value={past.length} sub="sessions run" accent="#2A9D8F" />
-          <StatCard label="Members" value={memberCount ?? '—'} sub="in the club" accent="#F4A261" />
-          <StatCard label="Topics" value={topicCount ?? '—'} sub="ready to use" accent="#E63946" />
+        <div className="dash-stats">
+          <DashStatCell label="Upcoming Sessions"  value={upcoming.length}    numColor="var(--blue)"  barColor="var(--blue)"  />
+          <DashStatCell label="Sessions Completed" value={past.length}        numColor="var(--red)"   barColor="var(--red)"   />
+          <DashStatCell label="Club Members"       value={memberCount ?? '—'} numColor="#9A6C00"      barColor="var(--yellow)"/>
+          <DashStatCell label="Topics Available"   value={topicCount ?? '—'}  numColor="var(--black)" barColor="var(--black)" />
         </div>
       )}
 
+      {/* ── Body grid ───────────────────────────────────────────────────── */}
       {loading ? (
         <div className="loading">Loading…</div>
       ) : (
-        <div className="dashboard-grid">
-          {/* Left column */}
-          <div className="dashboard-main">
+        <div className="dash-grid">
 
-            {/* Next session spotlight */}
-            {nextSession && (
-              <section style={{ marginBottom: '28px' }}>
-                <h3 className="section-title">Next Session</h3>
-                <Link to={`/sessions/${nextSession.id}`} className="dashboard-spotlight-card">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '8px' }}>
-                    <div>
-                      <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-                        <span className={`badge ${STATUS_COLORS[nextSession.status] ?? 'badge-gray'}`}>{nextSession.status}</span>
-                        <span className={`badge ${nextSession.mode === 'online' ? 'badge-purple' : 'badge-orange'}`}>{nextSession.mode}</span>
-                      </div>
-                      <h2 style={{ fontSize: '20px', fontWeight: 900, marginBottom: '6px' }}>{nextSession.title}</h2>
-                      {nextSession.topic_text && (
-                        <p style={{ fontSize: '14px', color: 'var(--text-muted)', fontStyle: 'italic', marginBottom: '10px' }}>
-                          "{nextSession.topic_text}"
-                        </p>
-                      )}
-                      <div className="session-card-meta">
-                        {nextSession.scheduled_at && (
-                          <>
-                            <span><Calendar size={14} /> {new Date(nextSession.scheduled_at).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
-                            <span><Clock size={14} /> {new Date(nextSession.scheduled_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</span>
-                          </>
-                        )}
-                        {nextSession.location && <span><MapPin size={14} /> {nextSession.location}</span>}
-                      </div>
-                    </div>
-                    <ArrowRight size={20} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
-                  </div>
-                </Link>
-              </section>
-            )}
+          {/* Left — main column */}
+          <div className="dash-main">
 
-            {/* All upcoming sessions */}
-            <section style={{ marginBottom: '28px' }}>
-              <h3 className="section-title">Upcoming Sessions ({upcoming.length})</h3>
-              {upcoming.length === 0 ? (
-                <div className="empty-state-card">
-                  <EmptyDebateIllustration />
-                  <p>No upcoming sessions scheduled yet.</p>
+            <div className="dash-cell-header">
+              <span>Upcoming Sessions</span>
+              <span className="dash-cell-count">{upcoming.length}</span>
+            </div>
+
+            {upcoming.length === 0 ? (
+              <div className="dash-empty">
+                <EmptyDebateIllustration />
+                <div className="dash-empty-content">
+                  <p className="dash-empty-label">No upcoming sessions scheduled yet.</p>
                   {user?.role === 'admin' && (
                     <Link to="/sessions/new" className="btn btn-primary">
-                      <Plus size={15} /> Schedule your first session
+                      <Plus size={15}/> Schedule your first session
                     </Link>
                   )}
                 </div>
-              ) : (
-                <div className="sessions-grid">
-                  {upcoming.map((s) => <SessionCard key={s.id} session={s} />)}
-                </div>
-              )}
-            </section>
+              </div>
+            ) : (
+              <div className="sessions-grid" style={{ padding: '20px 24px 0' }}>
+                {upcoming.map(s => <SessionCard key={s.id} session={s}/>)}
+              </div>
+            )}
 
-            {/* Past sessions */}
             {past.length > 0 && (
-              <section>
-                <h3 className="section-title">Recent Sessions</h3>
-                <div className="sessions-grid">
-                  {past.slice(0, 4).map((s) => <SessionCard key={s.id} session={s} />)}
+              <>
+                <div className="dash-cell-header" style={{ marginTop: '8px' }}>
+                  <span>Recent Sessions</span>
+                  <span className="dash-cell-count">{past.length}</span>
+                </div>
+                <div className="sessions-grid" style={{ padding: '20px 24px 0' }}>
+                  {past.slice(0, 4).map(s => <SessionCard key={s.id} session={s}/>)}
                 </div>
                 {past.length > 4 && (
-                  <Link to="/sessions" style={{ display: 'block', marginTop: '12px', fontSize: '13px', fontWeight: 700, textDecoration: 'underline' }}>
+                  <Link to="/sessions" className="dash-more-link" style={{ margin: '12px 24px 24px', display: 'inline-block' }}>
                     View all {past.length} past sessions →
                   </Link>
                 )}
-              </section>
+              </>
             )}
           </div>
 
-          {/* Right column */}
-          <div className="dashboard-sidebar">
+          {/* Right — sidebar */}
+          <div className="dash-sidebar">
+
+            {/* Countdown */}
+            {countdown && (
+              <div className="dash-cell dash-countdown">
+                <div className="dash-cell-header">Next Session</div>
+                <div className="dash-countdown-number">{countdown.label}</div>
+                <div className="dash-countdown-sub">
+                  {countdown.days > 0
+                    ? `${countdown.days} day${countdown.days !== 1 ? 's' : ''} away`
+                    : `${countdown.hours}h ${countdown.minutes}m to go`}
+                </div>
+                <Link to={`/sessions/${nextSession.id}`} className="dash-countdown-link">
+                  {nextSession.title} <ArrowRight size={13}/>
+                </Link>
+              </div>
+            )}
 
             {/* Quick actions (admin only) */}
             {user?.role === 'admin' && (
-              <section style={{ marginBottom: '24px' }}>
-                <h3 className="section-title">Quick Actions</h3>
-                <div className="quick-actions-grid">
-                  {quickActions.map(({ label, to, icon: Icon, color }) => (
-                    <Link key={label} to={to} className="quick-action-btn" style={{ '--qa-color': color }}>
-                      <Icon size={18} />
-                      <span>{label}</span>
+              <div className="dash-cell">
+                <div className="dash-cell-header">Quick Actions</div>
+                <div className="dash-actions-list">
+                  {QUICK_ACTIONS.map(({ label, sub, to, icon: Icon, color, textColor }) => (
+                    <Link key={label} to={to} className="dash-action-item">
+                      <div className="dash-action-icon" style={{ background: color, color: textColor }}>
+                        <Icon size={16}/>
+                      </div>
+                      <div className="dash-action-text">
+                        <span className="dash-action-name">{label}</span>
+                        <span className="dash-action-sub">{sub}</span>
+                      </div>
+                      <ArrowRight size={13} className="dash-action-arrow"/>
                     </Link>
                   ))}
                 </div>
-              </section>
+              </div>
             )}
 
             {/* Topic spotlight */}
             {spotlightTopic && (
-              <section style={{ marginBottom: '24px' }}>
-                <h3 className="section-title"><Star size={14} style={{ display: 'inline', marginRight: '6px' }} />Topic Spotlight</h3>
-                <div className="dashboard-topic-spotlight">
-                  <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
-                    <TopicLightbulbIllustration />
-                    <p className="spotlight-topic-text">"{spotlightTopic.text}"</p>
-                  </div>
-                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '10px' }}>
-                    {spotlightTopic.category && <span className="badge badge-gray">{spotlightTopic.category}</span>}
+              <div className="dash-cell">
+                <div className="dash-cell-header">
+                  <Star size={11} style={{ flexShrink: 0 }}/>
+                  Topic Spotlight
+                </div>
+                <div className="dash-topic-card">
+                  <TopicLightbulbIllustration />
+                  <p className="dash-topic-text">"{spotlightTopic.text}"</p>
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                    {spotlightTopic.category    && <span className="badge badge-gray">{spotlightTopic.category}</span>}
                     {spotlightTopic.proficiency && <span className="badge badge-blue">{spotlightTopic.proficiency}</span>}
                   </div>
-                  <Link to="/topics" style={{ fontSize: '12px', fontWeight: 700, display: 'block', marginTop: '10px' }}>
-                    Browse all topics →
-                  </Link>
+                  <Link to="/topics" className="dash-more-link">Browse all topics →</Link>
                 </div>
-              </section>
+              </div>
             )}
 
-            {/* Getting started checklist (shown when club is new) */}
-            {sessions.length === 0 && (
-              <section>
-                <h3 className="section-title" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <GettingStartedIllustration />
-                  Getting Started
-                </h3>
-                <div className="dashboard-checklist">
-                  {[
-                    { label: 'Add your club members', to: '/members', done: (memberCount ?? 0) > 1 },
-                    { label: 'Review debate formats', to: '/formats', done: false },
-                    { label: 'Build your topic bank', to: '/topics', done: (topicCount ?? 0) > 0 },
-                    { label: 'Schedule your first session', to: '/sessions/new', done: false },
-                    { label: 'Try AI Practice mode', to: '/practice', done: false },
-                  ].map(({ label, to, done }) => (
-                    <Link key={label} to={to} className={`checklist-item ${done ? 'done' : ''}`}>
-                      <span className="checklist-dot">{done ? '✓' : ''}</span>
-                      <span>{label}</span>
-                      <ArrowRight size={13} style={{ marginLeft: 'auto', opacity: 0.4 }} />
-                    </Link>
-                  ))}
-                </div>
-              </section>
-            )}
+            {/* Tip of the day */}
+            <div className="dash-cell dash-tip-cell">
+              <div className="dash-cell-header">Tip of the Day</div>
+              <p className="dash-tip-text">{tipOfDay}</p>
+            </div>
+
           </div>
         </div>
       )}

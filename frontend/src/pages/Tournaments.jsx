@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../api/client'
 import { Plus, Trophy, Calendar, School } from 'lucide-react'
+import PageHero from '../components/ui/PageHero'
 
 function BracketView({ bracket, schools }) {
   if (!bracket) return <p className="text-muted">No bracket generated yet.</p>
@@ -85,6 +86,13 @@ export default function Tournaments() {
 
   return (
     <div className="page-container">
+      <PageHero title="Tournaments" subtitle="Brackets & competitions" color="#121212">
+        <svg viewBox="0 0 400 88" preserveAspectRatio="xMidYMid slice">
+          <polygon points="300,4 340,72 260,72" fill="#F0C020" opacity="0.5"/>
+          <polygon points="340,16 368,68 312,68" fill="#D02020" opacity="0.3"/>
+          <circle cx="370" cy="88" r="55" fill="#1040C0" opacity="0.2"/>
+        </svg>
+      </PageHero>
       <div className="page-top-bar">
         <span className="text-muted" style={{ fontSize: 13 }}>{tournaments.length} tournaments · {schools.length} schools</span>
         <div style={{ display: 'flex', gap: 8 }}>

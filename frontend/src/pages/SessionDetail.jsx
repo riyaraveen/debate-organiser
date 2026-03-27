@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { getSession, updateSession, deleteSession, getFormat, notifyCalendar } from '../api'
 import { useAuth } from '../context/AuthContext'
 import { Calendar, MapPin, Users, Edit2, Trash2, Trophy, Link as LinkIcon, FileText, Sparkles, MessageCircle } from 'lucide-react'
+import PageHero from '../components/ui/PageHero'
 
 export default function SessionDetail() {
   const { id } = useParams()
@@ -87,33 +88,92 @@ export default function SessionDetail() {
   const gcalUrl = buildIcsUrl()
 
   return (
-    <div className="session-detail">
-      <div className="session-detail-header">
-        {editing ? (
-          <input
-            className="input-title"
-            value={editForm.title}
-            onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
-          />
-        ) : (
-          <h2>{session.title}</h2>
-        )}
-        {isAdmin && (
-          <div className="action-btns">
+    <div className="page-container">
+      <PageHero title="Session" subtitle="Session detail" color="#1040C0">
+        <svg viewBox="0 0 400 88" preserveAspectRatio="xMidYMid slice">
+          <circle cx="60" cy="44" r="65" fill="white" opacity="0.06"/>
+          <rect x="140" y="10" width="55" height="55" fill="#F0C020" opacity="0.18" transform="rotate(10 167 37)"/>
+          <circle cx="260" cy="44" r="50" fill="white" opacity="0.07"/>
+          <circle cx="260" cy="44" r="28" fill="white" opacity="0.07"/>
+          <polygon points="350,6 390,74 310,74" fill="white" opacity="0.07"/>
+          <circle cx="390" cy="20" r="40" fill="#F0C020" opacity="0.12"/>
+        </svg>
+      </PageHero>
+      <div className="session-detail">
+      <div className="session-layout">
+
+        {/* ── Sidebar ── */}
+        <aside className="session-sidebar">
+          <div className="session-sidebar-info">
             {editing ? (
-              <>
-                <button className="btn btn-primary" onClick={handleSave}>Save</button>
-                <button className="btn btn-ghost" onClick={() => setEditing(false)}>Cancel</button>
-              </>
+              <input className="input-title" value={editForm.title}
+                onChange={(e) => setEditForm({ ...editForm, title: e.target.value })} />
             ) : (
-              <>
-                <button className="btn btn-ghost" onClick={() => setEditing(true)}><Edit2 size={15} /> Edit</button>
-                <button className="btn btn-danger" onClick={handleDelete}><Trash2 size={15} /> Delete</button>
-              </>
+              <h2 className="session-sidebar-title">{session.title}</h2>
             )}
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
+              <span className="badge badge-blue">{session.status}</span>
+              <span className={`badge ${session.mode === 'online' ? 'badge-purple' : 'badge-orange'}`}>{session.mode}</span>
+            </div>
           </div>
-        )}
-      </div>
+
+          {isAdmin && (
+            <div className="action-btns" style={{ flexDirection: 'column' }}>
+              {editing ? (
+                <>
+                  <button className="btn btn-primary" onClick={handleSave}>Save</button>
+                  <button className="btn btn-ghost" onClick={() => setEditing(false)}>Cancel</button>
+                </>
+              ) : (
+                <>
+                  <button className="btn btn-ghost" onClick={() => setEditing(true)}><Edit2 size={15} /> Edit</button>
+                  <button className="btn btn-danger" onClick={handleDelete}><Trash2 size={15} /> Delete</button>
+                </>
+              )}
+            </div>
+          )}
+
+          <nav className="session-nav">
+            <Link to={`/sessions/${id}/notes`} className="session-nav-item">
+              <span className="session-nav-icon" style={{ background: 'var(--blue)' }}><FileText size={15} color="white" /></span>
+              My Notes
+            </Link>
+            <Link to={`/sessions/${id}/ai`} className="session-nav-item">
+              <span className="session-nav-icon" style={{ background: 'var(--red)' }}><Sparkles size={15} color="white" /></span>
+              AI Assistant
+            </Link>
+            <Link to={`/sessions/${id}/chat`} className="session-nav-item">
+              <span className="session-nav-icon" style={{ background: 'var(--yellow)' }}><MessageCircle size={15} color="var(--black)" /></span>
+              Team Chat
+            </Link>
+          </nav>
+
+          {isAdmin && session.status !== 'completed' && !recordingResult && (
+            <button className="btn btn-yellow" style={{ width: '100%', justifyContent: 'center' }}
+              onClick={() => setRecordingResult(true)}>
+              <Trophy size={15} /> Record Result
+            </button>
+          )}
+
+          {gcalUrl && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <a href={gcalUrl} target="_blank" rel="noreferrer" className="btn btn-ghost" style={{ justifyContent: 'center' }}>
+                <Calendar size={14} /> Add to Calendar
+              </a>
+              {isAdmin && (
+                <button className="btn btn-ghost" style={{ justifyContent: 'center' }} onClick={async () => {
+                  await notifyCalendar(id)
+                  alert('Calendar notifications sent to all participants.')
+                }}>
+                  <Calendar size={14} /> Notify Participants
+                </button>
+              )}
+            </div>
+          )}
+        </aside>
+
+        {/* ── Main Content ── */}
+        <div className="session-main">
 
       <div className="detail-grid">
         <div className="detail-section">
@@ -191,14 +251,6 @@ export default function SessionDetail() {
         </div>
       )}
 
-      {isAdmin && session.status !== 'completed' && !recordingResult && (
-        <div style={{ marginBottom: 24 }}>
-          <button className="btn btn-yellow" onClick={() => setRecordingResult(true)}>
-            <Trophy size={15} /> Record Result
-          </button>
-        </div>
-      )}
-
       {recordingResult && (
         <div className="result-form-panel">
           <h4>Record Debate Result</h4>
@@ -251,22 +303,6 @@ export default function SessionDetail() {
         )}
       </div>
 
-      {gcalUrl && (
-        <div className="gcal-section" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 24 }}>
-          <a href={gcalUrl} target="_blank" rel="noreferrer" className="btn btn-ghost">
-            <Calendar size={15} /> Add to Google Calendar
-          </a>
-          {isAdmin && (
-            <button className="btn btn-ghost" onClick={async () => {
-              await notifyCalendar(id)
-              alert('Calendar notifications sent to all participants.')
-            }}>
-              <Calendar size={15} /> Notify All Participants
-            </button>
-          )}
-        </div>
-      )}
-
       {/* Additional notes */}
       <div className="additional-notes-section">
         <h3 className="additional-notes-title">Additional Notes</h3>
@@ -285,43 +321,6 @@ export default function SessionDetail() {
             {isAdmin ? 'No additional notes yet — click Edit to add some.' : 'No additional notes from the organiser.'}
           </p>
         )}
-      </div>
-
-      {/* Quick-access cards to sub-pages */}
-      <div className="session-subpage-cards" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
-        <Link to={`/sessions/${id}/notes`} className="session-subpage-card">
-          <div className="session-subpage-card-icon" style={{ background: 'var(--blue)' }}>
-            <FileText size={22} color="white" />
-          </div>
-          <div>
-            <div className="session-subpage-card-title">My Notes</div>
-            <div className="session-subpage-card-desc">
-              Write your arguments, rebuttals, and key points. Includes live web research sources for this topic.
-            </div>
-          </div>
-        </Link>
-        <Link to={`/sessions/${id}/ai`} className="session-subpage-card">
-          <div className="session-subpage-card-icon" style={{ background: 'var(--red)' }}>
-            <Sparkles size={22} color="white" />
-          </div>
-          <div>
-            <div className="session-subpage-card-title">AI Debate Assistant</div>
-            <div className="session-subpage-card-desc">
-              Generate counterarguments, evaluate your arguments, get research tips, and detect fallacies.
-            </div>
-          </div>
-        </Link>
-        <Link to={`/sessions/${id}/chat`} className="session-subpage-card">
-          <div className="session-subpage-card-icon" style={{ background: 'var(--yellow)' }}>
-            <MessageCircle size={22} color="var(--black)" />
-          </div>
-          <div>
-            <div className="session-subpage-card-title">Team Chat</div>
-            <div className="session-subpage-card-desc">
-              Real-time chat with your side only. Proposition and opposition have separate rooms.
-            </div>
-          </div>
-        </Link>
       </div>
 
       {session.status === 'completed' && (
@@ -368,6 +367,9 @@ export default function SessionDetail() {
           </div>
         </div>
       )}
+        </div>{/* end session-main */}
+      </div>{/* end session-layout */}
+      </div>{/* end session-detail */}
     </div>
   )
 }

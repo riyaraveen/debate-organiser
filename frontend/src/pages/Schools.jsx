@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../api/client'
 import { Plus, Trash2, Trophy } from 'lucide-react'
+import PageHero from '../components/ui/PageHero'
 
 export default function Schools() {
   const [schools, setSchools] = useState([])
@@ -37,6 +38,17 @@ export default function Schools() {
 
   return (
     <div className="page-container">
+      <PageHero title="Schools" subtitle="Registered institutions" color="#1040C0">
+        <svg viewBox="0 0 400 88" preserveAspectRatio="xMidYMid slice">
+          <rect x="220" y="10" width="24" height="24" fill="white" opacity="0.10"/>
+          <rect x="252" y="10" width="24" height="24" fill="white" opacity="0.10"/>
+          <rect x="284" y="10" width="24" height="24" fill="#F0C020" opacity="0.20"/>
+          <rect x="220" y="42" width="24" height="24" fill="white" opacity="0.10"/>
+          <rect x="252" y="42" width="24" height="24" fill="#F0C020" opacity="0.20"/>
+          <rect x="284" y="42" width="24" height="24" fill="white" opacity="0.10"/>
+          <circle cx="370" cy="44" r="50" fill="white" opacity="0.06"/>
+        </svg>
+      </PageHero>
       <div className="page-top-bar">
         <span className="text-muted" style={{ fontSize: 13 }}>{schools.length} schools registered</span>
         <div style={{ display: 'flex', gap: 8 }}>
