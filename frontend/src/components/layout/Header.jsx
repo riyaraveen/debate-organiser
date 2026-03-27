@@ -43,7 +43,6 @@ export default function Header({ title }) {
 
   return (
     <header className="app-header">
-      <h1 className="page-title">{title}</h1>
       <div className="header-actions" ref={dropdownRef}>
         <button className="bell-btn" onClick={() => setOpen(!open)}>
           <Bell size={20} />
