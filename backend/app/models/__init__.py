@@ -8,3 +8,4 @@ from .session_note import SessionNote
 from .school import School
 from .tournament import Tournament
 from .team_message import TeamMessage
+from .calendar_event import CalendarEvent

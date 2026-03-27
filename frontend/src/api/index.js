@@ -58,3 +58,8 @@ export const updateSettings = (data) => api.patch('/api/settings/', data)
 
 // Topics — AI generate
 export const generateTopic = () => api.get('/api/topics/generate')
+
+// Calendar events
+export const getEvents    = ()       => api.get('/api/events/')
+export const createEvent  = (data)   => api.post('/api/events/', data)
+export const deleteEvent  = (id)     => api.delete(`/api/events/${id}`)

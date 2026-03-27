@@ -604,6 +604,13 @@ input:focus, select:focus, textarea:focus {
   padding: 20px;
   box-shadow: var(--shadow);
 }
+.calendar-event-popup {
+  background: white;
+  border: var(--border-w) solid var(--black);
+  box-shadow: var(--shadow);
+  padding: 16px 20px;
+  margin-bottom: 16px;
+}
 .calendar-legend-item {
   display: flex;
   align-items: center;

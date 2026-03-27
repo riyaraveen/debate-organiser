@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getSessions } from '../api'
+import { getSessions, getEvents, createEvent, deleteEvent } from '../api'
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar'
 import PageHero from '../components/ui/PageHero'
 import { format, parse, startOfWeek, getDay } from 'date-fns'
 import { enUS } from 'date-fns/locale'
-import { Plus } from 'lucide-react'
+import { Plus, Trash2 } from 'lucide-react'
 import 'react-big-calendar/lib/css/react-big-calendar.css'
 
 const localizer = dateFnsLocalizer({
@@ -30,20 +30,36 @@ export default function CalendarPage() {
   const [customEvents, setCustomEvents] = useState([])
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ title: '', type: 'exam', date: '', endDate: '' })
+  const [selectedEvent, setSelectedEvent] = useState(null)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     getSessions().then((res) => {
-      const mapped = res.data
-        .filter((s) => s.scheduled_at)
-        .map((s) => ({
-          id: s.id,
-          title: s.title,
-          start: new Date(s.scheduled_at),
-          end: new Date(new Date(s.scheduled_at).getTime() + 90 * 60000),
-          eventType: 'session',
-          resource: s,
+      setSessionEvents(
+        res.data
+          .filter((s) => s.scheduled_at)
+          .map((s) => ({
+            id: s.id,
+            title: s.title,
+            start: new Date(s.scheduled_at),
+            end: new Date(new Date(s.scheduled_at).getTime() + 90 * 60000),
+            eventType: 'session',
+            resource: s,
+          }))
+      )
+    })
+
+    getEvents().then((res) => {
+      setCustomEvents(
+        res.data.map((e) => ({
+          id: e.id,
+          title: e.title,
+          start: new Date(e.start_at),
+          end: new Date(e.end_at),
+          eventType: e.event_type,
+          createdBy: e.created_by,
         }))
-      setSessionEvents(mapped)
+      )
     })
   }, [])
 
@@ -57,19 +73,50 @@ export default function CalendarPage() {
     return { style: { backgroundColor: typeColor, borderRadius: '4px', border: 'none', color: '#fff' } }
   }
 
-  const handleAddEvent = (e) => {
+  const handleAddEvent = async (e) => {
     e.preventDefault()
+    setError('')
     const start = new Date(form.date)
     const end = form.endDate ? new Date(form.endDate) : new Date(start.getTime() + 60 * 60000)
-    setCustomEvents(prev => [...prev, {
-      id: `custom-${Date.now()}`,
-      title: form.title,
-      start,
-      end,
-      eventType: form.type,
-    }])
-    setForm({ title: '', type: 'exam', date: '', endDate: '' })
-    setShowForm(false)
+    try {
+      const res = await createEvent({
+        title: form.title,
+        event_type: form.type,
+        start_at: start.toISOString(),
+        end_at: end.toISOString(),
+      })
+      const saved = res.data
+      setCustomEvents(prev => [...prev, {
+        id: saved.id,
+        title: saved.title,
+        start: new Date(saved.start_at),
+        end: new Date(saved.end_at),
+        eventType: saved.event_type,
+        createdBy: saved.created_by,
+      }])
+      setForm({ title: '', type: 'exam', date: '', endDate: '' })
+      setShowForm(false)
+    } catch {
+      setError('Failed to save event. Please try again.')
+    }
+  }
+
+  const handleDeleteEvent = async (event) => {
+    try {
+      await deleteEvent(event.id)
+      setCustomEvents(prev => prev.filter(e => e.id !== event.id))
+      setSelectedEvent(null)
+    } catch {
+      setError('Failed to delete event.')
+    }
+  }
+
+  const handleSelectEvent = (event) => {
+    if (event.eventType === 'session') {
+      navigate(`/sessions/${event.id}`)
+    } else {
+      setSelectedEvent(event)
+    }
   }
 
   return (
@@ -92,10 +139,12 @@ export default function CalendarPage() {
             <span key={t.value} className="calendar-legend-item" style={{ '--dot': t.color }}>{t.label}</span>
           ))}
         </div>
-        <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>
+        <button className="btn btn-primary" onClick={() => { setShowForm(!showForm); setSelectedEvent(null) }}>
           <Plus size={15} /> Add Event
         </button>
       </div>
+
+      {error && <div className="alert alert-error">{error}</div>}
 
       {showForm && (
         <form className="add-topic-form form-stack" style={{ flexDirection: 'column', alignItems: 'stretch' }} onSubmit={handleAddEvent}>
@@ -124,6 +173,38 @@ export default function CalendarPage() {
         </form>
       )}
 
+      {/* Event detail popup for custom events */}
+      {selectedEvent && (
+        <div className="calendar-event-popup">
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+            <div>
+              <span className={`badge`} style={{
+                background: EVENT_TYPES.find(t => t.value === selectedEvent.eventType)?.color ?? '#9333ea',
+                color: 'white', marginBottom: 6, display: 'inline-block',
+              }}>
+                {EVENT_TYPES.find(t => t.value === selectedEvent.eventType)?.label ?? selectedEvent.eventType}
+              </span>
+              <div style={{ fontWeight: 800, fontSize: 15 }}>{selectedEvent.title}</div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
+                {selectedEvent.start.toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })}
+                {' → '}
+                {selectedEvent.end.toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })}
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+              <button className="btn btn-ghost" style={{ padding: '4px 8px', color: 'var(--red)' }}
+                onClick={() => handleDeleteEvent(selectedEvent)}>
+                <Trash2 size={14}/> Delete
+              </button>
+              <button className="btn btn-ghost" style={{ padding: '4px 8px' }}
+                onClick={() => setSelectedEvent(null)}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="calendar-box">
         <Calendar
           localizer={localizer}
@@ -132,7 +213,7 @@ export default function CalendarPage() {
           endAccessor="end"
           style={{ height: '70vh' }}
           eventPropGetter={eventStyleGetter}
-          onSelectEvent={(event) => event.eventType === 'session' && navigate(`/sessions/${event.id}`)}
+          onSelectEvent={handleSelectEvent}
           views={['month', 'week', 'agenda']}
           date={date}
           view={view}

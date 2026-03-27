@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import auth, users, topics, formats, sessions, notifications, settings, notes, ai
+from app.routers import auth, users, topics, formats, sessions, notifications, settings, notes, ai, events
 from app.routers.schools import router as schools_router, tournament_router
 from app.routers.team_chat import router as team_chat_router
 from app.db.database import engine
@@ -40,6 +40,7 @@ app.include_router(notifications.router)
 app.include_router(settings.router)
 app.include_router(notes.router)
 app.include_router(ai.router)
+app.include_router(events.router)
 app.include_router(schools_router)
 app.include_router(tournament_router)
 app.include_router(team_chat_router)
