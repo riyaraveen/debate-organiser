@@ -76,27 +76,29 @@ export default function ClubSettings() {
           {saved && <div className="alert" style={{ background: '#CCFFD8', color: '#1A6030', border: '2px solid #121212' }}>Settings saved.</div>}
           {error && <div className="alert alert-error">{error}</div>}
 
-          <form onSubmit={handleSave} className="form-stack">
-            <label>
-              Club Name *
-              <input className="input" value={form.club_name}
-                onChange={(e) => setForm({ ...form, club_name: e.target.value })}
-                placeholder="e.g. Westminster Debate Society" required />
-            </label>
-            <label>
-              School / Institution
-              <input className="input" value={form.school_name}
-                onChange={(e) => setForm({ ...form, school_name: e.target.value })}
-                placeholder="e.g. Westminster School" />
-            </label>
-            <label>
-              Description
-              <textarea rows={3} value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
-                placeholder="A short description of your debate club…"
-                style={{ resize: 'vertical', border: '2px solid #121212', padding: '8px 12px', font: 'inherit', width: '100%', outline: 'none' }} />
-            </label>
-            <div>
+          <form onSubmit={handleSave}>
+            <div className="settings-fields-grid">
+              <label className="settings-label">
+                Club Name *
+                <input className="input" value={form.club_name}
+                  onChange={(e) => setForm({ ...form, club_name: e.target.value })}
+                  placeholder="e.g. Westminster Debate Society" required />
+              </label>
+              <label className="settings-label">
+                School / Institution
+                <input className="input" value={form.school_name}
+                  onChange={(e) => setForm({ ...form, school_name: e.target.value })}
+                  placeholder="e.g. Westminster School" />
+              </label>
+              <label className="settings-label" style={{ gridColumn: '1 / -1' }}>
+                Description
+                <textarea rows={3} value={form.description}
+                  onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  placeholder="A short description of your debate club…"
+                  style={{ resize: 'vertical', border: '2px solid #121212', padding: '8px 12px', font: 'inherit', width: '100%', outline: 'none' }} />
+              </label>
+            </div>
+            <div style={{ marginTop: 16 }}>
               <button type="submit" className="btn btn-primary" disabled={saving}>
                 {saving ? 'Saving…' : 'Save Settings'}
               </button>

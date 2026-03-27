@@ -50,20 +50,28 @@ export default function Profile() {
 
       <div className="profile-body">
         <div className="profile-card">
-          <div className="profile-header">
+          {saved && <div className="alert" style={{ background: '#CCFFD8', color: '#1A6030', border: '2px solid #121212', gridColumn: '1/-1' }}>Profile saved.</div>}
+          {error && <div className="alert alert-error" style={{ gridColumn: '1/-1' }}>{error}</div>}
+
+          {/* Left column: avatar + identity */}
+          <div className="profile-identity">
             <div className="profile-avatar">{user?.name?.[0]?.toUpperCase()}</div>
-            <div>
-              <h2>{user?.name}</h2>
-              <span className={`badge ${user?.role === 'admin' ? 'badge-red' : 'badge-blue'}`}>
-                {user?.role}
-              </span>
+            <h2 style={{ margin: '12px 0 6px', fontSize: 20, fontWeight: 900 }}>{user?.name}</h2>
+            <span className={`badge ${user?.role === 'admin' ? 'badge-red' : 'badge-blue'}`}>{user?.role}</span>
+            <div style={{ marginTop: 'auto', paddingTop: 20 }}>
+              {editing ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <button className="btn btn-primary" onClick={handleSave}>Save Changes</button>
+                  <button className="btn btn-ghost" onClick={() => setEditing(false)}>Cancel</button>
+                </div>
+              ) : (
+                <button className="btn btn-ghost" style={{ width: '100%', justifyContent: 'center' }} onClick={() => setEditing(true)}>Edit Profile</button>
+              )}
             </div>
           </div>
 
-          {saved && <div className="alert" style={{ background: '#CCFFD8', color: '#1A6030', border: '2px solid #121212' }}>Profile saved.</div>}
-          {error && <div className="alert alert-error">{error}</div>}
-
-          <div className="profile-fields">
+          {/* Right column: fields in 2×2 grid */}
+          <div className="profile-fields-grid">
             <div className="profile-field">
               <span className="profile-field-label"><User size={14} /> Full Name</span>
               {editing
@@ -87,17 +95,6 @@ export default function Profile() {
               <span className="profile-field-label"><Shield size={14} /> Proficiency</span>
               <span className="profile-field-value">{user?.proficiency || 'beginner'}</span>
             </div>
-          </div>
-
-          <div className="profile-actions">
-            {editing ? (
-              <>
-                <button className="btn btn-primary" onClick={handleSave}>Save Changes</button>
-                <button className="btn btn-ghost" onClick={() => setEditing(false)}>Cancel</button>
-              </>
-            ) : (
-              <button className="btn btn-ghost" onClick={() => setEditing(true)}>Edit Profile</button>
-            )}
           </div>
         </div>
       </div>
