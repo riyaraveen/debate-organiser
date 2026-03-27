@@ -175,6 +175,14 @@ input:focus, select:focus, textarea:focus {
   transition: box-shadow 0.1s;
 }
 .bell-btn:hover { box-shadow: var(--shadow-sm); }
+.bell-dot {
+  position: absolute;
+  top: 5px; right: 5px;
+  width: 8px; height: 8px;
+  background: var(--red);
+  border-radius: 50%;
+  border: 2px solid white;
+}
 .badge {
   position: absolute;
   top: -6px; right: -6px;

@@ -46,7 +46,7 @@ export default function Header({ title }) {
       <div className="header-actions" ref={dropdownRef}>
         <button className="bell-btn" onClick={() => setOpen(!open)}>
           <Bell size={20} />
-          {unread > 0 && <span className="badge">{unread}</span>}
+          {unread > 0 && <span className="bell-dot" aria-label={`${unread} unread notifications`}/>}
         </button>
 
         {open && (
