@@ -271,7 +271,7 @@ export default function Dashboard() {
         <div className="dash-stats">
           <DashStatCell label="Upcoming Sessions"  value={upcoming.length}    numColor="var(--blue)"  barColor="var(--blue)"  />
           <DashStatCell label="Sessions Completed" value={past.length}        numColor="var(--red)"   barColor="var(--red)"   />
-          <DashStatCell label="Club Members"       value={memberCount ?? '—'} numColor="#9A6C00"      barColor="var(--yellow)" accent="#FFFBE8"/>
+          <DashStatCell label="Club Members"       value={memberCount ?? '—'} numColor="#9A6C00"      barColor="var(--yellow)" />
           <DashStatCell label="Topics Available"   value={topicCount ?? '—'}  numColor="var(--black)" barColor="var(--black)" />
         </div>
       )}
