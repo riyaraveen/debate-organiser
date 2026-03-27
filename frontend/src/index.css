@@ -163,7 +163,7 @@ input:focus, select:focus, textarea:focus {
 .page-content { padding: 28px; }
 
 /* ── Header notifications ─────────────────────────── */
-.header-actions { position: relative; }
+.header-actions { position: relative; margin-left: auto; }
 .bell-btn {
   background: none;
   border: var(--border-w) solid var(--black);
