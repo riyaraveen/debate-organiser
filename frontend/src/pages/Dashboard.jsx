@@ -150,18 +150,22 @@ const STATUS_COLORS = {
 
 /* ── Sub-components ──────────────────────────────────────────────────────── */
 
-function SessionCard({ session }) {
+function SessionCard({ session, me }) {
   const date = session.scheduled_at
     ? new Date(session.scheduled_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
     : 'TBC'
   const time = session.scheduled_at
     ? new Date(session.scheduled_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
     : ''
+  const isParticipant = me && session.participants?.some(p => p.user_id === me.id)
   return (
     <Link to={`/sessions/${session.id}`} className="session-card">
       <div className="session-card-header">
         <span className={`badge ${STATUS_COLORS[session.status] ?? 'badge-gray'}`}>{session.status}</span>
         <span className={`badge ${session.mode === 'online' ? 'badge-purple' : 'badge-orange'}`}>{session.mode}</span>
+        <span className={`badge ${isParticipant ? 'badge-green' : 'badge-gray'}`}>
+          {isParticipant ? 'Participating' : 'Not participating'}
+        </span>
       </div>
       <h3 className="session-card-title">{session.title}</h3>
       {session.topic_text && <p className="session-card-topic">"{session.topic_text}"</p>}
@@ -220,8 +224,9 @@ export default function Dashboard() {
   }, [])
 
   const upcoming    = sessions.filter(s => s.status === 'scheduled' || s.status === 'draft')
+  const myUpcoming  = upcoming.filter(s => s.participants?.some(p => p.user_id === user?.id))
   const past        = sessions.filter(s => s.status === 'completed')
-  const nextSession = upcoming[0] ?? null
+  const nextSession = myUpcoming[0] ?? null
   const countdown   = nextSession?.scheduled_at ? getCountdown(nextSession.scheduled_at) : null
   const tipOfDay    = getTipOfDay()
 
@@ -329,7 +334,7 @@ export default function Dashboard() {
               </div>
             ) : (
               <div className="sessions-grid" style={{ padding: '20px 24px 0' }}>
-                {upcoming.map(s => <SessionCard key={s.id} session={s}/>)}
+                {upcoming.map(s => <SessionCard key={s.id} session={s} me={user}/>)}
               </div>
             )}
 
@@ -340,7 +345,7 @@ export default function Dashboard() {
                   <span className="dash-cell-count">{past.length}</span>
                 </div>
                 <div className="sessions-grid" style={{ padding: '20px 24px 0' }}>
-                  {past.slice(0, 4).map(s => <SessionCard key={s.id} session={s}/>)}
+                  {past.slice(0, 4).map(s => <SessionCard key={s.id} session={s} me={user}/>)}
                 </div>
                 {past.length > 4 && (
                   <Link to="/sessions" className="dash-more-link" style={{ margin: '12px 24px 24px', display: 'inline-block' }}>

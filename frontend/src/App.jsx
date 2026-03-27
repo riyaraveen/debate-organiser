@@ -20,6 +20,7 @@ import Schools from './pages/Schools'
 import SessionNotes from './pages/SessionNotes'
 import SessionAI from './pages/SessionAI'
 import SessionChat from './pages/SessionChat'
+import TeamMemberNotes from './pages/TeamMemberNotes'
 
 export default function App() {
   return (
@@ -46,13 +47,10 @@ export default function App() {
         <Route path="sessions/:id/notes" element={<SessionNotes />} />
         <Route path="sessions/:id/ai" element={<SessionAI />} />
         <Route path="sessions/:id/chat" element={<SessionChat />} />
+        <Route path="sessions/:id/notes/:userId" element={<TeamMemberNotes />} />
         <Route path="calendar" element={<CalendarPage />} />
         <Route path="topics" element={<Topics />} />
-        <Route path="members" element={
-          <ProtectedRoute adminOnly>
-            <Members />
-          </ProtectedRoute>
-        } />
+        <Route path="members" element={<Members />} />
         <Route path="learn" element={<Learn />} />
         <Route path="practice" element={<Practice />} />
         <Route path="tournaments" element={

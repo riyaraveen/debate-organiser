@@ -158,6 +158,23 @@ def get_team_notes(session_id: int, db: DBSession = Depends(get_db), _: User = D
     return result
 
 
+@router.get("/{session_id}/notes/{user_id}")
+def get_user_note(session_id: int, user_id: int, db: DBSession = Depends(get_db), _: User = Depends(get_current_user)):
+    from app.models.session_note import SessionNote
+    from app.models.user import User as UserModel
+    note = db.query(SessionNote).filter(
+        SessionNote.session_id == session_id,
+        SessionNote.user_id == user_id,
+    ).first()
+    u = db.query(UserModel).filter(UserModel.id == user_id).first()
+    return {
+        "user_id": user_id,
+        "user_name": u.name if u else f"User #{user_id}",
+        "content": note.content if note else "",
+        "updated_at": str(note.updated_at) if note else None,
+    }
+
+
 @router.post("/{session_id}/notify-calendar", status_code=200)
 def notify_calendar(session_id: int, db: DBSession = Depends(get_db), _: User = Depends(require_admin)):
     """Send all participants a notification with the Google Calendar link."""

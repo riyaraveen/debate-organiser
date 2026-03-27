@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { getSession, updateSession, deleteSession, getFormat, notifyCalendar } from '../api'
 import { useAuth } from '../context/AuthContext'
-import { Calendar, MapPin, Users, Edit2, Trash2, Trophy, Link as LinkIcon, FileText, Sparkles, MessageCircle } from 'lucide-react'
+import { Calendar, MapPin, Users, Edit2, Trash2, Trophy, Link as LinkIcon, FileText, Sparkles, MessageCircle, ArrowLeft } from 'lucide-react'
 import PageHero from '../components/ui/PageHero'
 
 export default function SessionDetail() {
@@ -99,6 +99,7 @@ export default function SessionDetail() {
           <circle cx="390" cy="20" r="40" fill="#F0C020" opacity="0.12"/>
         </svg>
       </PageHero>
+      <button className="back-btn" onClick={() => navigate('/sessions')}><ArrowLeft size={15}/> Back</button>
       <div className="session-detail">
       <div className="session-layout">
 

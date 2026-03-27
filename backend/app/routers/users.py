@@ -10,7 +10,7 @@ router = APIRouter(prefix="/api/users", tags=["users"])
 
 
 @router.get("/", response_model=List[UserOut])
-def list_users(db: Session = Depends(get_db), _: User = Depends(require_admin)):
+def list_users(db: Session = Depends(get_db), _: User = Depends(get_current_user)):
     return db.query(User).all()
 
 

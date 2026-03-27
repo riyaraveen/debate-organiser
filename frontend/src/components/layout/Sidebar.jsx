@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import {
@@ -10,13 +11,13 @@ const navItems = [
   { to: '/sessions', label: 'Sessions', icon: MessageSquare },
   { to: '/calendar', label: 'Calendar', icon: CalendarDays },
   { to: '/topics', label: 'Topics', icon: ListTodo },
+  { to: '/members', label: 'Members', icon: Users },
   { to: '/learn', label: 'Learn', icon: GraduationCap },
   { to: '/practice', label: 'AI Practice', icon: Swords },
   { to: '/profile', label: 'My Profile', icon: User },
 ]
 
 const adminItems = [
-  { to: '/members', label: 'Members', icon: Users },
   { to: '/formats', label: 'Formats', icon: Layers },
   { to: '/schools', label: 'Schools', icon: School },
   { to: '/tournaments', label: 'Tournaments', icon: Trophy },
@@ -25,6 +26,7 @@ const adminItems = [
 
 export default function Sidebar() {
   const { user, logout } = useAuth()
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
 
   return (
     <aside className="sidebar">
@@ -71,10 +73,23 @@ export default function Sidebar() {
             <span className="sidebar-user-role">{user?.role}</span>
           </div>
         </div>
-        <button className="logout-btn" onClick={logout} title="Log out">
+        <button className="logout-btn" onClick={() => setShowLogoutConfirm(true)} title="Log out">
           <LogOut size={18} />
         </button>
       </div>
+
+      {showLogoutConfirm && (
+        <div className="logout-confirm-backdrop" onClick={() => setShowLogoutConfirm(false)}>
+          <div className="logout-confirm" onClick={e => e.stopPropagation()}>
+            <div className="logout-confirm-title">Log out?</div>
+            <div className="logout-confirm-msg">Are you sure you want to log out?</div>
+            <div className="logout-confirm-actions">
+              <button className="logout-confirm-cancel" onClick={() => setShowLogoutConfirm(false)}>Cancel</button>
+              <button className="logout-confirm-ok" onClick={logout}>Log out</button>
+            </div>
+          </div>
+        </div>
+      )}
     </aside>
   )
 }

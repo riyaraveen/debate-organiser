@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import { getSession, getMyNote, saveMyNote, getTeamNotes, getWebSources } from '../api'
 import { useAuth } from '../context/AuthContext'
-import { ArrowLeft, Search, ExternalLink, Users, RefreshCw, FileText } from 'lucide-react'
+import { ArrowLeft, Search, ExternalLink, Users, RefreshCw, FileText, ChevronRight } from 'lucide-react'
 import RichEditor from '../components/ui/RichEditor'
 import PageHero from '../components/ui/PageHero'
 
@@ -15,12 +15,12 @@ function wordCount(html) {
 export default function SessionNotes() {
   const { id } = useParams()
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [session, setSession] = useState(null)
   const [noteContent, setNoteContent] = useState('')
   const [noteSaving, setNoteSaving] = useState(false)
   const [noteSaved, setNoteSaved] = useState(false)
   const [teamNotes, setTeamNotes] = useState([])
-  const [showTeam, setShowTeam] = useState(false)
   const [sources, setSources] = useState([])
   const [sourcesLoading, setSourcesLoading] = useState(false)
   const [sourcesError, setSourcesError] = useState('')
@@ -175,46 +175,36 @@ export default function SessionNotes() {
           </div>
 
           {/* Team notes */}
-          {teamNotes.filter((n) => n.content && n.user_name !== user?.name).length > 0 && (
+          {teamNotes.filter((n) => n.user_name !== user?.name).length > 0 && (
             <div className="sources-panel">
-              <button
-                className="sources-panel-header"
-                style={{ cursor: 'pointer', width: '100%', border: 'none' }}
-                onClick={() => setShowTeam(!showTeam)}
-              >
+              <div className="sources-panel-header">
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <Users size={15} color="white" />
                   <span style={{ fontWeight: 800, fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'white' }}>
-                    Team Notes ({teamNotes.filter((n) => n.content && n.user_name !== user?.name).length})
+                    Team Notes
                   </span>
                 </div>
-                <span style={{ color: 'white' }}>{showTeam ? '▲' : '▼'}</span>
-              </button>
-
-              {showTeam && (
-                <div className="sources-panel-body"><div className="sources-list">
-                  {teamNotes.filter((n) => n.content && n.user_name !== user?.name).map((n, i) => (
-                    <div key={i} className="source-card">
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                        <span className="avatar sm">{n.user_name[0]}</span>
-                        <strong style={{ fontSize: 13 }}>{n.user_name}</strong>
-                        <span className="text-muted" style={{ fontSize: 11 }}>
-                          {new Date(n.updated_at).toLocaleDateString()}
+              </div>
+              <div className="sources-panel-body">
+                <div className="team-notes-list">
+                  {teamNotes.filter((n) => n.user_name !== user?.name).map((n, i) => (
+                    <button
+                      key={i}
+                      className="team-note-member-card"
+                      onClick={() => navigate(`/sessions/${id}/notes/${n.user_id}`)}
+                    >
+                      <div className="avatar sm">{n.user_name[0]}</div>
+                      <div className="team-note-member-info">
+                        <span className="team-note-member-name">{n.user_name}</span>
+                        <span className="team-note-member-sub">
+                          {n.content ? `Updated ${new Date(n.updated_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}` : 'No notes yet'}
                         </span>
                       </div>
-                      {/* Render HTML from rich editor, or plain text fallback */}
-                      {n.content.startsWith('<') ? (
-                        <div
-                          className="re-content-readonly"
-                          dangerouslySetInnerHTML={{ __html: n.content }}
-                        />
-                      ) : (
-                        <p style={{ fontSize: 13, margin: 0, whiteSpace: 'pre-wrap' }}>{n.content}</p>
-                      )}
-                    </div>
+                      <ChevronRight size={14} style={{ marginLeft: 'auto', opacity: 0.4 }} />
+                    </button>
                   ))}
-                </div></div>
-              )}
+                </div>
+              </div>
             </div>
           )}
         </div>

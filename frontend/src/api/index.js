@@ -41,6 +41,7 @@ export const checkReminders    = ()  => api.post('/api/notifications/check-remin
 export const getMyNote = (sessionId) => api.get(`/api/sessions/${sessionId}/notes/me`)
 export const saveMyNote = (sessionId, content) => api.put(`/api/sessions/${sessionId}/notes/me`, { content })
 export const getTeamNotes = (sessionId) => api.get(`/api/sessions/${sessionId}/team-notes`)
+export const getUserNote = (sessionId, userId) => api.get(`/api/sessions/${sessionId}/notes/${userId}`)
 export const notifyCalendar = (sessionId) => api.post(`/api/sessions/${sessionId}/notify-calendar`)
 
 // AI

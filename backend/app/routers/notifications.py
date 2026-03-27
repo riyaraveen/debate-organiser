@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from app.db.database import get_db
 from app.models.user import User
 from app.models.notification import Notification
-from app.models.session import Session as DebateSession, SessionStatus
+from app.models.session import Session as DebateSession, SessionStatus, SessionParticipant
 from app.services.auth import get_current_user
 from pydantic import BaseModel
 
@@ -81,7 +81,13 @@ def check_reminders(db: Session = Depends(get_db), current_user: User = Depends(
         )
 
         for session in sessions:
+            participant_user_ids = {
+                p.user_id for p in db.query(SessionParticipant)
+                .filter(SessionParticipant.session_id == session.id).all()
+            }
             for user in all_users:
+                if user.id not in participant_user_ids:
+                    continue
                 ref_key = f"session_reminder_{session.id}_{key_suffix}"
                 exists = db.query(Notification).filter(
                     Notification.user_id == user.id,

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getSessions, getEvents, createEvent, deleteEvent } from '../api'
+import { useAuth } from '../context/AuthContext'
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar'
 import PageHero from '../components/ui/PageHero'
 import { format, parse, startOfWeek, getDay } from 'date-fns'
@@ -24,6 +25,7 @@ const EVENT_TYPES = [
 
 export default function CalendarPage() {
   const navigate = useNavigate()
+  const { user: me } = useAuth()
   const [date, setDate] = useState(new Date())
   const [view, setView] = useState('month')
   const [sessionEvents, setSessionEvents] = useState([])
@@ -65,12 +67,23 @@ export default function CalendarPage() {
 
   const events = [...sessionEvents, ...customEvents]
 
+  const isInSession = (event) =>
+    me && event.eventType === 'session' && event.resource?.participants?.some(p => p.user_id === me.id)
+
   const eventStyleGetter = (event) => {
     if (event.eventType === 'session') {
-      return { style: { backgroundColor: '#1040C0', borderRadius: '4px', border: 'none', color: '#fff' } }
+      const participating = isInSession(event)
+      return { style: { backgroundColor: participating ? '#1040C0' : '#6b7fa3', borderRadius: '4px', border: 'none', color: '#fff', opacity: participating ? 1 : 0.75 } }
     }
     const typeColor = EVENT_TYPES.find(t => t.value === event.eventType)?.color ?? '#9333ea'
     return { style: { backgroundColor: typeColor, borderRadius: '4px', border: 'none', color: '#fff' } }
+  }
+
+  const eventTitleAccessor = (event) => {
+    if (event.eventType === 'session') {
+      return isInSession(event) ? `★ ${event.title}` : event.title
+    }
+    return event.title
   }
 
   const handleAddEvent = async (e) => {
@@ -213,6 +226,7 @@ export default function CalendarPage() {
           endAccessor="end"
           style={{ height: '70vh' }}
           eventPropGetter={eventStyleGetter}
+          titleAccessor={eventTitleAccessor}
           onSelectEvent={handleSelectEvent}
           views={['month', 'week', 'agenda']}
           date={date}

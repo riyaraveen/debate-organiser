@@ -7,16 +7,26 @@ def assign_roles(format_roles: list, participant_ids: List[int]) -> List[dict]:
     Given a format's role definitions and a list of participant user IDs,
     return a list of {user_id, role_name, side} assignments.
 
-    Roles are assigned in order. If there are more participants than roles,
-    the extra participants are assigned as 'Observer'.
+    Roles with min_count > 1 (e.g. Audience x10, Adjudicator Panel x3) are
+    expanded into multiple individual slots. All slots are shuffled together
+    so every participant has an equal chance of being assigned any role.
+    Extra participants beyond defined slots get 'Observer'.
     """
-    assignments = []
-    shuffled = participant_ids[:]
-    random.shuffle(shuffled)
+    expanded_roles = []
+    for role in format_roles:
+        count = role.get("min_count", 1)
+        for _ in range(count):
+            expanded_roles.append(role)
 
-    for i, user_id in enumerate(shuffled):
-        if i < len(format_roles):
-            role = format_roles[i]
+    random.shuffle(expanded_roles)
+
+    shuffled_participants = participant_ids[:]
+    random.shuffle(shuffled_participants)
+
+    assignments = []
+    for i, user_id in enumerate(shuffled_participants):
+        if i < len(expanded_roles):
+            role = expanded_roles[i]
             assignments.append({
                 "user_id": user_id,
                 "role_name": role.get("name", "Participant"),
