@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { updateProfile } from '../api'
 import { User, Mail, GraduationCap, Shield } from 'lucide-react'
+import PageHero from '../components/ui/PageHero'
 
 export default function Profile() {
   const { user, loginSuccess } = useAuth()
@@ -14,7 +15,6 @@ export default function Profile() {
     setError('')
     try {
       const res = await updateProfile(form)
-      // Refresh auth context with updated user — reuse token from localStorage
       const token = localStorage.getItem('token')
       loginSuccess(token, res.data)
       setEditing(false)
@@ -26,56 +26,79 @@ export default function Profile() {
   }
 
   return (
-    <div className="profile-page">
-      <div className="profile-card">
-        <div className="profile-header">
-          <div className="profile-avatar">{user?.name?.[0]?.toUpperCase()}</div>
-          <div>
-            <h2>{user?.name}</h2>
-            <span className={`badge ${user?.role === 'admin' ? 'badge-red' : 'badge-blue'}`}>
-              {user?.role}
-            </span>
+    <div className="page-container">
+      <PageHero title="My Profile" subtitle="Account details & settings" color="#1040C0">
+        <svg viewBox="0 0 400 88" preserveAspectRatio="xMidYMid slice">
+          {/* Large avatar circle left */}
+          <circle cx="60" cy="44" r="36" fill="white" opacity="0.12"/>
+          <circle cx="60" cy="30" r="14" fill="white" opacity="0.30"/>
+          <rect x="38" y="50" width="44" height="26" rx="4" fill="white" opacity="0.22"/>
+          {/* Decorative lines (profile fields) */}
+          <rect x="120" y="28" width="80" height="5" rx="2" fill="white" opacity="0.20"/>
+          <rect x="120" y="40" width="55" height="5" rx="2" fill="white" opacity="0.14"/>
+          <rect x="120" y="52" width="68" height="5" rx="2" fill="white" opacity="0.14"/>
+          <rect x="120" y="64" width="42" height="5" rx="2" fill="white" opacity="0.10"/>
+          {/* Badge shape */}
+          <rect x="228" y="26" width="34" height="16" rx="2" fill="#F0C020" opacity="0.50"/>
+          {/* Geometric accent shapes right */}
+          <circle cx="320" cy="44" r="44" fill="white" opacity="0.07"/>
+          <circle cx="320" cy="44" r="26" fill="white" opacity="0.07"/>
+          <polygon points="360,12 390,60 330,60" fill="#F0C020" opacity="0.20"/>
+          <circle cx="385" cy="20" r="28" fill="white" opacity="0.06"/>
+        </svg>
+      </PageHero>
+
+      <div className="profile-body">
+        <div className="profile-card">
+          <div className="profile-header">
+            <div className="profile-avatar">{user?.name?.[0]?.toUpperCase()}</div>
+            <div>
+              <h2>{user?.name}</h2>
+              <span className={`badge ${user?.role === 'admin' ? 'badge-red' : 'badge-blue'}`}>
+                {user?.role}
+              </span>
+            </div>
           </div>
-        </div>
 
-        {saved && <div className="alert" style={{ background: '#CCFFD8', color: '#1A6030', border: '2px solid #121212' }}>Profile saved.</div>}
-        {error && <div className="alert alert-error">{error}</div>}
+          {saved && <div className="alert" style={{ background: '#CCFFD8', color: '#1A6030', border: '2px solid #121212' }}>Profile saved.</div>}
+          {error && <div className="alert alert-error">{error}</div>}
 
-        <div className="profile-fields">
-          <div className="profile-field">
-            <span className="profile-field-label"><User size={14} /> Full Name</span>
-            {editing
-              ? <input className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-              : <span className="profile-field-value">{user?.name}</span>}
+          <div className="profile-fields">
+            <div className="profile-field">
+              <span className="profile-field-label"><User size={14} /> Full Name</span>
+              {editing
+                ? <input className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+                : <span className="profile-field-value">{user?.name}</span>}
+            </div>
+
+            <div className="profile-field">
+              <span className="profile-field-label"><Mail size={14} /> Email</span>
+              <span className="profile-field-value text-muted">{user?.email}</span>
+            </div>
+
+            <div className="profile-field">
+              <span className="profile-field-label"><GraduationCap size={14} /> Grade / Year</span>
+              {editing
+                ? <input className="input" value={form.grade} onChange={(e) => setForm({ ...form, grade: e.target.value })} placeholder="e.g. Year 10" />
+                : <span className="profile-field-value">{user?.grade || <em className="text-muted">Not set</em>}</span>}
+            </div>
+
+            <div className="profile-field">
+              <span className="profile-field-label"><Shield size={14} /> Proficiency</span>
+              <span className="profile-field-value">{user?.proficiency || 'beginner'}</span>
+            </div>
           </div>
 
-          <div className="profile-field">
-            <span className="profile-field-label"><Mail size={14} /> Email</span>
-            <span className="profile-field-value text-muted">{user?.email}</span>
+          <div className="profile-actions">
+            {editing ? (
+              <>
+                <button className="btn btn-primary" onClick={handleSave}>Save Changes</button>
+                <button className="btn btn-ghost" onClick={() => setEditing(false)}>Cancel</button>
+              </>
+            ) : (
+              <button className="btn btn-ghost" onClick={() => setEditing(true)}>Edit Profile</button>
+            )}
           </div>
-
-          <div className="profile-field">
-            <span className="profile-field-label"><GraduationCap size={14} /> Grade / Year</span>
-            {editing
-              ? <input className="input" value={form.grade} onChange={(e) => setForm({ ...form, grade: e.target.value })} placeholder="e.g. Year 10" />
-              : <span className="profile-field-value">{user?.grade || <em className="text-muted">Not set</em>}</span>}
-          </div>
-
-          <div className="profile-field">
-            <span className="profile-field-label"><Shield size={14} /> Proficiency</span>
-            <span className="profile-field-value">{user?.proficiency || 'beginner'}</span>
-          </div>
-        </div>
-
-        <div className="profile-actions">
-          {editing ? (
-            <>
-              <button className="btn btn-primary" onClick={handleSave}>Save Changes</button>
-              <button className="btn btn-ghost" onClick={() => setEditing(false)}>Cancel</button>
-            </>
-          ) : (
-            <button className="btn btn-ghost" onClick={() => setEditing(true)}>Edit Profile</button>
-          )}
         </div>
       </div>
     </div>
