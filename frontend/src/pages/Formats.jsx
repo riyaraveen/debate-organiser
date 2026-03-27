@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getFormats, toggleFormat, createFormat } from '../api'
-import { Plus, ToggleLeft, ToggleRight, Users, Clock, ChevronDown, ChevronUp } from 'lucide-react'
+import { Plus, ToggleLeft, ToggleRight, Users, Clock, ChevronDown, ChevronUp, UserCheck } from 'lucide-react'
 import PageHero from '../components/ui/PageHero'
 
 const SIDE_COLORS = {
@@ -33,8 +33,9 @@ function FormatCard({ fmt, onToggle }) {
   const roles = parseJSON(fmt.roles)
   const speakingOrder = parseJSON(fmt.speaking_order)
 
-  const debaters  = roles.filter(r => r.side !== 'neutral')
+  const debaters  = roles.filter(r => r.side !== 'neutral' && r.side !== 'audience')
   const support   = roles.filter(r => r.side === 'neutral')
+  const audience  = roles.filter(r => r.side === 'audience')
 
   return (
     <div className={`format-card ${fmt.is_active ? '' : 'format-card-inactive'}`}>
@@ -109,6 +110,33 @@ function FormatCard({ fmt, onToggle }) {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* ── Audience ── */}
+      {audience.length > 0 && (
+        <div className="format-roles-section format-audience-section">
+          <div className="format-section-label" style={{ color: '#7C3AED' }}>
+            <UserCheck size={11} style={{ display: 'inline', marginRight: 4 }} />
+            Audience Required
+          </div>
+          {audience.map((r, i) => (
+            <div key={i} className="format-audience-card">
+              <div className="format-audience-icon">
+                <UserCheck size={16} color="white" />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div className="format-role-name">{r.description}</div>
+                {r.min_count && (
+                  <div className="format-audience-count">
+                    <Users size={11} />
+                    Minimum <strong>{r.min_count} audience members</strong> required
+                    {r.max_count && <> · max {r.max_count}</>}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
         </div>
       )}
 

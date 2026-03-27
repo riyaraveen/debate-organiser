@@ -2328,6 +2328,32 @@ label > span,
   flex-shrink: 0;
   margin-top: 2px;
 }
+.format-audience-section { background: #FAF5FF; }
+.format-audience-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  background: white;
+  border: 2px solid #7C3AED;
+}
+.format-audience-icon {
+  width: 30px; height: 30px;
+  background: #7C3AED;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.format-audience-count {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #7C3AED;
+  font-weight: 700;
+  margin-top: 4px;
+}
 .format-speaking-section {
   border-top: 1.5px solid #F0F0F0;
 }
