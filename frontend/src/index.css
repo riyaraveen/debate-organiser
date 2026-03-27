@@ -656,6 +656,126 @@ input:focus, select:focus, textarea:focus {
 .member-name-cell { display: flex; align-items: center; gap: 8px; }
 .role-select { width: auto; padding: 4px 8px; }
 
+.members-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border: var(--border-w) solid var(--black);
+  border-bottom: none;
+  background: white;
+}
+.members-stat {
+  padding: 18px 24px;
+  border-right: var(--border-w) solid var(--black);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.members-stat:last-child { border-right: none; }
+.members-stat-num {
+  font-size: 40px;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+.members-stat-label {
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--text-muted);
+}
+
+.members-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  border: var(--border-w) solid var(--black);
+  border-top: none;
+  box-shadow: var(--shadow);
+}
+.member-card {
+  border-right: var(--border-w) solid var(--black);
+  border-bottom: var(--border-w) solid var(--black);
+  background: white;
+  overflow: hidden;
+  transition: box-shadow 0.1s;
+}
+.member-card:hover { box-shadow: inset 0 0 0 2px var(--member-color); }
+
+.member-card-top {
+  background: var(--member-color);
+  padding: 20px 18px 14px;
+  position: relative;
+  /* polka-dot texture */
+  background-image: radial-gradient(circle, rgba(255,255,255,0.2) 1px, transparent 1px);
+  background-size: 12px 12px;
+}
+.member-card-avatar {
+  width: 52px;
+  height: 52px;
+  background: white;
+  color: var(--member-color);
+  font-size: 26px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: var(--border-w) solid var(--black);
+}
+.member-card-you {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: var(--yellow);
+  color: var(--black);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  padding: 2px 7px;
+  border: 2px solid var(--black);
+}
+.member-card-body {
+  padding: 14px 18px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.member-card-name {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+.member-card-email {
+  font-size: 11px;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.member-card-tags {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+.member-card-school {
+  font-size: 11px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.member-card-role-select {
+  margin-top: 4px;
+  font-size: 11px;
+  padding: 5px 8px;
+  border: var(--border-w) solid var(--black);
+  background: var(--off-white);
+  font: inherit;
+  width: 100%;
+  cursor: pointer;
+}
+
 /* ── Calendar ─────────────────────────────────────── */
 .calendar-box {
   background: white;
