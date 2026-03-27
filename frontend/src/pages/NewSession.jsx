@@ -104,7 +104,7 @@ export default function NewSession() {
                 >
                   <strong>{f.name}</strong>
                   <p>{f.description.slice(0, 100)}…</p>
-                  <small>{f.min_participants}–{f.max_participants} participants</small>
+                  <small>{f.min_participants} participants</small>
                 </button>
               ))}
             </div>
@@ -146,7 +146,7 @@ export default function NewSession() {
             <p className="step-subtitle">Choose who's debating. Roles will be assigned automatically.</p>
             {selectedFormat && (
               <p className="text-muted">
-                {selectedFormat.name} needs {selectedFormat.min_participants}–{selectedFormat.max_participants} participants.
+                {selectedFormat.name} needs {selectedFormat.min_participants} participants.
               </p>
             )}
             <div className="member-select-list">
