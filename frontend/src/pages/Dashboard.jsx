@@ -244,17 +244,16 @@ export default function Dashboard() {
         </div>
         {/* Right panel: blue polka-dot + Bauhaus house composition */}
         <div className="dash-masthead-right">
-          {/* Bauhaus house illustration — yellow circle, red roof, white building */}
-          <svg aria-hidden="true" viewBox="0 0 380 120"
+          {/* Bauhaus composition — yellow circle, red triangle, white square */}
+          <svg aria-hidden="true" viewBox="0 0 380 115"
             style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
-            {/* Large yellow circle — sun / base, peeking from bottom */}
-            <circle cx="290" cy="145" r="108" fill="#F0C020" stroke="#121212" strokeWidth="3"/>
-            {/* Red angular roof / triangle shape */}
-            <polygon points="198,28 272,96 124,96" fill="#D02020" stroke="#121212" strokeWidth="3" strokeLinejoin="round"/>
-            {/* White building rectangle */}
-            <rect x="163" y="52" width="74" height="74" fill="white" stroke="#121212" strokeWidth="3"/>
-            {/* Small doorway arch — black filled rect at base of building */}
-            <rect x="189" y="88" width="22" height="38" fill="#121212"/>
+            {/* Large yellow circle — bottom-center, mostly below midline */}
+            <circle cx="248" cy="152" r="102" fill="#F0C020" stroke="#121212" strokeWidth="3.5"/>
+            {/* Red triangle — sharp upward point, left of centre */}
+            <polygon points="148,6 230,106 66,106"
+              fill="#D02020" stroke="#121212" strokeWidth="3.5" strokeLinejoin="round"/>
+            {/* White square — black border, front and centre */}
+            <rect x="173" y="34" width="88" height="88" fill="white" stroke="#121212" strokeWidth="3.5"/>
           </svg>
           {/* New Session button — admin only, overlaid top-left */}
           {user?.role === 'admin' && (
