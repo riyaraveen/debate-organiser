@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { getUsers, updateUserRole } from '../api'
 import { useAuth } from '../context/AuthContext'
-import { School } from 'lucide-react'
+import { School, X, Mail, GraduationCap, Phone, Shield } from 'lucide-react'
 import PageHero from '../components/ui/PageHero'
 
 /* Deterministic colour per member based on name */
@@ -18,11 +18,71 @@ const PROFICIENCY_BADGE = {
   advanced:     'badge-red',
 }
 
+function MemberModal({ member, me, onClose, onRoleChange }) {
+  const color = avatarColor(member.name)
+  const fields = [
+    { icon: Mail,          label: 'Email',              value: member.email },
+    { icon: Shield,        label: 'Role',               value: member.role },
+    { icon: GraduationCap, label: 'Grade / Year',       value: member.grade },
+    { icon: Phone,         label: 'Phone',              value: member.phone },
+    { icon: School,        label: 'School',             value: member.school },
+    { icon: Shield,        label: 'Proficiency',        value: member.proficiency },
+  ]
+
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="member-modal" onClick={e => e.stopPropagation()}>
+        {/* Header band */}
+        <div className="member-modal-header" style={{ '--member-color': color,
+          backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.2) 1px, transparent 1px)',
+          backgroundSize: '12px 12px' }}>
+          <div className="member-modal-avatar">{member.name[0].toUpperCase()}</div>
+          <button className="member-modal-close" onClick={onClose}><X size={16}/></button>
+        </div>
+
+        {/* Body */}
+        <div className="member-modal-body">
+          <div className="member-modal-name">
+            {member.name}
+            {member.id === me?.id && <span className="member-card-you" style={{ position: 'static', marginLeft: 8 }}>YOU</span>}
+          </div>
+          <div className="member-modal-badges">
+            <span className={`badge ${member.role === 'admin' ? 'badge-red' : 'badge-blue'}`}>{member.role}</span>
+            <span className={`badge ${PROFICIENCY_BADGE[member.proficiency] ?? 'badge-gray'}`}>{member.proficiency}</span>
+          </div>
+
+          <div className="member-modal-fields">
+            {fields.map(({ icon: Icon, label, value }) => (
+              <div key={label} className="member-modal-field">
+                <span className="member-modal-field-label"><Icon size={13}/> {label}</span>
+                <span className="member-modal-field-value">{value || <em className="text-muted">Not set</em>}</span>
+              </div>
+            ))}
+          </div>
+
+          {me?.role === 'admin' && member.id !== me?.id && (
+            <div className="member-modal-role-row">
+              <span className="member-modal-field-label">Change Role</span>
+              <select value={member.role}
+                onChange={e => onRoleChange(member.id, e.target.value)}
+                className="member-card-role-select" style={{ marginTop: 0 }}>
+                <option value="member">Member</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function Members() {
   const { user: me } = useAuth()
   const [members, setMembers] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const [selected, setSelected] = useState(null)
 
   useEffect(() => {
     getUsers().then(r => setMembers(r.data)).catch(() => {}).finally(() => setLoading(false))
@@ -32,6 +92,7 @@ export default function Members() {
     if (userId === me?.id) return
     const res = await updateUserRole(userId, newRole)
     setMembers(prev => prev.map(m => m.id === userId ? res.data : m))
+    setSelected(prev => prev?.id === userId ? res.data : prev)
   }
 
   const filtered = members.filter(m =>
@@ -94,12 +155,22 @@ export default function Members() {
         </span>
       </div>
 
+      {selected && (
+        <MemberModal
+          member={selected}
+          me={me}
+          onClose={() => setSelected(null)}
+          onRoleChange={handleRoleChange}
+        />
+      )}
+
       {loading ? <div className="loading">Loading…</div> : (
         <div className="members-grid">
           {filtered.map(m => {
             const color = avatarColor(m.name)
             return (
-              <div key={m.id} className="member-card" style={{ '--member-color': color }}>
+              <div key={m.id} className="member-card" style={{ '--member-color': color, cursor: 'pointer' }}
+                onClick={() => setSelected(m)}>
                 {/* Coloured top band with avatar */}
                 <div className="member-card-top">
                   <div className="member-card-avatar">{m.name[0].toUpperCase()}</div>
@@ -130,6 +201,7 @@ export default function Members() {
                   {me?.role === 'admin' && m.id !== me?.id && (
                     <select value={m.role}
                       onChange={e => handleRoleChange(m.id, e.target.value)}
+                      onClick={e => e.stopPropagation()}
                       className="member-card-role-select">
                       <option value="member">Member</option>
                       <option value="admin">Admin</option>
