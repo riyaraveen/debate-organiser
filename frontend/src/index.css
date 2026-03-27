@@ -1104,7 +1104,6 @@ input:focus, select:focus, textarea:focus {
   .dash-masthead-right { min-height: 80px; border-left: none; border-top: var(--border-w) solid var(--black); }
   .dash-clock-time { font-size: 42px; }
   .dash-clock-secs { font-size: 24px; }
-  .dash-masthead-new-label { font-size: 16px; }
 }
 
 /* ═══════════════════════════════════════════════════
@@ -1129,64 +1128,21 @@ input:focus, select:focus, textarea:focus {
   position: relative;
   overflow: hidden;
 }
-/* Right panel: yellow New Session CTA */
+/* Right panel: blue polka-dot + Bauhaus illustration */
 .dash-masthead-right {
   background: var(--blue);
   display: flex;
-  align-items: stretch;
+  align-items: flex-start;
+  padding: 20px 24px;
   position: relative;
   overflow: hidden;
   border-left: var(--border-w) solid var(--black);
   background-image: radial-gradient(circle, rgba(255,255,255,0.18) 1.5px, transparent 1.5px);
   background-size: 16px 16px;
 }
-
-/* Yellow New Session CTA inside masthead right */
-.dash-masthead-new-session {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  background: var(--yellow);
-  color: var(--black);
-  text-decoration: none;
-  padding: 0 32px;
-  width: 100%;
-  border: none;
-  transition: background 0.1s;
+.dash-masthead-info {
   position: relative;
   z-index: 1;
-}
-.dash-masthead-new-session:hover { background: #D8A800; }
-.dash-masthead-new-icon {
-  width: 48px;
-  height: 48px;
-  background: var(--black);
-  color: var(--yellow);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  border: var(--border-w) solid var(--black);
-}
-.dash-masthead-new-text {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-.dash-masthead-new-label {
-  display: block;
-  font-size: 20px;
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  line-height: 1;
-}
-.dash-masthead-new-sub {
-  display: block;
-  font-size: 11px;
-  font-weight: 600;
-  color: rgba(0,0,0,0.5);
-  letter-spacing: 0.04em;
 }
 /* ── Live clock cell (top of main column) ─────────── */
 .dash-clock-cell {

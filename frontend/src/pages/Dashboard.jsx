@@ -242,24 +242,27 @@ export default function Dashboard() {
             <span className="dash-masthead-welcome">Welcome back, {user?.name}</span>
           </div>
         </div>
-        {/* Right panel: yellow New Session CTA (admin) or Bauhaus geometry */}
+        {/* Right panel: blue polka-dot + Bauhaus house composition */}
         <div className="dash-masthead-right">
-          {user?.role === 'admin' ? (
-            <Link to="/sessions/new" className="dash-masthead-new-session">
-              <div className="dash-masthead-new-icon"><Plus size={22}/></div>
-              <div className="dash-masthead-new-text">
-                <span className="dash-masthead-new-label">New Session</span>
-                <span className="dash-masthead-new-sub">Schedule a debate</span>
-              </div>
-            </Link>
-          ) : (
-            /* Bauhaus geometric decoration for non-admins */
-            <svg viewBox="0 0 240 110" fill="none" aria-hidden="true"
-              style={{ position: 'absolute', right: 0, bottom: 0, width: 240, height: 110, pointerEvents: 'none' }}>
-              <circle cx="195" cy="98" r="80" fill="#F0C020" opacity="0.32"/>
-              <polygon points="130,8 170,76 90,76" fill="#D02020" opacity="0.75"/>
-              <rect x="152" y="14" width="58" height="58" fill="rgba(255,255,255,0.1)"/>
-            </svg>
+          {/* Bauhaus house illustration — yellow circle, red roof, white building */}
+          <svg aria-hidden="true" viewBox="0 0 380 120"
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
+            {/* Large yellow circle — sun / base, peeking from bottom */}
+            <circle cx="290" cy="145" r="108" fill="#F0C020" stroke="#121212" strokeWidth="3"/>
+            {/* Red angular roof / triangle shape */}
+            <polygon points="198,28 272,96 124,96" fill="#D02020" stroke="#121212" strokeWidth="3" strokeLinejoin="round"/>
+            {/* White building rectangle */}
+            <rect x="163" y="52" width="74" height="74" fill="white" stroke="#121212" strokeWidth="3"/>
+            {/* Small doorway arch — black filled rect at base of building */}
+            <rect x="189" y="88" width="22" height="38" fill="#121212"/>
+          </svg>
+          {/* New Session button — admin only, overlaid top-left */}
+          {user?.role === 'admin' && (
+            <div className="dash-masthead-info">
+              <Link to="/sessions/new" className="btn dash-masthead-btn">
+                <Plus size={15}/> New Session
+              </Link>
+            </div>
           )}
         </div>
       </div>
