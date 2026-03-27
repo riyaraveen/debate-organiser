@@ -1212,7 +1212,7 @@ input:focus, select:focus, textarea:focus {
 }
 /* ── Live clock cell (top of main column) ─────────── */
 .dash-clock-cell {
-  background: var(--black);
+  background: #0D2660;
   padding: 22px 28px;
   border-bottom: var(--border-w) solid var(--black);
   display: flex;
@@ -1222,30 +1222,49 @@ input:focus, select:focus, textarea:focus {
 .dash-clock-inner {
   display: flex;
   align-items: center;
-  gap: 28px;
+  gap: 32px;
 }
-.dash-clock-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
+/* Fixed-width wrapper so seconds changes don't shift the right column */
 .dash-clock-time {
   font-size: 60px;
   font-weight: 900;
   letter-spacing: 0;
   color: white;
   line-height: 1;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .dash-clock-colon {
   padding: 0 6px;
-  color: rgba(255,255,255,0.4);
+  color: rgba(255,255,255,0.35);
   font-weight: 300;
 }
 .dash-clock-secs {
   font-size: 34px;
   font-weight: 700;
   color: rgba(255,255,255,0.35);
-  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.dash-clock-ampm {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--yellow);
+  letter-spacing: 0.08em;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+/* Right column: day/date + toggle button — stationary */
+.dash-clock-right {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.dash-clock-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 .dash-clock-day {
   font-size: 12px;
@@ -1253,6 +1272,7 @@ input:focus, select:focus, textarea:focus {
   letter-spacing: 0.2em;
   color: var(--yellow);
   text-transform: uppercase;
+  white-space: nowrap;
 }
 .dash-clock-date {
   font-size: 10px;
@@ -1260,6 +1280,25 @@ input:focus, select:focus, textarea:focus {
   letter-spacing: 0.12em;
   color: rgba(255,255,255,0.45);
   text-transform: uppercase;
+  white-space: nowrap;
+}
+.dash-clock-fmt-btn {
+  background: rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.7);
+  border: 1px solid rgba(255,255,255,0.25);
+  padding: 3px 10px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+  align-self: flex-start;
+}
+.dash-clock-fmt-btn:hover {
+  background: var(--yellow);
+  color: var(--black);
+  border-color: var(--yellow);
 }
 .dash-masthead-accent {
   width: 8px;

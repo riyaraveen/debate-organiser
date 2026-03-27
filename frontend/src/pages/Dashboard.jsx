@@ -196,6 +196,7 @@ export default function Dashboard() {
   const [spotlightTopic, setSpotlightTopic] = useState(null)
   const [loading,       setLoading]       = useState(true)
   const [now,           setNow]           = useState(new Date())
+  const [use24h,        setUse24h]        = useState(true)
 
   useEffect(() => {
     const tick = setInterval(() => setNow(new Date()), 1000)
@@ -224,8 +225,12 @@ export default function Dashboard() {
   const countdown   = nextSession?.scheduled_at ? getCountdown(nextSession.scheduled_at) : null
   const tipOfDay    = getTipOfDay()
 
-  const [clockH, clockM] = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }).split(':')
-  const clockSecs = now.toLocaleTimeString('en-GB', { second: '2-digit' }).slice(-2)
+  const clockH    = use24h
+    ? String(now.getHours()).padStart(2, '0')
+    : String(now.getHours() % 12 || 12).padStart(2, '0')
+  const clockM    = String(now.getMinutes()).padStart(2, '0')
+  const clockSecs = String(now.getSeconds()).padStart(2, '0')
+  const clockAmPm = use24h ? null : (now.getHours() >= 12 ? 'PM' : 'AM')
   const clockDay  = now.toLocaleDateString('en-GB', { weekday: 'long' }).toUpperCase()
   const clockDate = now.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase()
 
@@ -289,11 +294,18 @@ export default function Dashboard() {
             <div className="dash-clock-cell">
               <div className="dash-clock-inner">
                 <span className="dash-clock-time">
-                  {clockH}<span className="dash-clock-colon">:</span>{clockM}<span className="dash-clock-secs"><span className="dash-clock-colon">:</span>{clockSecs}</span>
+                  {clockH}<span className="dash-clock-colon">:</span>{clockM}
+                  <span className="dash-clock-secs"><span className="dash-clock-colon">:</span>{clockSecs}</span>
+                  {clockAmPm && <span className="dash-clock-ampm">{clockAmPm}</span>}
                 </span>
-                <div className="dash-clock-meta">
-                  <span className="dash-clock-day">{clockDay}</span>
-                  <span className="dash-clock-date">{clockDate}</span>
+                <div className="dash-clock-right">
+                  <div className="dash-clock-meta">
+                    <span className="dash-clock-day">{clockDay}</span>
+                    <span className="dash-clock-date">{clockDate}</span>
+                  </div>
+                  <button className="dash-clock-fmt-btn" onClick={() => setUse24h(v => !v)}>
+                    {use24h ? '12H' : '24H'}
+                  </button>
                 </div>
               </div>
             </div>
