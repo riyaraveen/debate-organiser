@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { updateProfile } from '../api'
-import { User, Mail, GraduationCap, Shield } from 'lucide-react'
+import { User, Mail, GraduationCap, Shield, Phone, School } from 'lucide-react'
 import PageHero from '../components/ui/PageHero'
 
 export default function Profile() {
   const { user, loginSuccess } = useAuth()
   const [editing, setEditing] = useState(false)
-  const [form, setForm] = useState({ name: user?.name || '', grade: user?.grade || '' })
+  const [form, setForm] = useState({ name: user?.name || '', grade: user?.grade || '', phone: user?.phone || '', school: user?.school || '' })
   const [error, setError] = useState('')
   const [saved, setSaved] = useState(false)
 
@@ -89,6 +89,20 @@ export default function Profile() {
               {editing
                 ? <input className="input" value={form.grade} onChange={(e) => setForm({ ...form, grade: e.target.value })} placeholder="e.g. Year 10" />
                 : <span className="profile-field-value">{user?.grade || <em className="text-muted">Not set</em>}</span>}
+            </div>
+
+            <div className="profile-field">
+              <span className="profile-field-label"><Phone size={14} /> Phone Number</span>
+              {editing
+                ? <input className="input" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="e.g. +44 7700 900000" />
+                : <span className="profile-field-value">{user?.phone || <em className="text-muted">Not set</em>}</span>}
+            </div>
+
+            <div className="profile-field">
+              <span className="profile-field-label"><School size={14} /> School / Institution</span>
+              {editing
+                ? <input className="input" value={form.school} onChange={(e) => setForm({ ...form, school: e.target.value })} placeholder="e.g. Westminster School" />
+                : <span className="profile-field-value">{user?.school || <em className="text-muted">Not set</em>}</span>}
             </div>
 
             <div className="profile-field">

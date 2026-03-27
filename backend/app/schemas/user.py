@@ -14,6 +14,8 @@ class UserUpdate(BaseModel):
     name: Optional[str] = None
     grade: Optional[str] = None
     bio: Optional[str] = None
+    phone: Optional[str] = None
+    school: Optional[str] = None
     proficiency: Optional[ProficiencyLevel] = None
 
 
@@ -28,6 +30,8 @@ class UserOut(BaseModel):
     role: UserRole
     grade: Optional[str]
     bio: Optional[str]
+    phone: Optional[str] = None
+    school: Optional[str] = None
     proficiency: ProficiencyLevel
 
     class Config:

@@ -24,5 +24,7 @@ class User(Base):
     role = Column(Enum(UserRole), default=UserRole.member, nullable=False)
     grade = Column(String, nullable=True)
     bio = Column(String, nullable=True)
+    phone = Column(String, nullable=True)
+    school = Column(String, nullable=True)
     proficiency = Column(Enum(ProficiencyLevel), default=ProficiencyLevel.beginner)
     created_at = Column(DateTime, server_default=func.now())
