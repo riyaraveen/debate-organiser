@@ -6,72 +6,52 @@ import { Calendar, Clock, MapPin, Plus, Users, BookOpen, Zap, Star, ArrowRight }
 
 /* ── Illustrations ───────────────────────────────────────────────────────── */
 
-/* Two faceless Bauhaus debaters facing each other — Oskar Schlemmer style.
-   Blue figure (left) vs Red figure (right), yellow stage floor, black outlines.
-   Speech bubbles match each figure's colour. */
+/* Bauhaus constructivist geometric composition — no figures, pure form. */
 function EmptyDebateIllustration() {
   return (
-    <svg viewBox="0 0 560 260" preserveAspectRatio="xMidYMid meet"
+    <svg viewBox="0 0 560 240" preserveAspectRatio="xMidYMid meet"
       xmlns="http://www.w3.org/2000/svg" className="dash-empty-bg">
 
-      {/* ── Background ── */}
-      <rect x="0" y="0" width="560" height="260" fill="#F5F5F5"/>
+      {/* Background */}
+      <rect width="560" height="240" fill="#F5F5F5"/>
 
-      {/* Yellow stage floor */}
-      <rect x="0" y="206" width="560" height="54" fill="#F0C020"/>
-      <rect x="0" y="203" width="560" height="5" fill="#121212"/>
+      {/* ── Left zone — blue cluster ── */}
+      {/* Large blue circle */}
+      <circle cx="100" cy="130" r="88" fill="#1040C0"/>
+      {/* White ring cutout */}
+      <circle cx="100" cy="130" r="56" fill="#F5F5F5"/>
+      {/* Small solid core */}
+      <circle cx="100" cy="130" r="24" fill="#1040C0"/>
+      {/* Vertical bar cutting through */}
+      <rect x="88" y="42" width="24" height="176" fill="#121212"/>
+      {/* Horizontal bar */}
+      <rect x="12" y="118" width="176" height="24" fill="#121212"/>
 
-      {/* ── Blue debater (left, facing right) ── */}
-      {/* Head */}
-      <circle cx="138" cy="78" r="34" fill="#1040C0" stroke="#121212" strokeWidth="3"/>
-      {/* Torso */}
-      <rect x="110" y="112" width="56" height="88" fill="#1040C0" stroke="#121212" strokeWidth="3"/>
-      {/* Back arm (left) */}
-      <rect x="68"  y="120" width="44" height="14" fill="#1040C0" stroke="#121212" strokeWidth="3"/>
-      {/* Forward arm (right — extended toward center, slightly raised) */}
-      <rect x="164" y="114" width="66" height="14" fill="#1040C0" stroke="#121212" strokeWidth="3"/>
-      {/* Legs */}
-      <rect x="112" y="198" width="24" height="18" fill="#1040C0" stroke="#121212" strokeWidth="3"/>
-      <rect x="140" y="198" width="24" height="18" fill="#1040C0" stroke="#121212" strokeWidth="3"/>
+      {/* ── Right zone — red cluster ── */}
+      {/* Large red square */}
+      <rect x="358" y="50" width="140" height="140" fill="#D02020"/>
+      {/* White square inset */}
+      <rect x="386" y="78" width="84" height="84" fill="#F5F5F5"/>
+      {/* Small red square in centre */}
+      <rect x="410" y="102" width="36" height="36" fill="#D02020"/>
+      {/* Diagonal accent — top-right */}
+      <polygon points="498,50 538,50 538,90" fill="#121212"/>
 
-      {/* Blue speech bubble (upper-left) */}
-      <rect x="14"  y="8"  width="172" height="58" fill="#1040C0" stroke="#121212" strokeWidth="3"/>
-      {/* Bubble tail pointing toward head */}
-      <polygon points="90,64 115,64 100,90" fill="#1040C0"/>
-      <line x1="90" y1="64" x2="100" y2="90" stroke="#121212" strokeWidth="3"/>
-      <line x1="115" y1="64" x2="100" y2="90" stroke="#121212" strokeWidth="3"/>
-      {/* Text lines inside bubble */}
-      <rect x="26" y="22" width="148" height="6" fill="white" opacity="0.75"/>
-      <rect x="26" y="36" width="108" height="6" fill="white" opacity="0.75"/>
-      <rect x="26" y="50" width="128" height="6" fill="white" opacity="0.75"/>
+      {/* ── Centre — yellow & black composition ── */}
+      {/* Yellow horizontal band */}
+      <rect x="188" y="100" width="184" height="40" fill="#F0C020"/>
+      {/* Black square overlapping centre */}
+      <rect x="252" y="80" width="56" height="80" fill="#121212"/>
+      {/* Small yellow circle inside black */}
+      <circle cx="280" cy="120" r="18" fill="#F0C020"/>
+      {/* Top triangle — red */}
+      <polygon points="280,18 312,72 248,72" fill="#D02020"/>
+      {/* Bottom triangle — blue */}
+      <polygon points="280,222 248,168 312,168" fill="#1040C0"/>
 
-      {/* ── Red debater (right, facing left — mirror of blue) ── */}
-      {/* Head */}
-      <circle cx="422" cy="78" r="34" fill="#D02020" stroke="#121212" strokeWidth="3"/>
-      {/* Torso */}
-      <rect x="394" y="112" width="56" height="88" fill="#D02020" stroke="#121212" strokeWidth="3"/>
-      {/* Back arm (right) */}
-      <rect x="448" y="120" width="44" height="14" fill="#D02020" stroke="#121212" strokeWidth="3"/>
-      {/* Forward arm (left — extended toward center) */}
-      <rect x="330" y="114" width="66" height="14" fill="#D02020" stroke="#121212" strokeWidth="3"/>
-      {/* Legs */}
-      <rect x="396" y="198" width="24" height="18" fill="#D02020" stroke="#121212" strokeWidth="3"/>
-      <rect x="424" y="198" width="24" height="18" fill="#D02020" stroke="#121212" strokeWidth="3"/>
-
-      {/* Red speech bubble (upper-right) */}
-      <rect x="374" y="8" width="172" height="58" fill="#D02020" stroke="#121212" strokeWidth="3"/>
-      {/* Bubble tail */}
-      <polygon points="445,64 470,64 460,90" fill="#D02020"/>
-      <line x1="445" y1="64" x2="460" y2="90" stroke="#121212" strokeWidth="3"/>
-      <line x1="470" y1="64" x2="460" y2="90" stroke="#121212" strokeWidth="3"/>
-      {/* Text lines inside bubble */}
-      <rect x="386" y="22" width="148" height="6" fill="white" opacity="0.75"/>
-      <rect x="386" y="36" width="108" height="6" fill="white" opacity="0.75"/>
-      <rect x="386" y="50" width="128" height="6" fill="white" opacity="0.75"/>
-
-      {/* ── Centre VS marker — rotated yellow square ── */}
-      <rect x="261" y="131" width="38" height="38" fill="#F0C020" stroke="#121212" strokeWidth="3"
-        transform="rotate(45 280 150)"/>
+      {/* ── Accent lines ── */}
+      <line x1="188" y1="50" x2="188" y2="190" stroke="#121212" strokeWidth="3"/>
+      <line x1="372" y1="50" x2="372" y2="190" stroke="#121212" strokeWidth="3"/>
 
     </svg>
   )
