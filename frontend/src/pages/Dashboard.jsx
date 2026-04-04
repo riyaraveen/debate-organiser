@@ -4,59 +4,6 @@ import { getSessions, getUsers, getTopics } from '../api'
 import { useAuth } from '../context/AuthContext'
 import { Calendar, Clock, MapPin, Plus, Users, BookOpen, Zap, Star, ArrowRight } from 'lucide-react'
 
-/* ── Illustrations ───────────────────────────────────────────────────────── */
-
-/* Bauhaus constructivist geometric composition — no figures, pure form. */
-function EmptyDebateIllustration() {
-  return (
-    <svg viewBox="0 0 560 240" preserveAspectRatio="xMidYMid meet"
-      xmlns="http://www.w3.org/2000/svg" className="dash-empty-bg">
-
-      {/* Background */}
-      <rect width="560" height="240" fill="#F5F5F5"/>
-
-      {/* ── Left zone — blue cluster ── */}
-      {/* Large blue circle */}
-      <circle cx="100" cy="130" r="88" fill="#1040C0"/>
-      {/* White ring cutout */}
-      <circle cx="100" cy="130" r="56" fill="#F5F5F5"/>
-      {/* Small solid core */}
-      <circle cx="100" cy="130" r="24" fill="#1040C0"/>
-      {/* Vertical bar cutting through */}
-      <rect x="88" y="42" width="24" height="176" fill="#121212"/>
-      {/* Horizontal bar */}
-      <rect x="12" y="118" width="176" height="24" fill="#121212"/>
-
-      {/* ── Right zone — red cluster ── */}
-      {/* Large red square */}
-      <rect x="358" y="50" width="140" height="140" fill="#D02020"/>
-      {/* White square inset */}
-      <rect x="386" y="78" width="84" height="84" fill="#F5F5F5"/>
-      {/* Small red square in centre */}
-      <rect x="410" y="102" width="36" height="36" fill="#D02020"/>
-      {/* Diagonal accent — top-right */}
-      <polygon points="498,50 538,50 538,90" fill="#121212"/>
-
-      {/* ── Centre — yellow & black composition ── */}
-      {/* Yellow horizontal band */}
-      <rect x="188" y="100" width="184" height="40" fill="#F0C020"/>
-      {/* Black square overlapping centre */}
-      <rect x="252" y="80" width="56" height="80" fill="#121212"/>
-      {/* Small yellow circle inside black */}
-      <circle cx="280" cy="120" r="18" fill="#F0C020"/>
-      {/* Top triangle — red */}
-      <polygon points="280,18 312,72 248,72" fill="#D02020"/>
-      {/* Bottom triangle — blue */}
-      <polygon points="280,222 248,168 312,168" fill="#1040C0"/>
-
-      {/* ── Accent lines ── */}
-      <line x1="188" y1="50" x2="188" y2="190" stroke="#121212" strokeWidth="3"/>
-      <line x1="372" y1="50" x2="372" y2="190" stroke="#121212" strokeWidth="3"/>
-
-    </svg>
-  )
-}
-
 /* Bauhaus constructivist spotlight / lightbulb motif for the topic card */
 function TopicSpotlightIllustration() {
   return (
@@ -302,7 +249,6 @@ export default function Dashboard() {
 
             {upcoming.length === 0 ? (
               <div className="dash-empty">
-                <EmptyDebateIllustration />
                 <div className="dash-empty-content">
                   <p className="dash-empty-label">No upcoming sessions scheduled yet.</p>
                   {user?.role === 'admin' && (
