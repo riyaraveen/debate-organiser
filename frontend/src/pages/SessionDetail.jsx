@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { getSession, updateSession, deleteSession, getFormat, notifyCalendar } from '../api'
+import { getSession, updateSession, deleteSession, createSession, getFormat, notifyCalendar, getUsers, addParticipant, removeParticipant, updateParticipant, getTemplates, createTemplate } from '../api'
+import { useToast } from '../context/ToastContext'
 import { useAuth } from '../context/AuthContext'
-import { Calendar, MapPin, Users, Edit2, Trash2, Trophy, Link as LinkIcon, FileText, Sparkles, MessageCircle, ArrowLeft } from 'lucide-react'
+import { Calendar, MapPin, Users, Edit2, Trash2, Trophy, Link as LinkIcon, FileText, Sparkles, MessageCircle, ArrowLeft, UserMinus, UserPlus, RefreshCw, Check, X, Copy, Timer } from 'lucide-react'
 import PageHero from '../components/ui/PageHero'
 
 export default function SessionDetail() {
@@ -14,8 +15,15 @@ export default function SessionDetail() {
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(false)
   const [editForm, setEditForm] = useState({})
+  const toast = useToast()
   const [recordingResult, setRecordingResult] = useState(false)
   const [resultForm, setResultForm] = useState({ winner_team: '', result_notes: '' })
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [editingParticipants, setEditingParticipants] = useState(false)
+  const [allMembers, setAllMembers] = useState([])
+  const [addForm, setAddForm] = useState({ user_id: '', role_name: '', side: '' })
+  const [replacingId, setReplacingId] = useState(null)
+  const [replaceUserId, setReplaceUserId] = useState('')
 
   useEffect(() => {
     getSession(id)
@@ -44,8 +52,9 @@ export default function SessionDetail() {
       const res = await updateSession(id, payload)
       setSession(res.data)
       setEditing(false)
+      toast.success('Session updated.')
     } catch (err) {
-      alert(err.response?.data?.detail || 'Update failed')
+      toast.error(err.response?.data?.detail || 'Update failed')
     }
   }
 
@@ -55,15 +64,73 @@ export default function SessionDetail() {
       const res = await updateSession(id, payload)
       setSession(res.data)
       setRecordingResult(false)
+      toast.success('Result recorded.')
     } catch (err) {
-      alert(err.response?.data?.detail || 'Failed to record result')
+      toast.error(err.response?.data?.detail || 'Failed to record result')
     }
   }
 
   const handleDelete = async () => {
-    if (!confirm('Delete this session? This cannot be undone.')) return
     await deleteSession(id)
     navigate('/sessions')
+  }
+
+  const handleSaveTemplate = async () => {
+    const name = window.prompt('Template name:', session.title)
+    if (!name) return
+    await createTemplate({ name, format_id: session.format_id, mode: session.mode, location: session.location || '' })
+    toast.success(`Template "${name}" saved.`)
+  }
+
+  const handleDuplicate = async () => {
+    const res = await createSession({
+      title: `${session.title} (copy)`,
+      format_id: session.format_id,
+      mode: session.mode,
+      topic_text: session.topic_text || '',
+      participant_ids: session.participants.map(p => p.user_id),
+      auto_assign_roles: true,
+    })
+    navigate(`/sessions/${res.data.id}`)
+  }
+
+  const openParticipantEdit = async () => {
+    if (!allMembers.length) {
+      const res = await getUsers()
+      setAllMembers(res.data)
+    }
+    setEditingParticipants(true)
+  }
+
+  const handleRemoveParticipant = async (participantId) => {
+    await removeParticipant(id, participantId)
+    const res = await getSession(id)
+    setSession(res.data)
+  }
+
+  const handleAddParticipant = async () => {
+    if (!addForm.user_id) return
+    await addParticipant(id, {
+      user_id: parseInt(addForm.user_id),
+      role_name: addForm.role_name || null,
+      side: addForm.side || null,
+    })
+    setAddForm({ user_id: '', role_name: '', side: '' })
+    const res = await getSession(id)
+    setSession(res.data)
+  }
+
+  const handleReplaceParticipant = async (participant) => {
+    if (!replaceUserId) return
+    await updateParticipant(id, participant.id, {
+      user_id: parseInt(replaceUserId),
+      role_name: participant.role_name,
+      side: participant.side,
+    })
+    setReplacingId(null)
+    setReplaceUserId('')
+    const res = await getSession(id)
+    setSession(res.data)
   }
 
   const buildIcsUrl = () => {
@@ -128,7 +195,17 @@ export default function SessionDetail() {
               ) : (
                 <>
                   <button className="btn btn-ghost" onClick={() => setEditing(true)}><Edit2 size={15} /> Edit</button>
-                  <button className="btn btn-danger" onClick={handleDelete}><Trash2 size={15} /> Delete</button>
+                  <button className="btn btn-ghost" onClick={handleDuplicate}><Copy size={15} /> Duplicate</button>
+                  <button className="btn btn-ghost" onClick={handleSaveTemplate}><FileText size={15} /> Save as Template</button>
+                  {confirmDelete ? (
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 13 }}>
+                      <span style={{ fontWeight: 700 }}>Delete session?</span>
+                      <button className="btn btn-danger" style={{ padding: '4px 10px' }} onClick={handleDelete}>Yes, delete</button>
+                      <button className="btn btn-ghost" style={{ padding: '4px 10px' }} onClick={() => setConfirmDelete(false)}>Cancel</button>
+                    </div>
+                  ) : (
+                    <button className="btn btn-danger" onClick={() => setConfirmDelete(true)}><Trash2 size={15} /> Delete</button>
+                  )}
                 </>
               )}
             </div>
@@ -147,6 +224,10 @@ export default function SessionDetail() {
               <span className="session-nav-icon" style={{ background: 'var(--yellow)' }}><MessageCircle size={15} color="var(--black)" /></span>
               Team Chat
             </Link>
+            <Link to={`/sessions/${id}/timer`} className="session-nav-item">
+              <span className="session-nav-icon" style={{ background: '#1A8040' }}><Timer size={15} color="white" /></span>
+              Debate Timer
+            </Link>
           </nav>
 
           {isAdmin && session.status !== 'completed' && !recordingResult && (
@@ -164,7 +245,7 @@ export default function SessionDetail() {
               {isAdmin && (
                 <button className="btn btn-ghost" style={{ justifyContent: 'center' }} onClick={async () => {
                   await notifyCalendar(id)
-                  alert('Calendar notifications sent to all participants.')
+                  toast.success('Calendar notifications sent to all participants.')
                 }}>
                   <Calendar size={14} /> Notify Participants
                 </button>
@@ -283,22 +364,139 @@ export default function SessionDetail() {
       )}
 
       <div className="participants-section">
-        <h3><Users size={16} /> Participants</h3>
-        {session.participants?.length === 0 ? (
+        {format && (() => {
+          const count = session.participants?.length ?? 0
+          const { min_participants, max_participants } = format
+          if (count < min_participants) return (
+            <div className="alert alert-error" style={{ marginBottom: 10, fontSize: 13 }}>
+              ⚠ Too few participants — {count}/{min_participants} minimum required for {format.name}.
+            </div>
+          )
+          if (count > max_participants) return (
+            <div className="alert alert-error" style={{ marginBottom: 10, fontSize: 13 }}>
+              ⚠ Too many participants — {count}/{max_participants} maximum for {format.name}.
+            </div>
+          )
+          return null
+        })()}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+          <h3 style={{ margin: 0 }}>
+            <Users size={16} /> Participants
+            {format && (
+              <span className={`badge ${
+                (session.participants?.length ?? 0) >= format.min_participants &&
+                (session.participants?.length ?? 0) <= format.max_participants
+                  ? 'badge-green' : 'badge-red'
+              }`} style={{ marginLeft: 8, fontSize: 12 }}>
+                {session.participants?.length ?? 0}/{format.max_participants}
+              </span>
+            )}
+          </h3>
+          {isAdmin && !editingParticipants && (
+            <button className="btn btn-ghost" style={{ fontSize: 13 }} onClick={openParticipantEdit}>
+              <Edit2 size={13} /> Edit
+            </button>
+          )}
+          {isAdmin && editingParticipants && (
+            <button className="btn btn-ghost" style={{ fontSize: 13 }} onClick={() => setEditingParticipants(false)}>
+              <Check size={13} /> Done
+            </button>
+          )}
+        </div>
+
+        {session.participants?.length === 0 && !editingParticipants ? (
           <p className="text-muted">No participants assigned yet.</p>
         ) : (
           <table className="participants-table">
             <thead>
-              <tr><th>Name</th><th>Role</th><th>Side</th></tr>
+              <tr>
+                <th>Name</th><th>Role</th><th>Side</th>
+                {editingParticipants && <th></th>}
+              </tr>
             </thead>
             <tbody>
               {session.participants.map((p) => (
                 <tr key={p.id}>
-                  <td>{p.user?.name ?? `User #${p.user_id}`}</td>
+                  <td>
+                    {editingParticipants && replacingId === p.id ? (
+                      <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                        <select value={replaceUserId} onChange={(e) => setReplaceUserId(e.target.value)}
+                          style={{ fontSize: 13, padding: '4px 6px' }}>
+                          <option value="">Pick member…</option>
+                          {allMembers
+                            .filter(m => !session.participants.some(x => x.user_id === m.id && x.id !== p.id))
+                            .map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                        </select>
+                        <button className="btn btn-primary" style={{ padding: '4px 8px', fontSize: 12 }}
+                          onClick={() => handleReplaceParticipant(p)}>
+                          <Check size={12} />
+                        </button>
+                        <button className="btn btn-ghost" style={{ padding: '4px 8px', fontSize: 12 }}
+                          onClick={() => { setReplacingId(null); setReplaceUserId('') }}>
+                          <X size={12} />
+                        </button>
+                      </div>
+                    ) : (
+                      p.user?.name ?? `User #${p.user_id}`
+                    )}
+                  </td>
                   <td>{p.role_name ?? '—'}</td>
                   <td>{p.side ?? '—'}</td>
+                  {editingParticipants && (
+                    <td style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
+                      <button className="btn btn-ghost" title="Replace" style={{ padding: '4px 8px' }}
+                        onClick={() => { setReplacingId(p.id); setReplaceUserId('') }}>
+                        <RefreshCw size={13} />
+                      </button>
+                      <button className="btn btn-danger" title="Remove" style={{ padding: '4px 8px' }}
+                        onClick={() => handleRemoveParticipant(p.id)}>
+                        <UserMinus size={13} />
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))}
+
+              {editingParticipants && (
+                <tr>
+                  <td>
+                    <select value={addForm.user_id} onChange={(e) => setAddForm({ ...addForm, user_id: e.target.value })}
+                      style={{ fontSize: 13, padding: '4px 6px', width: '100%' }}>
+                      <option value="">Add member…</option>
+                      {allMembers
+                        .filter(m => !session.participants.some(p => p.user_id === m.id))
+                        .map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                    </select>
+                  </td>
+                  <td>
+                    <select value={addForm.role_name}
+                      onChange={(e) => {
+                        const role = format?.roles?.find(r => r.name === e.target.value)
+                        setAddForm({ ...addForm, role_name: e.target.value, side: role?.side ?? addForm.side })
+                      }}
+                      style={{ fontSize: 13, padding: '4px 6px', width: '100%' }}>
+                      <option value="">Role (optional)</option>
+                      {format?.roles?.map(r => <option key={r.name} value={r.name}>{r.name}</option>)}
+                    </select>
+                  </td>
+                  <td>
+                    <select value={addForm.side} onChange={(e) => setAddForm({ ...addForm, side: e.target.value })}
+                      style={{ fontSize: 13, padding: '4px 6px' }}>
+                      <option value="">Side…</option>
+                      <option value="proposition">proposition</option>
+                      <option value="opposition">opposition</option>
+                      <option value="government">government</option>
+                      <option value="neutral">neutral</option>
+                    </select>
+                  </td>
+                  <td>
+                    <button className="btn btn-primary" style={{ padding: '4px 10px' }}
+                      onClick={handleAddParticipant} disabled={!addForm.user_id}>
+                      <UserPlus size={13} />
+                    </button>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         )}

@@ -77,7 +77,11 @@ export default function Header({ title }) {
 
         <button className="bell-btn" onClick={handleBellClick}>
           <Bell size={20}/>
-          {unread > 0 && <span className="bell-dot" aria-label={`${unread} unread`}/>}
+          {unread > 0 && (
+            <span className="bell-badge" aria-label={`${unread} unread`}>
+              {unread > 9 ? '9+' : unread}
+            </span>
+          )}
         </button>
 
         {open && (

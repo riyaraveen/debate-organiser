@@ -2,12 +2,13 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { register } from '../api'
 import { useAuth } from '../context/AuthContext'
-import { BookOpen } from 'lucide-react'
+import { BookOpen, Eye, EyeOff } from 'lucide-react'
 
 export default function Register() {
   const [form, setForm] = useState({ name: '', email: '', password: '', grade: '' })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
   const { loginSuccess } = useAuth()
   const navigate = useNavigate()
 
@@ -45,7 +46,15 @@ export default function Register() {
             <input type="email" value={form.email} onChange={set('email')} required />
           </label>
           <label>Password
-            <input type="password" value={form.password} onChange={set('password')} required minLength={6} />
+            <div style={{ position: 'relative' }}>
+              <input type={showPassword ? 'text' : 'password'} value={form.password}
+                onChange={set('password')} required minLength={6}
+                style={{ paddingRight: '2.5rem', width: '100%' }} />
+              <button type="button" onClick={() => setShowPassword(v => !v)}
+                style={{ position: 'absolute', right: '0.6rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: 'inherit', display: 'flex' }}>
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
           </label>
           <label>Grade / Year (optional)
             <input value={form.grade} onChange={set('grade')} placeholder="e.g. Grade 10, Year 12" />

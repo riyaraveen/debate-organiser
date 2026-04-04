@@ -6,7 +6,7 @@ from app.models.user import User
 from app.models.session import Session, SessionParticipant
 from app.models.debate_format import DebateFormat
 from app.models.topic import Topic
-from app.schemas.session import SessionCreate, SessionUpdate, SessionOut, ParticipantOut
+from app.schemas.session import SessionCreate, SessionUpdate, SessionOut, ParticipantOut, ParticipantIn
 from app.services.auth import get_current_user, require_admin
 from app.services.role_assignment import assign_roles
 from app.services.notifications import notify_users
@@ -76,6 +76,8 @@ def create_session(body: SessionCreate, db: DBSession = Depends(get_db), current
         fmt = db.query(DebateFormat).filter(DebateFormat.id == body.format_id).first()
         if body.auto_assign_roles and fmt:
             assignments = assign_roles(fmt.roles, body.participant_ids)
+        elif not body.auto_assign_roles and body.manual_assignments:
+            assignments = [{"user_id": a.user_id, "role_name": a.role_name, "side": a.side} for a in body.manual_assignments]
         else:
             assignments = [{"user_id": uid, "role_name": None, "side": None} for uid in body.participant_ids]
 
@@ -90,7 +92,7 @@ def create_session(body: SessionCreate, db: DBSession = Depends(get_db), current
 
         # Notify participants
         notify_users(db, body.participant_ids,
-                     f"You've been added to the session: {session.title}",
+                     f"You've been added to '{session.title}'. Check your role and session details.",
                      link=f"/sessions/{session.id}")
 
     return _enrich_session(session, db)
@@ -122,16 +124,27 @@ def update_session(
     db.commit()
     db.refresh(session)
 
+    _FIELD_LABELS = {
+        "title": "title renamed",
+        "scheduled_at": "date/time changed",
+        "location": "location updated",
+        "status": f"status changed to {session.status}",
+        "topic_text": "topic updated",
+        "topic_id": "topic updated",
+        "winner_team": "result recorded",
+        "result_notes": "judge's notes added",
+        "additional_notes": "organiser notes updated",
+    }
     if changed_fields:
         participants = db.query(SessionParticipant).filter(
             SessionParticipant.session_id == session_id
         ).all()
         participant_ids = [p.user_id for p in participants]
         if participant_ids:
-            fields_str = ", ".join(changed_fields)
+            changes = ", ".join(_FIELD_LABELS.get(f, f) for f in changed_fields)
             notify_users(
                 db, participant_ids,
-                f"Session '{session.title}' was updated ({fields_str})",
+                f"'{session.title}' was updated — {changes}.",
                 link=f"/sessions/{session_id}",
             )
 
@@ -202,3 +215,87 @@ def delete_session(session_id: int, db: DBSession = Depends(get_db), _: User = D
     db.query(SessionParticipant).filter(SessionParticipant.session_id == session_id).delete()
     db.delete(session)
     db.commit()
+
+
+# ---------------------------------------------------------------------------
+# Participant management
+# ---------------------------------------------------------------------------
+
+@router.post("/{session_id}/participants", response_model=ParticipantOut, status_code=201)
+def add_participant(
+    session_id: int,
+    body: ParticipantIn,
+    db: DBSession = Depends(get_db),
+    _: User = Depends(require_admin),
+):
+    session = db.query(Session).filter(Session.id == session_id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    existing = db.query(SessionParticipant).filter(
+        SessionParticipant.session_id == session_id,
+        SessionParticipant.user_id == body.user_id,
+    ).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="User is already a participant")
+    p = SessionParticipant(session_id=session_id, user_id=body.user_id,
+                           role_name=body.role_name, side=body.side)
+    db.add(p)
+    db.commit()
+    db.refresh(p)
+    user = db.query(User).filter(User.id == p.user_id).first()
+    role_str = f" as {p.role_name}" if p.role_name else ""
+    notify_users(db, [body.user_id],
+                 f"You've been added to '{session.title}'{role_str}.",
+                 link=f"/sessions/{session_id}")
+    return {**{c.name: getattr(p, c.name) for c in p.__table__.columns}, "user": user}
+
+
+@router.delete("/{session_id}/participants/{participant_id}", status_code=204)
+def remove_participant(
+    session_id: int,
+    participant_id: int,
+    db: DBSession = Depends(get_db),
+    _: User = Depends(require_admin),
+):
+    p = db.query(SessionParticipant).filter(
+        SessionParticipant.id == participant_id,
+        SessionParticipant.session_id == session_id,
+    ).first()
+    if not p:
+        raise HTTPException(status_code=404, detail="Participant not found")
+    db.delete(p)
+    db.commit()
+
+
+@router.patch("/{session_id}/participants/{participant_id}", response_model=ParticipantOut)
+def update_participant(
+    session_id: int,
+    participant_id: int,
+    body: ParticipantIn,
+    db: DBSession = Depends(get_db),
+    _: User = Depends(require_admin),
+):
+    """Replace the user assigned to a participant slot, or update their role/side."""
+    p = db.query(SessionParticipant).filter(
+        SessionParticipant.id == participant_id,
+        SessionParticipant.session_id == session_id,
+    ).first()
+    if not p:
+        raise HTTPException(status_code=404, detail="Participant not found")
+    if body.user_id != p.user_id:
+        conflict = db.query(SessionParticipant).filter(
+            SessionParticipant.session_id == session_id,
+            SessionParticipant.user_id == body.user_id,
+            SessionParticipant.id != participant_id,
+        ).first()
+        if conflict:
+            raise HTTPException(status_code=400, detail="User is already a participant")
+    p.user_id = body.user_id
+    if body.role_name is not None:
+        p.role_name = body.role_name
+    if body.side is not None:
+        p.side = body.side
+    db.commit()
+    db.refresh(p)
+    user = db.query(User).filter(User.id == p.user_id).first()
+    return {**{c.name: getattr(p, c.name) for c in p.__table__.columns}, "user": user}

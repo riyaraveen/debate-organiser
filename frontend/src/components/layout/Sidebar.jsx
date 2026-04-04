@@ -1,9 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { NavLink } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import {
   LayoutDashboard, CalendarDays, MessageSquare, BookOpen,
-  Users, ListTodo, LogOut, GraduationCap, Settings, Layers, User, Swords, Trophy, School
+  Users, ListTodo, LogOut, GraduationCap, Settings, Layers, User, Swords, Trophy, School, Sun, Moon
 } from 'lucide-react'
 
 const navItems = [
@@ -27,6 +27,12 @@ const adminItems = [
 export default function Sidebar() {
   const { user, logout } = useAuth()
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
+  const [dark, setDark] = useState(() => localStorage.getItem('theme') === 'dark')
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light')
+    localStorage.setItem('theme', dark ? 'dark' : 'light')
+  }, [dark])
 
   return (
     <aside className="sidebar">
@@ -73,6 +79,9 @@ export default function Sidebar() {
             <span className="sidebar-user-role">{user?.role}</span>
           </div>
         </div>
+        <button className="logout-btn" onClick={() => setDark(d => !d)} title="Toggle dark mode" style={{ marginRight: 4 }}>
+          {dark ? <Sun size={18} /> : <Moon size={18} />}
+        </button>
         <button className="logout-btn" onClick={() => setShowLogoutConfirm(true)} title="Log out">
           <LogOut size={18} />
         </button>

@@ -9,3 +9,5 @@ from .school import School
 from .tournament import Tournament
 from .team_message import TeamMessage
 from .calendar_event import CalendarEvent
+from .availability import UserAvailability
+from .template import SessionTemplate

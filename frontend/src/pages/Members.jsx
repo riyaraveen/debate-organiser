@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { getUsers, updateUserRole } from '../api'
 import { useAuth } from '../context/AuthContext'
-import { School, X, Mail, GraduationCap, Phone, Shield } from 'lucide-react'
+import { School, X, Mail, GraduationCap, Phone, Shield, User } from 'lucide-react'
 import PageHero from '../components/ui/PageHero'
 
 /* Deterministic colour per member based on name */
@@ -59,6 +60,10 @@ function MemberModal({ member, me, onClose, onRoleChange }) {
               </div>
             ))}
           </div>
+
+          <Link to={`/members/${member.id}`} className="btn btn-ghost" style={{ width: '100%', justifyContent: 'center', marginBottom: 8 }}>
+            <User size={14} /> View Profile
+          </Link>
 
           {me?.role === 'admin' && member.id !== me?.id && (
             <div className="member-modal-role-row">
@@ -213,8 +218,17 @@ export default function Members() {
           })}
 
           {filtered.length === 0 && (
-            <div style={{ padding: '40px 24px', color: 'var(--text-muted)', fontSize: 13, gridColumn: '1/-1' }}>
-              No members match your search.
+            <div className="empty-illustration" style={{ gridColumn: '1/-1' }}>
+              <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
+                {[18, 40, 62].map((x, i) => (
+                  <g key={i}>
+                    <circle cx={x} cy={28} r={10} stroke="#121212" strokeWidth="3" fill={i===1?"#F0C020":"none"}/>
+                    <path d={`M${x-14} 60 Q${x} 44 ${x+14} 60`} stroke="#121212" strokeWidth="3" fill="none"/>
+                  </g>
+                ))}
+              </svg>
+              <h3>No members found</h3>
+              <p>{search ? `No members match "${search}".` : 'No members have joined yet.'}</p>
             </div>
           )}
         </div>

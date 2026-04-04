@@ -1,15 +1,19 @@
 import { useState, useEffect } from 'react'
-import { getTopics, createTopic, updateTopic, deleteTopic, generateTopic } from '../api'
+import { getTopics, createTopic, updateTopic, deleteTopic, generateTopic, getSessions } from '../api'
 import { useAuth } from '../context/AuthContext'
-import { Plus, Trash2, CheckCircle, XCircle } from 'lucide-react'
+import { useToast } from '../context/ToastContext'
+import { Plus, Trash2, CheckCircle, XCircle, Clock } from 'lucide-react'
 import PageHero from '../components/ui/PageHero'
 
 export default function Topics() {
   const { user } = useAuth()
+  const toast = useToast()
   const [topics, setTopics] = useState([])
-  const [filters, setFilters] = useState({ is_go: '', proficiency: '', search: '' })
+  const [recentTopicIds, setRecentTopicIds] = useState([])
+  const [filters, setFilters] = useState({ is_go: '', proficiency: '', search: '', category: '' })
   const [showAdd, setShowAdd] = useState(false)
   const [newTopic, setNewTopic] = useState({ text: '', category: '', is_go: true, proficiency: '' })
+  const [pendingDeleteId, setPendingDeleteId] = useState(null)
   const [loading, setLoading] = useState(true)
 
   const fetchTopics = () => {
@@ -22,6 +26,16 @@ export default function Topics() {
 
   useEffect(() => { fetchTopics() }, [filters])
 
+  useEffect(() => {
+    getSessions().then(r => {
+      const ids = r.data
+        .filter(s => s.topic_id)
+        .sort((a, b) => new Date(b.scheduled_at ?? 0) - new Date(a.scheduled_at ?? 0))
+        .map(s => s.topic_id)
+      setRecentTopicIds([...new Set(ids)].slice(0, 5))
+    }).catch(() => {})
+  }, [])
+
   const handleAdd = async (e) => {
     e.preventDefault()
     try {
@@ -30,19 +44,21 @@ export default function Topics() {
       setShowAdd(false)
       setNewTopic({ text: '', category: '', is_go: true, proficiency: '' })
     } catch (err) {
-      alert(err.response?.data?.detail || 'Failed to add topic')
+      toast.error(err.response?.data?.detail || 'Failed to add topic')
     }
   }
 
   const handleToggleGo = async (topic) => {
     const res = await updateTopic(topic.id, { is_go: !topic.is_go })
     setTopics(topics.map((t) => t.id === topic.id ? res.data : t))
+    toast.success(`Topic marked as ${res.data.is_go ? 'Go' : 'No-Go'}.`)
   }
 
   const handleDelete = async (id) => {
-    if (!confirm('Delete this topic?')) return
     await deleteTopic(id)
     setTopics(topics.filter((t) => t.id !== id))
+    setPendingDeleteId(null)
+    toast.success('Topic deleted.')
   }
 
   const handleGenerate = async () => {
@@ -52,11 +68,17 @@ export default function Topics() {
       setNewTopic({ text, category: category || '', is_go: true, proficiency: proficiency || '' })
       setShowAdd(true)
     } catch {
-      alert('Failed to generate topic')
+      toast.error('Failed to generate topic')
     }
   }
 
   const isAdmin = user?.role === 'admin'
+  const categories = [...new Set(topics.map(t => t.category).filter(Boolean))].sort()
+  const displayedTopics = filters.category
+    ? topics.filter(t => t.category === filters.category)
+    : topics
+  const recentTopics = topics.filter(t => recentTopicIds.includes(t.id))
+    .sort((a, b) => recentTopicIds.indexOf(a.id) - recentTopicIds.indexOf(b.id))
 
   return (
     <div className="page-container">
@@ -83,6 +105,10 @@ export default function Topics() {
             <option value="beginner">Beginner</option>
             <option value="intermediate">Intermediate</option>
             <option value="advanced">Advanced</option>
+          </select>
+          <select value={filters.category} onChange={(e) => setFilters({ ...filters, category: e.target.value })}>
+            <option value="">All categories</option>
+            {categories.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
         </div>
         {isAdmin && (
@@ -120,44 +146,84 @@ export default function Topics() {
       )}
 
       {loading ? <div className="loading">Loading…</div> : (
-        <div className="topics-table-wrap">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Topic</th>
-                <th>Category</th>
-                <th>Level</th>
-                <th>Status</th>
-                {isAdmin && <th>Actions</th>}
-              </tr>
-            </thead>
-            <tbody>
-              {topics.map((t) => (
-                <tr key={t.id}>
-                  <td>{t.text}</td>
-                  <td>{t.category || '—'}</td>
-                  <td>{t.proficiency || '—'}</td>
-                  <td>
-                    {t.is_go
-                      ? <span className="badge badge-green"><CheckCircle size={12} /> Go</span>
-                      : <span className="badge badge-red"><XCircle size={12} /> No-Go</span>}
-                  </td>
-                  {isAdmin && (
-                    <td className="action-cell">
-                      <button className="icon-btn" title="Toggle go/no-go" onClick={() => handleToggleGo(t)}>
-                        {t.is_go ? <XCircle size={15} /> : <CheckCircle size={15} />}
-                      </button>
-                      <button className="icon-btn danger" title="Delete" onClick={() => handleDelete(t.id)}>
-                        <Trash2 size={15} />
-                      </button>
-                    </td>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {topics.length === 0 && <p className="empty-state">No topics found. Add some above!</p>}
-        </div>
+        <>
+          {recentTopics.length > 0 && (
+            <div style={{ marginBottom: 24 }}>
+              <h4 style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+                <Clock size={15} /> Recently Used
+              </h4>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {recentTopics.map(t => (
+                  <span key={t.id} className={`badge ${t.is_go ? 'badge-green' : 'badge-gray'}`}
+                    style={{ fontSize: 12, padding: '4px 10px' }}>
+                    {t.text}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="topics-table-wrap">
+            {displayedTopics.length === 0 ? (
+              <div className="empty-illustration">
+                <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
+                  <rect x="10" y="20" width="60" height="8" rx="2" fill="#121212"/>
+                  <rect x="10" y="36" width="45" height="8" rx="2" fill="#121212"/>
+                  <rect x="10" y="52" width="52" height="8" rx="2" fill="#121212"/>
+                  <circle cx="64" cy="64" r="14" fill="#F0C020" stroke="#121212" strokeWidth="3"/>
+                  <line x1="60" y1="64" x2="68" y2="64" stroke="#121212" strokeWidth="3" strokeLinecap="round"/>
+                  <line x1="64" y1="60" x2="64" y2="68" stroke="#121212" strokeWidth="3" strokeLinecap="round"/>
+                </svg>
+                <h3>No topics found</h3>
+                <p>{isAdmin ? 'Add a topic above or adjust your filters.' : 'No topics match your current filters.'}</p>
+              </div>
+            ) : (
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Topic</th>
+                    <th>Category</th>
+                    <th>Level</th>
+                    <th>Status</th>
+                    {isAdmin && <th>Actions</th>}
+                  </tr>
+                </thead>
+                <tbody>
+                  {displayedTopics.map((t) => (
+                    <tr key={t.id}>
+                      <td>{t.text}</td>
+                      <td>{t.category || '—'}</td>
+                      <td>{t.proficiency || '—'}</td>
+                      <td>
+                        {t.is_go
+                          ? <span className="badge badge-green"><CheckCircle size={12} /> Go</span>
+                          : <span className="badge badge-red"><XCircle size={12} /> No-Go</span>}
+                      </td>
+                      {isAdmin && (
+                        <td className="action-cell">
+                          <button className="icon-btn" title="Toggle go/no-go" onClick={() => handleToggleGo(t)}>
+                            {t.is_go ? <XCircle size={15} /> : <CheckCircle size={15} />}
+                          </button>
+                          {pendingDeleteId === t.id ? (
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12 }}>
+                              Sure?
+                              <button className="btn btn-danger" style={{ padding: '2px 8px', fontSize: 12 }} onClick={() => handleDelete(t.id)}>Yes</button>
+                              <button className="btn btn-ghost" style={{ padding: '2px 8px', fontSize: 12 }} onClick={() => setPendingDeleteId(null)}>No</button>
+                            </span>
+                          ) : (
+                            <button className="icon-btn danger" title="Delete" onClick={() => setPendingDeleteId(t.id)}>
+                              <Trash2 size={15} />
+                            </button>
+                          )}
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </>
       )}
     </div>
   )

@@ -22,6 +22,12 @@ class ParticipantOut(BaseModel):
         from_attributes = True
 
 
+class ManualAssignment(BaseModel):
+    user_id: int
+    role_name: Optional[str] = None
+    side: Optional[str] = None
+
+
 class SessionCreate(BaseModel):
     title: str
     topic_id: Optional[int] = None
@@ -32,6 +38,7 @@ class SessionCreate(BaseModel):
     location: Optional[str] = None
     participant_ids: Optional[List[int]] = []
     auto_assign_roles: bool = True
+    manual_assignments: Optional[List[ManualAssignment]] = None
 
 
 class SessionUpdate(BaseModel):
