@@ -24,7 +24,7 @@ export default function SessionChat() {
   const [messages, setMessages] = useState([])
   const [side, setSide] = useState(null)
   const [input, setInput] = useState('')
-  const [status, setStatus] = useState('connecting') // connecting | open | closed | error | forbidden | removed
+  const [status, setStatus] = useState('connecting') // connecting | open | closed | error | forbidden | removed | side_changed
   const [error, setError] = useState('')
   const wsRef = useRef(null)
   const bottomRef = useRef(null)
@@ -73,6 +73,8 @@ export default function SessionChat() {
         setMessages((prev) => [...prev, { ...data, isSystem: true }])
       } else if (data.type === 'removed') {
         setStatus('removed')
+      } else if (data.type === 'side_changed') {
+        setStatus('side_changed')
       } else if (data.type === 'error') {
         setError(data.detail)
       } else if (data.type === 'joined') {
@@ -84,7 +86,7 @@ export default function SessionChat() {
     ws.onerror = () => setStatus('error')
     ws.onclose = (e) => {
       if (e.code === 4001) { setStatus('error'); setError('Authentication failed.') }
-      else if (e.code === 4003) { setStatus(s => s === 'removed' ? 'removed' : 'forbidden') }
+      else if (e.code === 4003) { setStatus(s => (s === 'removed' || s === 'side_changed') ? s : 'forbidden') }
       else if (status !== 'closed') setStatus('error')
     }
 
@@ -160,6 +162,14 @@ export default function SessionChat() {
           {status === 'removed' && (
             <div className="alert alert-error" style={{ margin: '12px 0' }}>
               You have been removed from this session and can no longer send messages. Your previous messages are still visible to your team.
+            </div>
+          )}
+
+          {/* Side reassigned — prompt reconnect */}
+          {status === 'side_changed' && (
+            <div className="alert" style={{ margin: '12px 0', background: '#FFF3CD', border: '2px solid #121212', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+              <span>Your role has been changed. Refresh to join your new team chat.</span>
+              <button className="btn btn-ghost" style={{ flexShrink: 0, fontSize: 12 }} onClick={loadHistory}>Refresh</button>
             </div>
           )}
 

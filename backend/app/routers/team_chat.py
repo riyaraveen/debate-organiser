@@ -47,8 +47,10 @@ class _ConnectionManager:
         key = self._key(session_id, side)
         return {uid for _, _, uid in self._rooms.get(key, [])}
 
-    async def kick_user(self, session_id: int, user_id: int):
-        """Close all WebSocket connections for a user across all sides of a session."""
+    async def kick_user(self, session_id: int, user_id: int, reason: str = "removed"):
+        """Close all WebSocket connections for a user across all sides of a session.
+        reason: 'removed' (kicked out) or 'side_changed' (reassigned, should reconnect).
+        """
         prefix = f"{session_id}:"
         for key in list(self._rooms.keys()):
             if not key.startswith(prefix):
@@ -56,7 +58,7 @@ class _ConnectionManager:
             to_kick = [ws for ws, _, uid in self._rooms[key] if uid == user_id]
             for ws in to_kick:
                 try:
-                    await ws.send_json({"type": "removed", "detail": "You have been removed from this session."})
+                    await ws.send_json({"type": reason})
                     await ws.close(code=4003)
                 except Exception:
                     pass

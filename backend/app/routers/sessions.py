@@ -276,7 +276,7 @@ async def remove_participant(
 
 
 @router.patch("/{session_id}/participants/{participant_id}", response_model=ParticipantOut)
-def update_participant(
+async def update_participant(
     session_id: int,
     participant_id: int,
     body: ParticipantIn,
@@ -298,6 +298,10 @@ def update_participant(
         ).first()
         if conflict:
             raise HTTPException(status_code=400, detail="User is already a participant")
+
+    side_changed = body.side is not None and body.side != p.side
+    user_changed = body.user_id != p.user_id
+
     p.user_id = body.user_id
     if body.role_name is not None:
         p.role_name = body.role_name
@@ -305,5 +309,13 @@ def update_participant(
         p.side = body.side
     db.commit()
     db.refresh(p)
+
+    # If the side changed (or the user slot was swapped), kick affected users
+    # so they reconnect to the correct room on next page load.
+    if side_changed or user_changed:
+        await chat_manager.kick_user(session_id, p.user_id, reason="side_changed")
+        if user_changed:
+            await chat_manager.kick_user(session_id, body.user_id, reason="side_changed")
+
     user = db.query(User).filter(User.id == p.user_id).first()
     return {**{c.name: getattr(p, c.name) for c in p.__table__.columns}, "user": user}
