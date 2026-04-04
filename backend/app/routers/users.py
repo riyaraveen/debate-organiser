@@ -3,19 +3,34 @@ from sqlalchemy.orm import Session
 from typing import List
 from app.db.database import get_db
 from app.models.user import User
-from app.schemas.user import UserOut, UserUpdate, UserRoleUpdate
-from app.services.auth import get_current_user, require_admin
+from app.models.club import ClubMembership
+from app.schemas.user import UserOut, UserUpdate
+from app.services.auth import get_current_user, get_club_membership, require_club_admin
+from pydantic import BaseModel
 
 router = APIRouter(prefix="/api/users", tags=["users"])
 
 
+class ClubRoleUpdate(BaseModel):
+    role: str  # admin, member
+
+
 @router.get("/", response_model=List[UserOut])
-def list_users(db: Session = Depends(get_db), _: User = Depends(get_current_user)):
-    return db.query(User).all()
+def list_users(db: Session = Depends(get_db), membership: ClubMembership = Depends(get_club_membership)):
+    memberships = db.query(ClubMembership).filter(ClubMembership.club_id == membership.club_id).all()
+    user_ids = [m.user_id for m in memberships]
+    return db.query(User).filter(User.id.in_(user_ids)).all()
 
 
 @router.get("/{user_id}", response_model=UserOut)
-def get_user(user_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def get_user(user_id: int, db: Session = Depends(get_db), membership: ClubMembership = Depends(get_club_membership)):
+    # Verify the requested user is a member of the same club
+    target_membership = db.query(ClubMembership).filter(
+        ClubMembership.club_id == membership.club_id,
+        ClubMembership.user_id == user_id,
+    ).first()
+    if not target_membership:
+        raise HTTPException(status_code=404, detail="User not found")
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -32,11 +47,27 @@ def update_profile(body: UserUpdate, db: Session = Depends(get_db), current_user
 
 
 @router.patch("/{user_id}/role", response_model=UserOut)
-def update_role(user_id: int, body: UserRoleUpdate, db: Session = Depends(get_db), _: User = Depends(require_admin)):
+def update_role(
+    user_id: int,
+    body: ClubRoleUpdate,
+    db: Session = Depends(get_db),
+    admin_membership: ClubMembership = Depends(require_club_admin),
+):
+    if body.role not in ("admin", "member"):
+        raise HTTPException(status_code=400, detail="Role must be 'admin' or 'member'")
+    target = db.query(ClubMembership).filter(
+        ClubMembership.club_id == admin_membership.club_id,
+        ClubMembership.user_id == user_id,
+    ).first()
+    if not target:
+        raise HTTPException(status_code=404, detail="User not found in this club")
+    if target.role == "owner":
+        raise HTTPException(status_code=403, detail="Cannot change owner's role")
+    target.role = body.role
+    # Mirror to global user.role so ProtectedRoute still works for club-specific admin status
     user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    user.role = body.role
+    if user:
+        user.role = body.role
     db.commit()
     db.refresh(user)
     return user

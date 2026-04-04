@@ -7,7 +7,8 @@ from app.models.session import Session, SessionParticipant
 from app.models.debate_format import DebateFormat
 from app.models.topic import Topic
 from app.schemas.session import SessionCreate, SessionUpdate, SessionOut, ParticipantOut, ParticipantIn
-from app.services.auth import get_current_user, require_admin
+from app.services.auth import get_current_user, require_admin, get_club_membership, require_club_admin
+from app.models.club import ClubMembership
 from app.services.role_assignment import assign_roles
 from app.services.notifications import notify_users
 from app.models.team_message import TeamMessage
@@ -37,21 +38,21 @@ def _enrich_session(session: Session, db: DBSession) -> dict:
 
 
 @router.get("/", response_model=List[SessionOut])
-def list_sessions(db: DBSession = Depends(get_db), _: User = Depends(get_current_user)):
-    sessions = db.query(Session).order_by(Session.scheduled_at.desc()).all()
+def list_sessions(db: DBSession = Depends(get_db), membership: ClubMembership = Depends(get_club_membership)):
+    sessions = db.query(Session).filter(Session.club_id == membership.club_id).order_by(Session.scheduled_at.desc()).all()
     return [_enrich_session(s, db) for s in sessions]
 
 
 @router.get("/{session_id}", response_model=SessionOut)
-def get_session(session_id: int, db: DBSession = Depends(get_db), _: User = Depends(get_current_user)):
-    session = db.query(Session).filter(Session.id == session_id).first()
+def get_session(session_id: int, db: DBSession = Depends(get_db), membership: ClubMembership = Depends(get_club_membership)):
+    session = db.query(Session).filter(Session.id == session_id, Session.club_id == membership.club_id).first()
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
     return _enrich_session(session, db)
 
 
 @router.post("/", response_model=SessionOut, status_code=201)
-def create_session(body: SessionCreate, db: DBSession = Depends(get_db), current_user: User = Depends(require_admin)):
+def create_session(body: SessionCreate, db: DBSession = Depends(get_db), current_user: User = Depends(get_current_user), membership: ClubMembership = Depends(require_club_admin)):
     # Snapshot topic text
     topic_text = body.topic_text
     if body.topic_id and not topic_text:
@@ -68,6 +69,7 @@ def create_session(body: SessionCreate, db: DBSession = Depends(get_db), current
         scheduled_at=body.scheduled_at,
         location=body.location,
         created_by=current_user.id,
+        club_id=membership.club_id,
     )
     db.add(session)
     db.commit()
@@ -104,9 +106,10 @@ def update_session(
     session_id: int,
     body: SessionUpdate,
     db: DBSession = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(get_current_user),
+    membership: ClubMembership = Depends(require_club_admin),
 ):
-    session = db.query(Session).filter(Session.id == session_id).first()
+    session = db.query(Session).filter(Session.id == session_id, Session.club_id == membership.club_id).first()
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 
@@ -153,7 +156,7 @@ def update_session(
 
 
 @router.get("/{session_id}/team-notes")
-def get_team_notes(session_id: int, db: DBSession = Depends(get_db), _: User = Depends(get_current_user)):
+def get_team_notes(session_id: int, db: DBSession = Depends(get_db), _: ClubMembership = Depends(get_club_membership)):
     from app.models.session_note import SessionNote
     from app.models.user import User as UserModel
     notes = db.query(SessionNote).filter(
@@ -173,7 +176,7 @@ def get_team_notes(session_id: int, db: DBSession = Depends(get_db), _: User = D
 
 
 @router.get("/{session_id}/notes/{user_id}")
-def get_user_note(session_id: int, user_id: int, db: DBSession = Depends(get_db), _: User = Depends(get_current_user)):
+def get_user_note(session_id: int, user_id: int, db: DBSession = Depends(get_db), _: ClubMembership = Depends(get_club_membership)):
     from app.models.session_note import SessionNote
     from app.models.user import User as UserModel
     note = db.query(SessionNote).filter(
@@ -190,7 +193,7 @@ def get_user_note(session_id: int, user_id: int, db: DBSession = Depends(get_db)
 
 
 @router.post("/{session_id}/notify-calendar", status_code=200)
-def notify_calendar(session_id: int, db: DBSession = Depends(get_db), _: User = Depends(require_admin)):
+def notify_calendar(session_id: int, db: DBSession = Depends(get_db), _: ClubMembership = Depends(require_club_admin)):
     """Send all participants a notification with the Google Calendar link."""
     session = db.query(Session).filter(Session.id == session_id).first()
     if not session:
@@ -209,7 +212,7 @@ def notify_calendar(session_id: int, db: DBSession = Depends(get_db), _: User = 
 
 
 @router.delete("/{session_id}", status_code=204)
-def delete_session(session_id: int, db: DBSession = Depends(get_db), _: User = Depends(require_admin)):
+def delete_session(session_id: int, db: DBSession = Depends(get_db), _: ClubMembership = Depends(require_club_admin)):
     session = db.query(Session).filter(Session.id == session_id).first()
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -227,7 +230,7 @@ def add_participant(
     session_id: int,
     body: ParticipantIn,
     db: DBSession = Depends(get_db),
-    _: User = Depends(require_admin),
+    _: ClubMembership = Depends(require_club_admin),
 ):
     session = db.query(Session).filter(Session.id == session_id).first()
     if not session:
@@ -256,7 +259,7 @@ async def remove_participant(
     session_id: int,
     participant_id: int,
     db: DBSession = Depends(get_db),
-    _: User = Depends(require_admin),
+    _: ClubMembership = Depends(require_club_admin),
 ):
     p = db.query(SessionParticipant).filter(
         SessionParticipant.id == participant_id,
@@ -278,7 +281,7 @@ def update_participant(
     participant_id: int,
     body: ParticipantIn,
     db: DBSession = Depends(get_db),
-    _: User = Depends(require_admin),
+    _: ClubMembership = Depends(require_club_admin),
 ):
     """Replace the user assigned to a participant slot, or update their role/side."""
     p = db.query(SessionParticipant).filter(

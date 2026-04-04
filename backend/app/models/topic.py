@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, Enum, DateTime, func
+from sqlalchemy import Column, Integer, String, Boolean, Enum, DateTime, ForeignKey, func
 from app.db.database import Base
 import enum
 
@@ -26,4 +26,5 @@ class Topic(Base):
     max_age = Column(Integer, nullable=True)
     proficiency = Column(Enum(ProficiencyLevel), nullable=True)
     source = Column(Enum(TopicSource), default=TopicSource.admin)
+    club_id = Column(Integer, ForeignKey("clubs.id"), nullable=True)
     created_at = Column(DateTime, server_default=func.now())

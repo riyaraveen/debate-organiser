@@ -10,5 +10,6 @@ class Announcement(Base):
     title = Column(String, nullable=False)
     content = Column(Text, nullable=True)
     created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
+    club_id = Column(Integer, ForeignKey("clubs.id"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     is_active = Column(Boolean, default=True)

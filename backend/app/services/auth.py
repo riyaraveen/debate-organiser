@@ -2,11 +2,12 @@ from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, Header, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.models.user import User
+from app.models.club import ClubMembership
 
 SECRET_KEY = "change-me-in-production-use-env-var"
 ALGORITHM = "HS256"
@@ -57,3 +58,25 @@ def require_admin(current_user: User = Depends(get_current_user)) -> User:
     if current_user.role != "admin":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
     return current_user
+
+
+def get_club_membership(
+    x_club_id: Optional[int] = Header(None, alias="X-Club-ID"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> ClubMembership:
+    if not x_club_id:
+        raise HTTPException(status_code=400, detail="X-Club-ID header required")
+    membership = db.query(ClubMembership).filter(
+        ClubMembership.club_id == x_club_id,
+        ClubMembership.user_id == current_user.id,
+    ).first()
+    if not membership:
+        raise HTTPException(status_code=403, detail="Not a member of this club")
+    return membership
+
+
+def require_club_admin(membership: ClubMembership = Depends(get_club_membership)) -> ClubMembership:
+    if membership.role not in ("owner", "admin"):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Club admin access required")
+    return membership

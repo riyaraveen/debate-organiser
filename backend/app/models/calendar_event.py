@@ -11,3 +11,4 @@ class CalendarEvent(Base):
     start_at = Column(DateTime, nullable=False)
     end_at = Column(DateTime, nullable=False)
     created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
+    club_id = Column(Integer, ForeignKey("clubs.id"), nullable=True)

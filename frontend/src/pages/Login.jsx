@@ -18,8 +18,8 @@ export default function Login() {
     setLoading(true)
     try {
       const res = await login(form.email, form.password)
-      loginSuccess(res.data.access_token, res.data.user)
-      navigate('/')
+      loginSuccess(res.data.access_token, res.data.user, res.data.clubs || [])
+      navigate('/club-select')
     } catch (err) {
       setError(err.response?.data?.detail || 'Login failed')
     } finally {

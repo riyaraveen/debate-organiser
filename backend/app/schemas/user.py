@@ -9,6 +9,16 @@ class UserCreate(BaseModel):
     password: str
     grade: Optional[str] = None
     invite_code: Optional[str] = None
+    club_name: Optional[str] = None  # required when not using invite_code
+
+
+class ClubOut(BaseModel):
+    id: int
+    name: str
+    role: str  # owner, admin, member
+
+    class Config:
+        from_attributes = True
 
 
 class UserUpdate(BaseModel):
@@ -48,3 +58,4 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserOut
+    clubs: list[ClubOut] = []

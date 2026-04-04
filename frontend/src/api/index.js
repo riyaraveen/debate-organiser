@@ -5,6 +5,13 @@ export const login = (email, password) => api.post('/api/auth/login', { email, p
 export const register = (data) => api.post('/api/auth/register', data)
 export const getMe = () => api.get('/api/auth/me')
 
+// Clubs
+export const getMyClubs = () => api.get('/api/clubs/mine')
+export const createClub = (data) => api.post('/api/clubs/', data)
+export const getClubMembers = (clubId) => api.get(`/api/clubs/${clubId}/members`)
+export const updateClubMemberRole = (clubId, userId, role) => api.patch(`/api/clubs/${clubId}/members/${userId}`, { role })
+export const removeClubMember = (clubId, userId) => api.delete(`/api/clubs/${clubId}/members/${userId}`)
+
 // Users
 export const getUsers = () => api.get('/api/users/')
 export const getUser = (id) => api.get(`/api/users/${id}`)

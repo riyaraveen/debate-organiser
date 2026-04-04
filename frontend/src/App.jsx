@@ -1,8 +1,11 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
+import { useAuth } from './context/AuthContext'
+import { useClub } from './context/ClubContext'
 import { ProtectedRoute } from './components/ui/ProtectedRoute'
 import AppLayout from './components/layout/AppLayout'
 import Login from './pages/Login'
 import Register from './pages/Register'
+import ClubSelect from './pages/ClubSelect'
 import Dashboard from './pages/Dashboard'
 import Sessions from './pages/Sessions'
 import SessionDetail from './pages/SessionDetail'
@@ -24,18 +27,28 @@ import TeamMemberNotes from './pages/TeamMemberNotes'
 import MemberProfile from './pages/MemberProfile'
 import SessionTimer from './pages/SessionTimer'
 
+function ClubRequiredRoute({ children }) {
+  const { user, loading } = useAuth()
+  const { activeClub } = useClub()
+  if (loading) return null
+  if (!user) return <Navigate to="/login" replace />
+  if (!activeClub) return <Navigate to="/club-select" replace />
+  return children
+}
+
 export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/club-select" element={<ClubSelect />} />
 
       <Route
         path="/"
         element={
-          <ProtectedRoute>
+          <ClubRequiredRoute>
             <AppLayout />
-          </ProtectedRoute>
+          </ClubRequiredRoute>
         }
       >
         <Route index element={<Dashboard />} />

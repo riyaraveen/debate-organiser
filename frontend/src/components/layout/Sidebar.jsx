@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
-import { NavLink } from 'react-router-dom'
+import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import { useClub } from '../../context/ClubContext'
 import {
   LayoutDashboard, CalendarDays, MessageSquare, BookOpen,
-  Users, ListTodo, LogOut, GraduationCap, Settings, Layers, User, Swords, Trophy, School, Sun, Moon
+  Users, ListTodo, LogOut, GraduationCap, Settings, Layers, User, Swords, Trophy, School, Sun, Moon, RefreshCw
 } from 'lucide-react'
 
 const navItems = [
@@ -26,6 +27,8 @@ const adminItems = [
 
 export default function Sidebar() {
   const { user, logout } = useAuth()
+  const { activeClub } = useClub()
+  const navigate = useNavigate()
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
   const [dark, setDark] = useState(() => localStorage.getItem('theme') === 'dark')
 
@@ -40,6 +43,23 @@ export default function Sidebar() {
         <BookOpen size={22} />
         <span>DebateOrg</span>
       </div>
+      {activeClub && (
+        <div style={{ padding: '6px 16px 8px', borderBottom: '1px solid rgba(255,255,255,0.12)' }}>
+          <div style={{ fontSize: 11, opacity: 0.6, marginBottom: 2 }}>Active club</div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4 }}>
+            <span style={{ fontSize: 13, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {activeClub.name}
+            </span>
+            <button
+              title="Switch club"
+              onClick={() => navigate('/club-select')}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', opacity: 0.7, padding: 0, flexShrink: 0 }}
+            >
+              <RefreshCw size={13} />
+            </button>
+          </div>
+        </div>
+      )}
 
       <nav className="sidebar-nav">
         {navItems.map(({ to, label, icon: Icon }) => (

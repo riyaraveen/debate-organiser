@@ -12,4 +12,5 @@ class SessionTemplate(Base):
     location = Column(String, nullable=True)
     auto_assign_roles = Column(Boolean, default=True)
     created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
+    club_id = Column(Integer, ForeignKey("clubs.id"), nullable=True)
     created_at = Column(DateTime, server_default=func.now())

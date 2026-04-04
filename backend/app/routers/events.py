@@ -5,8 +5,9 @@ from datetime import datetime
 
 from app.db.database import get_db
 from app.models.calendar_event import CalendarEvent
-from app.models.user import User, UserRole
-from app.services.auth import get_current_user
+from app.models.user import User
+from app.models.club import ClubMembership
+from app.services.auth import get_current_user, get_club_membership
 
 router = APIRouter(prefix="/api/events", tags=["events"])
 
@@ -31,18 +32,24 @@ class EventOut(BaseModel):
 
 
 @router.get("/", response_model=list[EventOut])
-def list_events(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    return db.query(CalendarEvent).order_by(CalendarEvent.start_at).all()
+def list_events(db: Session = Depends(get_db), membership: ClubMembership = Depends(get_club_membership)):
+    return db.query(CalendarEvent).filter(CalendarEvent.club_id == membership.club_id).order_by(CalendarEvent.start_at).all()
 
 
 @router.post("/", response_model=EventOut)
-def create_event(data: EventCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def create_event(
+    data: EventCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    membership: ClubMembership = Depends(get_club_membership),
+):
     event = CalendarEvent(
         title=data.title,
         event_type=data.event_type,
         start_at=data.start_at,
         end_at=data.end_at,
         created_by=current_user.id,
+        club_id=membership.club_id,
     )
     db.add(event)
     db.commit()
@@ -51,11 +58,16 @@ def create_event(data: EventCreate, db: Session = Depends(get_db), current_user:
 
 
 @router.delete("/{event_id}")
-def delete_event(event_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def delete_event(
+    event_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    membership: ClubMembership = Depends(get_club_membership),
+):
     event = db.get(CalendarEvent, event_id)
-    if not event:
+    if not event or event.club_id != membership.club_id:
         raise HTTPException(status_code=404, detail="Event not found")
-    if event.created_by != current_user.id and current_user.role != UserRole.admin:
+    if event.created_by != current_user.id and membership.role not in ("owner", "admin"):
         raise HTTPException(status_code=403, detail="Not allowed")
     db.delete(event)
     db.commit()

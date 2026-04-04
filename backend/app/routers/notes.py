@@ -7,7 +7,8 @@ from app.db.database import get_db
 from app.models.session_note import SessionNote
 from app.models.session import Session as SessionModel
 from app.models.user import User
-from app.services.auth import get_current_user
+from app.services.auth import get_current_user, get_club_membership
+from app.models.club import ClubMembership
 
 router = APIRouter(prefix="/api/sessions", tags=["notes"])
 
@@ -28,8 +29,8 @@ class NoteUpsert(BaseModel):
 
 
 @router.get("/{session_id}/notes/me", response_model=NoteOut)
-def get_my_note(session_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    session = db.query(SessionModel).filter(SessionModel.id == session_id).first()
+def get_my_note(session_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user), membership: ClubMembership = Depends(get_club_membership)):
+    session = db.query(SessionModel).filter(SessionModel.id == session_id, SessionModel.club_id == membership.club_id).first()
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
     note = db.query(SessionNote).filter(
@@ -45,8 +46,8 @@ def get_my_note(session_id: int, db: Session = Depends(get_db), current_user: Us
 
 
 @router.put("/{session_id}/notes/me", response_model=NoteOut)
-def save_my_note(session_id: int, body: NoteUpsert, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    session = db.query(SessionModel).filter(SessionModel.id == session_id).first()
+def save_my_note(session_id: int, body: NoteUpsert, db: Session = Depends(get_db), current_user: User = Depends(get_current_user), membership: ClubMembership = Depends(get_club_membership)):
+    session = db.query(SessionModel).filter(SessionModel.id == session_id, SessionModel.club_id == membership.club_id).first()
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
     note = db.query(SessionNote).filter(

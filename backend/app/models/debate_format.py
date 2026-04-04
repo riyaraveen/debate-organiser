@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, JSON
+from sqlalchemy import Column, Integer, String, Boolean, JSON, ForeignKey
 from app.db.database import Base
 
 
@@ -6,7 +6,7 @@ class DebateFormat(Base):
     __tablename__ = "debate_formats"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, unique=True, nullable=False)
+    name = Column(String, nullable=False)
     description = Column(String, nullable=False)
     min_participants = Column(Integer, nullable=False)
     max_participants = Column(Integer, nullable=False)
@@ -17,3 +17,4 @@ class DebateFormat(Base):
     rules_summary = Column(String, nullable=True)
     is_active = Column(Boolean, default=True)
     is_builtin = Column(Boolean, default=False)
+    club_id = Column(Integer, ForeignKey("clubs.id"), nullable=True)  # NULL = global/builtin

@@ -5,7 +5,8 @@ from pydantic import BaseModel
 from app.db.database import get_db
 from app.models.user import User
 from app.models.template import SessionTemplate
-from app.services.auth import get_current_user, require_admin
+from app.models.club import ClubMembership
+from app.services.auth import get_current_user, get_club_membership, require_club_admin
 
 router = APIRouter(prefix="/api/templates", tags=["templates"])
 
@@ -31,13 +32,23 @@ class TemplateOut(BaseModel):
 
 
 @router.get("/", response_model=List[TemplateOut])
-def list_templates(db: Session = Depends(get_db), _: User = Depends(get_current_user)):
-    return db.query(SessionTemplate).order_by(SessionTemplate.created_at.desc()).all()
+def list_templates(db: Session = Depends(get_db), membership: ClubMembership = Depends(get_club_membership)):
+    return (
+        db.query(SessionTemplate)
+        .filter(SessionTemplate.club_id == membership.club_id)
+        .order_by(SessionTemplate.created_at.desc())
+        .all()
+    )
 
 
 @router.post("/", response_model=TemplateOut, status_code=201)
-def create_template(body: TemplateCreate, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
-    t = SessionTemplate(**body.model_dump(), created_by=current_user.id)
+def create_template(
+    body: TemplateCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    membership: ClubMembership = Depends(require_club_admin),
+):
+    t = SessionTemplate(**body.model_dump(), created_by=current_user.id, club_id=membership.club_id)
     db.add(t)
     db.commit()
     db.refresh(t)
@@ -45,8 +56,11 @@ def create_template(body: TemplateCreate, db: Session = Depends(get_db), current
 
 
 @router.delete("/{template_id}", status_code=204)
-def delete_template(template_id: int, db: Session = Depends(get_db), _: User = Depends(require_admin)):
-    t = db.query(SessionTemplate).filter(SessionTemplate.id == template_id).first()
+def delete_template(template_id: int, db: Session = Depends(get_db), membership: ClubMembership = Depends(require_club_admin)):
+    t = db.query(SessionTemplate).filter(
+        SessionTemplate.id == template_id,
+        SessionTemplate.club_id == membership.club_id,
+    ).first()
     if not t:
         raise HTTPException(status_code=404, detail="Template not found")
     db.delete(t)

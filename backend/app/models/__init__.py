@@ -1,4 +1,5 @@
 from .user import User
+from .club import Club, ClubMembership
 from .debate_format import DebateFormat
 from .topic import Topic
 from .session import Session, SessionParticipant

@@ -4,14 +4,14 @@ const api = axios.create({
   baseURL: 'http://localhost:8000',
 })
 
-// Attach JWT from localStorage on every request
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token')
   if (token) config.headers.Authorization = `Bearer ${token}`
+  const clubId = localStorage.getItem('active_club_id')
+  if (clubId) config.headers['X-Club-ID'] = clubId
   return config
 })
 
-// On 401, clear token and redirect to login
 api.interceptors.response.use(
   (res) => res,
   (err) => {
