@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
-import { getFormats, toggleFormat, createFormat } from '../api'
-import { Plus, ToggleLeft, ToggleRight, Users, Clock, ChevronDown, ChevronUp, UserCheck, Scale } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { getFormats, toggleFormat, createFormat, updateFormat } from '../api'
+import { Plus, ToggleLeft, ToggleRight, Users, Clock, ChevronDown, ChevronUp, UserCheck, Scale, GripVertical, Trash2, Edit2, Check, X, BarChart2 } from 'lucide-react'
 import PageHero from '../components/ui/PageHero'
 
 const SIDE_COLORS = {
@@ -28,8 +28,77 @@ function parseJSON(val) {
   try { return JSON.parse(val) } catch { return [] }
 }
 
-function FormatCard({ fmt, onToggle }) {
+function SpeakingOrderEditor({ fmt, onSave, onCancel }) {
+  const [speeches, setSpeeches] = useState(parseJSON(fmt.speaking_order).map((s, i) => ({ ...s, _id: i })))
+  const dragIdx = useRef(null)
+  const allRoles = parseJSON(fmt.roles).map(r => r.name)
+
+  const update = (idx, field, val) => setSpeeches(s => s.map((r, i) => i === idx ? { ...r, [field]: val } : r))
+  const remove = (idx) => setSpeeches(s => s.filter((_, i) => i !== idx))
+  const add = () => setSpeeches(s => [...s, { role: '', description: '', duration_seconds: 300, _id: Date.now() }])
+
+  const onDragStart = (i) => { dragIdx.current = i }
+  const onDragOver = (e, i) => {
+    e.preventDefault()
+    if (dragIdx.current === null || dragIdx.current === i) return
+    setSpeeches(s => {
+      const next = [...s]
+      const [moved] = next.splice(dragIdx.current, 1)
+      next.splice(i, 0, moved)
+      dragIdx.current = i
+      return next
+    })
+  }
+  const onDrop = () => { dragIdx.current = null }
+
+  const totalSec = speeches.reduce((a, s) => a + (Number(s.duration_seconds) || 0), 0)
+
+  return (
+    <div style={{ border: '2px solid #121212', marginTop: 16, background: '#fafafa' }}>
+      <div style={{ background: '#121212', color: '#fff', padding: '8px 14px', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, display: 'flex', justifyContent: 'space-between' }}>
+        <span>Edit Speaking Order — {speeches.length} speech{speeches.length !== 1 ? 'es' : ''} · {fmtTime(totalSec)} total</span>
+        <span style={{ opacity: 0.6, fontWeight: 400 }}>Drag to reorder</span>
+      </div>
+      <div>
+        {speeches.map((s, i) => (
+          <div key={s._id} draggable onDragStart={() => onDragStart(i)} onDragOver={e => onDragOver(e, i)} onDrop={onDrop}
+            style={{ display: 'grid', gridTemplateColumns: '24px 1fr 1fr 80px 32px', gap: 6, padding: '8px 10px', borderBottom: '1px solid #e5e5e5', alignItems: 'center', cursor: 'grab', background: '#fff' }}>
+            <GripVertical size={14} style={{ opacity: 0.4 }} />
+            <select value={s.role} onChange={e => update(i, 'role', e.target.value)}
+              style={{ border: '1.5px solid #ccc', padding: '4px 6px', font: 'inherit', fontSize: 12 }}>
+              <option value="">— Role —</option>
+              {allRoles.map(r => <option key={r} value={r}>{r}</option>)}
+              <option value="POI">POI</option>
+            </select>
+            <input placeholder="Description (e.g. 1st Prop speech)" value={s.description || ''}
+              onChange={e => update(i, 'description', e.target.value)}
+              style={{ border: '1.5px solid #ccc', padding: '4px 6px', font: 'inherit', fontSize: 12 }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <input type="number" min={30} step={30} value={s.duration_seconds}
+                onChange={e => update(i, 'duration_seconds', +e.target.value)}
+                style={{ border: '1.5px solid #ccc', padding: '4px 6px', font: 'inherit', fontSize: 12, width: '100%' }} />
+              <span style={{ fontSize: 10, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>sec</span>
+            </div>
+            <button onClick={() => remove(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--red)', padding: 0 }}>
+              <Trash2 size={14} />
+            </button>
+          </div>
+        ))}
+      </div>
+      <div style={{ padding: '10px 12px', display: 'flex', gap: 8, alignItems: 'center' }}>
+        <button className="btn btn-ghost" style={{ fontSize: 12 }} onClick={add}><Plus size={13} /> Add Speech</button>
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+          <button className="btn btn-primary" style={{ fontSize: 12 }} onClick={() => onSave(speeches.map(({ _id, ...s }) => s))}><Check size={13} /> Save</button>
+          <button className="btn btn-ghost" style={{ fontSize: 12 }} onClick={onCancel}><X size={13} /> Cancel</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function FormatCard({ fmt, onToggle, onUpdate }) {
   const [expanded, setExpanded] = useState(false)
+  const [editingOrder, setEditingOrder] = useState(false)
   const roles = parseJSON(fmt.roles)
   const speakingOrder = parseJSON(fmt.speaking_order)
 
@@ -50,7 +119,7 @@ function FormatCard({ fmt, onToggle }) {
             <h3 className="format-card-name">{fmt.name}</h3>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 5 }}>
               <span className="format-meta-chip">
-                <Users size={11} /> {fmt.min_participants}–{fmt.max_participants} participants
+                <Users size={11} /> {fmt.min_participants === fmt.max_participants ? `${fmt.min_participants} participants` : `${fmt.min_participants}–${fmt.max_participants} participants`}
               </span>
               <span className={`badge ${fmt.is_builtin ? 'badge-gray' : 'badge-blue'}`} style={{ fontSize: 10 }}>
                 {fmt.is_builtin ? 'Built-in' : 'Custom'}
@@ -171,16 +240,32 @@ function FormatCard({ fmt, onToggle }) {
       )}
 
       {/* ── Speaking order (expandable) ── */}
-      {speakingOrder.length > 0 && (
-        <div className="format-speaking-section">
-          <button className="format-expand-btn" onClick={() => setExpanded(e => !e)}>
+      <div className="format-speaking-section">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <button className="format-expand-btn" onClick={() => setExpanded(e => !e)} style={{ flex: 1 }}>
             <Clock size={12} />
-            Speaking Order ({speakingOrder.length} speeches)
+            Speaking Order ({speakingOrder.length} speech{speakingOrder.length !== 1 ? 'es' : ''})
             {expanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
           </button>
-          {expanded && (
-            <div className="format-speaking-list">
-              {speakingOrder.map((s, i) => {
+          {!fmt.is_builtin && (
+            <button className="btn btn-ghost" style={{ fontSize: 11, padding: '4px 10px' }}
+              onClick={() => { setEditingOrder(e => !e); setExpanded(true) }}>
+              <Edit2 size={11} /> {editingOrder ? 'Cancel Edit' : 'Edit Order'}
+            </button>
+          )}
+        </div>
+        {editingOrder && (
+          <SpeakingOrderEditor fmt={fmt} onCancel={() => setEditingOrder(false)}
+            onSave={async (newOrder) => {
+              await onUpdate(fmt.id, { speaking_order: newOrder })
+              setEditingOrder(false)
+            }} />
+        )}
+        {expanded && !editingOrder && (
+          <div className="format-speaking-list">
+            {speakingOrder.length === 0
+              ? <p style={{ fontSize: 12, color: 'var(--text-muted)', padding: '8px 0' }}>No speaking order defined yet.{!fmt.is_builtin && ' Click "Edit Order" to add speeches.'}</p>
+              : speakingOrder.map((s, i) => {
                 const matchedRole = roles.find(r => r.name === s.role)
                 const { bg } = sideStyle(matchedRole?.side ?? 'neutral')
                 return (
@@ -193,11 +278,52 @@ function FormatCard({ fmt, onToggle }) {
                     <span className="format-speech-time">{fmtTime(s.duration_seconds)}</span>
                   </div>
                 )
-              })}
-            </div>
-          )}
-        </div>
-      )}
+              })
+            }
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function CompareView({ formats }) {
+  const allFormats = formats
+  const totalTime = (fmt) => parseJSON(fmt.speaking_order).reduce((a, s) => a + (s.duration_seconds || 0), 0)
+  const sides = (fmt) => [...new Set(parseJSON(fmt.roles).filter(r => r.side && r.side !== 'neutral' && r.side !== 'audience').map(r => r.side))]
+
+  return (
+    <div style={{ overflowX: 'auto', border: '3px solid #121212' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+        <thead>
+          <tr style={{ background: '#121212', color: '#fff' }}>
+            <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, fontSize: 11 }}>Attribute</th>
+            {allFormats.map(f => (
+              <th key={f.id} style={{ padding: '10px 16px', textAlign: 'center', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, fontSize: 11 }}>
+                {f.name}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {[
+            { label: 'Participants', fn: f => f.min_participants === f.max_participants ? `${f.min_participants}` : `${f.min_participants}–${f.max_participants}` },
+            { label: 'Total Speaking Time', fn: f => fmtTime(totalTime(f)) || '—' },
+            { label: 'Speeches', fn: f => parseJSON(f.speaking_order).length || '—' },
+            { label: 'Sides', fn: f => sides(f).join(', ') || '—' },
+            { label: 'Judges', fn: f => { const d = parseJSON(f.roles).filter(r => r.decides); return d.length ? `${d[0].name} ×${d[0].min_count ?? 1}` : 'None' } },
+            { label: 'Audience Required', fn: f => parseJSON(f.roles).some(r => r.side === 'audience') ? '✓ Yes' : 'No' },
+            { label: 'Status', fn: f => f.is_active ? 'Active' : 'Inactive' },
+          ].map(({ label, fn }, ri) => (
+            <tr key={label} style={{ background: ri % 2 === 0 ? '#fff' : '#f9f9f9', borderBottom: '1px solid #e5e5e5' }}>
+              <td style={{ padding: '10px 16px', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</td>
+              {allFormats.map(f => (
+                <td key={f.id} style={{ padding: '10px 16px', textAlign: 'center' }}>{fn(f)}</td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   )
 }
@@ -206,11 +332,16 @@ export default function Formats() {
   const [formats, setFormats] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState({ name: '', description: '', min_participants: 2, max_participants: 8 })
+  const [compareMode, setCompareMode] = useState(false)
+  const [form, setForm] = useState({
+    name: '', description: '', min_participants: 2, max_participants: 8,
+    decider_type: 'none', decider_count: 1,
+    requires_audience: false, min_audience: 20,
+  })
   const [error, setError] = useState('')
 
   useEffect(() => {
-    getFormats().then((res) => setFormats(res.data)).finally(() => setLoading(false))
+    getFormats(true).then((res) => setFormats(res.data)).finally(() => setLoading(false))
   }, [])
 
   const handleToggle = async (id) => {
@@ -222,13 +353,38 @@ export default function Formats() {
     }
   }
 
+  const handleUpdate = async (id, data) => {
+    try {
+      const res = await updateFormat(id, data)
+      setFormats((prev) => prev.map((f) => f.id === id ? res.data : f))
+    } catch {
+      setError('Failed to save changes')
+    }
+  }
+
   const handleCreate = async (e) => {
     e.preventDefault()
     setError('')
+
+    const roles = []
+    if (form.decider_type !== 'none') {
+      const deciderNames = {
+        judge:        { name: 'Judge',        description: 'Evaluates arguments and decides the winner.' },
+        panel:        { name: 'Judge',        description: 'Panel member — majority vote decides the winner.' },
+        chair:        { name: 'Chairperson',  description: 'Chairs the debate and casts the deciding vote.' },
+        audience_vote:{ name: 'Audience',     description: 'The audience votes to decide the winner.' },
+      }
+      const d = deciderNames[form.decider_type]
+      roles.push({ name: d.name, side: 'neutral', description: d.description, decides: true, min_count: form.decider_count })
+    }
+    if (form.requires_audience) {
+      roles.push({ name: 'Audience', side: 'audience', description: 'Audience members attend the debate.', min_count: form.min_audience })
+    }
+
     try {
-      const res = await createFormat({ ...form, roles: [], speaking_order: [] })
+      const res = await createFormat({ ...form, roles, speaking_order: [] })
       setFormats((prev) => [...prev, res.data])
-      setForm({ name: '', description: '', min_participants: 2, max_participants: 8 })
+      setForm({ name: '', description: '', min_participants: 2, max_participants: 8, decider_type: 'none', decider_count: 1, requires_audience: false, min_audience: 20 })
       setShowForm(false)
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to create format')
@@ -264,39 +420,132 @@ export default function Formats() {
 
       <div className="page-top-bar">
         <span className="text-muted" style={{ fontSize: 13 }}>{formats.filter(f => f.is_active).length} active · {formats.filter(f => !f.is_active).length} inactive</span>
-        <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>
-          <Plus size={15} /> Add Custom Format
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className={`btn ${compareMode ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setCompareMode(m => !m)}>
+            <BarChart2 size={15} /> {compareMode ? 'Back to Cards' : 'Compare Formats'}
+          </button>
+          <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>
+            <Plus size={15} /> Add Custom Format
+          </button>
+        </div>
       </div>
 
       {error && <div className="alert alert-error">{error}</div>}
 
       {showForm && (
-        <form onSubmit={handleCreate} className="add-topic-form form-stack" style={{ flexDirection: 'column' }}>
-          <h4 style={{ fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', fontSize: 13 }}>New Format</h4>
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-            <input className="input" placeholder="Format name *" value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })} style={{ flex: 2, minWidth: 180 }} required />
-            <input type="number" className="input" placeholder="Min participants" value={form.min_participants}
-              onChange={(e) => setForm({ ...form, min_participants: +e.target.value })} style={{ flex: 1, minWidth: 100 }} min={2} />
-            <input type="number" className="input" placeholder="Max participants" value={form.max_participants}
-              onChange={(e) => setForm({ ...form, max_participants: +e.target.value })} style={{ flex: 1, minWidth: 100 }} min={2} />
+        <form onSubmit={handleCreate} style={{
+          border: '3px solid #121212', padding: 28, marginBottom: 24,
+          display: 'flex', flexDirection: 'column', gap: 18,
+        }}>
+          <div>
+            <h4 style={{ fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', fontSize: 13, margin: '0 0 4px' }}>New Custom Format</h4>
+            <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: 0 }}>
+              Define the basics here. Roles and speaking order can be added after the format is created.
+            </p>
           </div>
-          <textarea rows={2} placeholder="Description" value={form.description}
-            onChange={(e) => setForm({ ...form, description: e.target.value })}
-            style={{ border: '2px solid #121212', padding: '8px 12px', font: 'inherit', width: '100%', resize: 'vertical', outline: 'none' }} />
-          <div style={{ display: 'flex', gap: 8 }}>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, width: '100%' }}>
+            <span style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Format Name <span style={{ color: 'var(--red)' }}>*</span>
+            </span>
+            <input className="input" placeholder="e.g. British Parliamentary, Lincoln-Douglas, WSDC…"
+              value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
+              required style={{ width: '100%', boxSizing: 'border-box' }} />
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, width: '100%' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <span style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Min Participants</span>
+              <input type="number" className="input" value={form.min_participants}
+                onChange={(e) => setForm({ ...form, min_participants: +e.target.value })}
+                min={2} style={{ width: '100%', boxSizing: 'border-box' }} />
+              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Smallest viable team size</span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <span style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Max Participants</span>
+              <input type="number" className="input" value={form.max_participants}
+                onChange={(e) => setForm({ ...form, max_participants: +e.target.value })}
+                min={2} style={{ width: '100%', boxSizing: 'border-box' }} />
+              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Upper limit for session planning</span>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, width: '100%' }}>
+            <span style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Description</span>
+            <textarea rows={3} placeholder="Briefly describe the format — its rules, structure, or what makes it unique…"
+              value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })}
+              style={{ border: '2px solid #121212', padding: '8px 12px', font: 'inherit', width: '100%', resize: 'vertical', outline: 'none', boxSizing: 'border-box' }} />
+          </div>
+
+          {/* Who decides the winner */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%', border: '2px solid #e5e5e5', padding: 16, boxSizing: 'border-box' }}>
+            <div>
+              <span style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Who Decides the Winner?</span>
+              <p style={{ fontSize: 11, color: 'var(--text-muted)', margin: '2px 0 0' }}>Select the role responsible for judging the outcome of the debate.</p>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: form.decider_type !== 'none' ? '1fr auto' : '1fr', gap: 12, alignItems: 'end' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Decision maker</span>
+                <select value={form.decider_type} onChange={e => setForm({ ...form, decider_type: e.target.value })}
+                  style={{ border: '2px solid #121212', padding: '8px 10px', font: 'inherit', fontSize: 13, outline: 'none', background: 'var(--bg)', color: 'var(--text)' }}>
+                  <option value="none">No designated decider</option>
+                  <option value="judge">Single Judge</option>
+                  <option value="panel">Panel of Judges (majority vote)</option>
+                  <option value="chair">Chairperson / Speaker</option>
+                  <option value="audience_vote">Audience Vote</option>
+                </select>
+              </div>
+              {form.decider_type !== 'none' && form.decider_type !== 'audience_vote' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Count</span>
+                  <input type="number" className="input" value={form.decider_count} min={1} max={9}
+                    onChange={e => setForm({ ...form, decider_count: +e.target.value })}
+                    style={{ width: 80, boxSizing: 'border-box' }} />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Audience requirement */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%', border: '2px solid #e5e5e5', padding: 16, boxSizing: 'border-box' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <span style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Requires Audience?</span>
+                <p style={{ fontSize: 11, color: 'var(--text-muted)', margin: '2px 0 0' }}>Some formats (e.g. Oxford Style) require a live audience to vote or provide feedback.</p>
+              </div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', flexShrink: 0 }}>
+                <input type="checkbox" checked={form.requires_audience}
+                  onChange={e => setForm({ ...form, requires_audience: e.target.checked })} />
+                <span style={{ fontSize: 13, fontWeight: 700 }}>{form.requires_audience ? 'Yes' : 'No'}</span>
+              </label>
+            </div>
+            {form.requires_audience && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Minimum audience size</span>
+                <input type="number" className="input" value={form.min_audience} min={1}
+                  onChange={e => setForm({ ...form, min_audience: +e.target.value })}
+                  style={{ width: 120, boxSizing: 'border-box' }} />
+              </div>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', gap: 10 }}>
             <button type="submit" className="btn btn-primary">Create Format</button>
             <button type="button" className="btn btn-ghost" onClick={() => setShowForm(false)}>Cancel</button>
           </div>
         </form>
       )}
 
-      <div className="formats-grid">
-        {formats.map((f) => (
-          <FormatCard key={f.id} fmt={f} onToggle={handleToggle} />
-        ))}
-      </div>
+      {compareMode
+        ? <CompareView formats={formats} />
+        : (
+          <div className="formats-grid">
+            {formats.map((f) => (
+              <FormatCard key={f.id} fmt={f} onToggle={handleToggle} onUpdate={handleUpdate} />
+            ))}
+          </div>
+        )
+      }
     </div>
   )
 }

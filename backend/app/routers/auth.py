@@ -4,6 +4,7 @@ from app.db.database import get_db
 from app.models.user import User
 from app.schemas.user import UserCreate, LoginRequest, TokenResponse, UserOut
 from app.services.auth import hash_password, verify_password, create_access_token, get_current_user
+from app.models.invite_code import InviteCode
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -12,6 +13,12 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 def register(body: UserCreate, db: Session = Depends(get_db)):
     if db.query(User).filter(User.email == body.email).first():
         raise HTTPException(status_code=400, detail="Email already registered")
+    # Validate invite code if provided
+    invite = None
+    if body.invite_code:
+        invite = db.query(InviteCode).filter(InviteCode.code == body.invite_code, InviteCode.is_active == True).first()
+        if not invite:
+            raise HTTPException(status_code=400, detail="Invalid or expired invite code")
     user = User(
         name=body.name,
         email=body.email,
@@ -21,6 +28,9 @@ def register(body: UserCreate, db: Session = Depends(get_db)):
     db.add(user)
     db.commit()
     db.refresh(user)
+    if invite:
+        invite.used_count += 1
+        db.commit()
     token = create_access_token({"sub": str(user.id)})
     return TokenResponse(access_token=token, user=UserOut.from_orm(user))
 

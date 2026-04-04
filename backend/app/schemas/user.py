@@ -8,6 +8,7 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str
     grade: Optional[str] = None
+    invite_code: Optional[str] = None
 
 
 class UserUpdate(BaseModel):

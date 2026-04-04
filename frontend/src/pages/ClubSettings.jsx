@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { getSettings, updateSettings } from '../api'
-import { Settings } from 'lucide-react'
+import { getSettings, updateSettings, getAnnouncements, createAnnouncement, deleteAnnouncement, getInvites, createInvite, deactivateInvite } from '../api'
+import { Settings, Megaphone, Link2, Trash2, Plus, Copy, Check } from 'lucide-react'
 import PageHero from '../components/ui/PageHero'
 
 export default function ClubSettings() {
@@ -9,6 +9,13 @@ export default function ClubSettings() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
+
+  const [announcements, setAnnouncements] = useState([])
+  const [annForm, setAnnForm] = useState({ title: '', content: '' })
+  const [showAnnForm, setShowAnnForm] = useState(false)
+
+  const [invites, setInvites] = useState([])
+  const [copied, setCopied] = useState(null)
 
   useEffect(() => {
     getSettings()
@@ -19,7 +26,41 @@ export default function ClubSettings() {
       }))
       .catch(() => setError('Failed to load settings'))
       .finally(() => setLoading(false))
+    getAnnouncements().then(r => setAnnouncements(r.data)).catch(() => {})
+    getInvites().then(r => setInvites(r.data)).catch(() => {})
   }, [])
+
+  const handlePostAnnouncement = async (e) => {
+    e.preventDefault()
+    try {
+      const res = await createAnnouncement(annForm)
+      setAnnouncements(a => [res.data, ...a])
+      setAnnForm({ title: '', content: '' })
+      setShowAnnForm(false)
+    } catch {}
+  }
+
+  const handleDeleteAnnouncement = async (id) => {
+    await deleteAnnouncement(id)
+    setAnnouncements(a => a.filter(x => x.id !== id))
+  }
+
+  const handleCreateInvite = async () => {
+    const res = await createInvite()
+    setInvites(i => [res.data, ...i])
+  }
+
+  const handleDeactivateInvite = async (id) => {
+    await deactivateInvite(id)
+    setInvites(i => i.map(x => x.id === id ? { ...x, is_active: false } : x))
+  }
+
+  const copyInviteLink = (code) => {
+    const url = `${window.location.origin}/register?code=${code}`
+    navigator.clipboard.writeText(url)
+    setCopied(code)
+    setTimeout(() => setCopied(null), 2000)
+  }
 
   const handleSave = async (e) => {
     e.preventDefault()
@@ -67,6 +108,82 @@ export default function ClubSettings() {
       </PageHero>
 
       <div className="settings-body">
+
+        {/* Announcements */}
+        <div className="settings-card" style={{ marginBottom: 24 }}>
+          <div className="settings-header">
+            <Megaphone size={20} />
+            <h2>Announcements</h2>
+          </div>
+          <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 12 }}>
+            Active announcements appear as a banner for all members at the top of the app.
+          </p>
+          {announcements.length === 0 && !showAnnForm && (
+            <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>No active announcements.</p>
+          )}
+          {announcements.map(a => (
+            <div key={a.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '10px 14px', border: '2px solid #e5e5e5', marginBottom: 8, gap: 10 }}>
+              <div>
+                <strong style={{ fontSize: 13 }}>{a.title}</strong>
+                {a.content && <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--text-muted)' }}>{a.content}</p>}
+              </div>
+              <button className="btn btn-ghost" style={{ fontSize: 11, color: 'var(--red)', flexShrink: 0 }} onClick={() => handleDeleteAnnouncement(a.id)}>
+                <Trash2 size={12} /> Remove
+              </button>
+            </div>
+          ))}
+          {showAnnForm && (
+            <form onSubmit={handlePostAnnouncement} style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 10 }}>
+              <input className="input" placeholder="Announcement title *" value={annForm.title}
+                onChange={e => setAnnForm(f => ({ ...f, title: e.target.value }))} required />
+              <textarea rows={2} placeholder="Optional details…" value={annForm.content}
+                onChange={e => setAnnForm(f => ({ ...f, content: e.target.value }))}
+                style={{ border: '2px solid #121212', padding: '8px 12px', font: 'inherit', resize: 'vertical', outline: 'none' }} />
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button type="submit" className="btn btn-primary" style={{ fontSize: 12 }}>Post</button>
+                <button type="button" className="btn btn-ghost" style={{ fontSize: 12 }} onClick={() => setShowAnnForm(false)}>Cancel</button>
+              </div>
+            </form>
+          )}
+          {!showAnnForm && (
+            <button className="btn btn-ghost" style={{ fontSize: 12, marginTop: 4 }} onClick={() => setShowAnnForm(true)}>
+              <Plus size={13} /> New Announcement
+            </button>
+          )}
+        </div>
+
+        {/* Invite Links */}
+        <div className="settings-card" style={{ marginBottom: 24 }}>
+          <div className="settings-header">
+            <Link2 size={20} />
+            <h2>Invite Links</h2>
+          </div>
+          <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 12 }}>
+            Generate invite links so new members can self-register. Share the link — anyone with it can create an account.
+          </p>
+          {invites.length === 0 && <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>No invite links yet.</p>}
+          {invites.map(inv => (
+            <div key={inv.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', border: '2px solid #e5e5e5', marginBottom: 8, opacity: inv.is_active ? 1 : 0.5 }}>
+              <code style={{ flex: 1, fontSize: 13, fontWeight: 700, letterSpacing: '0.08em' }}>{inv.code}</code>
+              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Used {inv.used_count}×</span>
+              <span className={`badge ${inv.is_active ? 'badge-green' : 'badge-gray'}`} style={{ fontSize: 10 }}>{inv.is_active ? 'Active' : 'Inactive'}</span>
+              {inv.is_active && (
+                <button className="btn btn-ghost" style={{ fontSize: 11 }} onClick={() => copyInviteLink(inv.code)}>
+                  {copied === inv.code ? <><Check size={12} /> Copied!</> : <><Copy size={12} /> Copy Link</>}
+                </button>
+              )}
+              {inv.is_active && (
+                <button className="btn btn-ghost" style={{ fontSize: 11 }} onClick={() => handleDeactivateInvite(inv.id)}>
+                  <Trash2 size={12} /> Revoke
+                </button>
+              )}
+            </div>
+          ))}
+          <button className="btn btn-ghost" style={{ fontSize: 12, marginTop: 4 }} onClick={handleCreateInvite}>
+            <Plus size={13} /> Generate New Link
+          </button>
+        </div>
+
         <div className="settings-card">
           <div className="settings-header">
             <Settings size={24} />

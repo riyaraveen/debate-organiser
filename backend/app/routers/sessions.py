@@ -11,6 +11,7 @@ from app.services.auth import get_current_user, require_admin
 from app.services.role_assignment import assign_roles
 from app.services.notifications import notify_users
 from app.models.team_message import TeamMessage
+from app.routers.team_chat import manager as chat_manager
 
 router = APIRouter(prefix="/api/sessions", tags=["sessions"])
 
@@ -246,12 +247,12 @@ def add_participant(
     role_str = f" as {p.role_name}" if p.role_name else ""
     notify_users(db, [body.user_id],
                  f"You've been added to '{session.title}'{role_str}.",
-                 link=f"/sessions/{session_id}")
+                 link=f"/sessions/{session_id}/chat")
     return {**{c.name: getattr(p, c.name) for c in p.__table__.columns}, "user": user}
 
 
 @router.delete("/{session_id}/participants/{participant_id}", status_code=204)
-def remove_participant(
+async def remove_participant(
     session_id: int,
     participant_id: int,
     db: DBSession = Depends(get_db),
@@ -263,8 +264,12 @@ def remove_participant(
     ).first()
     if not p:
         raise HTTPException(status_code=404, detail="Participant not found")
+    removed_user_id = p.user_id
     db.delete(p)
     db.commit()
+    # Close the removed user's active chat WebSocket(s) for this session.
+    # Their messages are retained in TeamMessage.
+    await chat_manager.kick_user(session_id, removed_user_id)
 
 
 @router.patch("/{session_id}/participants/{participant_id}", response_model=ParticipantOut)

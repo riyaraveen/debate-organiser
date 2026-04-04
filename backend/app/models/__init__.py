@@ -11,3 +11,5 @@ from .team_message import TeamMessage
 from .calendar_event import CalendarEvent
 from .availability import UserAvailability
 from .template import SessionTemplate
+from .announcement import Announcement
+from .invite_code import InviteCode

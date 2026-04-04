@@ -26,3 +26,11 @@ class FormatCreate(BaseModel):
     roles: List[Any]
     speaking_order: List[Any]
     rules_summary: Optional[str] = None
+
+
+class FormatUpdate(BaseModel):
+    speaking_order: Optional[List[Any]] = None
+    roles: Optional[List[Any]] = None
+    description: Optional[str] = None
+    min_participants: Optional[int] = None
+    max_participants: Optional[int] = None

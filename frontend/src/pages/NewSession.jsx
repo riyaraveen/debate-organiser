@@ -2,8 +2,34 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getFormats, getTopics, getRandomTopic, generateTopic, getUsers, createSession, getAvailability, getTemplates } from '../api'
 
-const BASE_STEPS = ['Format', 'Topic', 'Participants', 'Details', 'Review']
-const MANUAL_STEPS = ['Format', 'Topic', 'Participants', 'Roles', 'Details', 'Review']
+const STEPS = ['Format', 'Topic', 'Participants', 'Details', 'Review']
+
+function shuffleArray(arr) {
+  const a = [...arr]
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]]
+  }
+  return a
+}
+
+function computeAutoAssignments(participantIds, formatRoles) {
+  const expanded = []
+  for (const role of formatRoles) {
+    const count = role.min_count ?? 1
+    for (let i = 0; i < count; i++) expanded.push(role)
+  }
+  const shuffledRoles = shuffleArray(expanded)
+  const shuffledIds = shuffleArray(participantIds)
+  const result = {}
+  shuffledIds.forEach((uid, i) => {
+    const role = shuffledRoles[i]
+    result[uid] = role
+      ? { role_name: role.name, side: role.side ?? 'neutral' }
+      : { role_name: 'Observer', side: 'neutral' }
+  })
+  return result
+}
 
 export default function NewSession() {
   const navigate = useNavigate()
@@ -12,7 +38,8 @@ export default function NewSession() {
   const [topics, setTopics] = useState([])
   const [users, setUsers] = useState([])
   const [templates, setTemplates] = useState([])
-  const [availabilityMap, setAvailabilityMap] = useState({}) // userId -> [date strings]
+  const [availabilityMap, setAvailabilityMap] = useState({})
+  const [assignments, setAssignments] = useState({}) // userId -> { role_name, side }
   const [error, setError] = useState('')
 
   const [form, setForm] = useState({
@@ -25,7 +52,6 @@ export default function NewSession() {
     location: '',
     participant_ids: [],
     auto_assign_roles: true,
-    manual_assignments: {},
   })
 
   useEffect(() => {
@@ -63,42 +89,42 @@ export default function NewSession() {
     }
   }
 
+  const selectedFormat = formats.find((f) => f.id === form.format_id)
+  const formatRoles = selectedFormat?.roles ?? []
+  const uniqueRoles = [...new Map(formatRoles.map(r => [r.name, r])).values()]
+
+  const reshuffle = () => {
+    setAssignments(computeAutoAssignments(form.participant_ids, formatRoles))
+  }
+
   const toggleParticipant = (id) => {
     const newIds = form.participant_ids.includes(id)
       ? form.participant_ids.filter((x) => x !== id)
       : [...form.participant_ids, id]
-    // Remove manual assignment if participant removed
-    if (!newIds.includes(id)) {
-      setForm((f) => {
-        const { [id]: _, ...rest } = f.manual_assignments
-        return { ...f, participant_ids: newIds, manual_assignments: rest }
-      })
+    set('participant_ids', newIds)
+    if (form.auto_assign_roles) {
+      setAssignments(computeAutoAssignments(newIds, formatRoles))
     } else {
-      set('participant_ids', newIds)
+      setAssignments(prev => {
+        const next = { ...prev }
+        if (!newIds.includes(id)) delete next[id]
+        else next[id] = { role_name: null, side: null }
+        return next
+      })
     }
   }
 
-  const setAssignment = (userId, roleObj) => {
-    setForm((f) => ({
-      ...f,
-      manual_assignments: { ...f.manual_assignments, [userId]: roleObj },
+  const setAssignment = (userId, field, value) => {
+    setAssignments(prev => ({
+      ...prev,
+      [userId]: { ...prev[userId], [field]: value || null },
     }))
   }
 
-  const selectedFormat = formats.find((f) => f.id === form.format_id)
-
-  // Get unique roles from format
-  const formatRoles = selectedFormat?.roles ?? []
-  const uniqueRoles = []
-  const seen = new Set()
-  for (const r of formatRoles) {
-    if (!seen.has(r.name)) {
-      seen.add(r.name)
-      uniqueRoles.push(r)
-    }
+  const switchMode = (auto) => {
+    set('auto_assign_roles', auto)
+    if (auto) setAssignments(computeAutoAssignments(form.participant_ids, formatRoles))
   }
-
-  const STEPS = form.auto_assign_roles ? BASE_STEPS : MANUAL_STEPS
 
   const handleSubmit = async () => {
     setError('')
@@ -112,13 +138,12 @@ export default function NewSession() {
         scheduled_at: form.scheduled_at ? new Date(form.scheduled_at).toISOString() : null,
         location: form.location,
         participant_ids: form.participant_ids,
-        auto_assign_roles: form.auto_assign_roles,
-      }
-      if (!form.auto_assign_roles) {
-        payload.manual_assignments = form.participant_ids.map((uid) => {
-          const a = form.manual_assignments[uid]
-          return { user_id: uid, role_name: a?.role_name ?? null, side: a?.side ?? null }
-        })
+        auto_assign_roles: false,
+        manual_assignments: form.participant_ids.map(uid => ({
+          user_id: uid,
+          role_name: assignments[uid]?.role_name ?? null,
+          side: assignments[uid]?.side ?? null,
+        })),
       }
       const res = await createSession(payload)
       navigate(`/sessions/${res.data.id}`)
@@ -132,7 +157,6 @@ export default function NewSession() {
     }
   }
 
-  const rolesStepIndex = STEPS.indexOf('Roles')
   const detailsStepIndex = STEPS.indexOf('Details')
   const reviewStepIndex = STEPS.indexOf('Review')
 
@@ -140,7 +164,6 @@ export default function NewSession() {
     if (step === 0) return !!form.format_id
     if (step === 1) return !!form.topic_text
     if (step === 2) return form.participant_ids.length > 0
-    if (!form.auto_assign_roles && step === rolesStepIndex) return true
     if (step === detailsStepIndex) return !!form.title
     return true
   }
@@ -232,12 +255,13 @@ export default function NewSession() {
         {step === 2 && (
           <div>
             <h3>Select participants</h3>
-            <p className="step-subtitle">Choose who's debating, then pick how roles are assigned.</p>
+            <p className="step-subtitle">Choose who's debating, then assign their roles.</p>
             {selectedFormat && (
-              <p className="text-muted">
-                {selectedFormat.name} needs {selectedFormat.min_participants} participants.
+              <p className="text-muted" style={{ marginBottom: 10 }}>
+                {selectedFormat.name} needs {selectedFormat.min_participants}–{selectedFormat.max_participants} participants.
               </p>
             )}
+
             <div className="member-select-list">
               {users.map((u) => {
                 const sessionDate = form.scheduled_at ? form.scheduled_at.slice(0, 10) : null
@@ -260,59 +284,69 @@ export default function NewSession() {
               })}
             </div>
 
-            <div className="role-assignment-toggle">
-              <span className="role-assignment-label">Role assignment</span>
-              <div className="role-toggle-btns">
-                <button
-                  className={`role-toggle-btn ${form.auto_assign_roles ? 'active' : ''}`}
-                  onClick={() => set('auto_assign_roles', true)}
-                >
-                  Random
+            {/* Role assignment mode toggle */}
+            <div style={{ margin: '20px 0 14px', display: 'flex', alignItems: 'center', gap: 12 }}>
+              <span style={{ fontWeight: 700, fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Role assignment</span>
+              <div style={{ display: 'flex', border: '2px solid #121212', overflow: 'hidden' }}>
+                <button onClick={() => switchMode(true)} style={{
+                  padding: '7px 18px', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em',
+                  border: 'none', cursor: 'pointer',
+                  background: form.auto_assign_roles ? '#121212' : '#fff',
+                  color: form.auto_assign_roles ? '#fff' : '#121212',
+                }}>
+                  ⚡ Auto-assign
                 </button>
-                <button
-                  className={`role-toggle-btn ${!form.auto_assign_roles ? 'active' : ''}`}
-                  onClick={() => set('auto_assign_roles', false)}
-                >
-                  Manual
+                <button onClick={() => switchMode(false)} style={{
+                  padding: '7px 18px', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em',
+                  border: 'none', borderLeft: '2px solid #121212', cursor: 'pointer',
+                  background: !form.auto_assign_roles ? '#121212' : '#fff',
+                  color: !form.auto_assign_roles ? '#fff' : '#121212',
+                }}>
+                  ✎ Manual
                 </button>
               </div>
+              {form.auto_assign_roles && form.participant_ids.length > 0 && (
+                <button className="btn btn-ghost" style={{ fontSize: 12 }} onClick={reshuffle}>🔀 Re-shuffle</button>
+              )}
             </div>
-          </div>
-        )}
 
-        {/* Step 3 (manual only): Roles */}
-        {!form.auto_assign_roles && step === rolesStepIndex && (
-          <div>
-            <h3>Assign roles</h3>
-            <p className="step-subtitle">Choose a role for each participant. Leave blank to assign no role.</p>
-            <div className="manual-roles-list">
-              {form.participant_ids.map((uid) => {
-                const u = users.find((x) => x.id === uid)
-                const assignment = form.manual_assignments[uid]
-                return (
-                  <div key={uid} className="manual-role-row">
-                    <div className="manual-role-user">
-                      <span className="avatar sm">{u?.name[0]}</span>
-                      <span>{u?.name}</span>
+            {/* Inline role table */}
+            {form.participant_ids.length > 0 && (
+              <div style={{ border: '2px solid #121212' }}>
+                <div style={{ background: '#121212', color: '#fff', padding: '6px 14px', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>
+                  {form.auto_assign_roles ? 'Auto-assigned roles — edit if needed' : 'Assign roles manually'}
+                </div>
+                {form.participant_ids.map(uid => {
+                  const u = users.find(x => x.id === uid)
+                  const a = assignments[uid] ?? {}
+                  return (
+                    <div key={uid} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 0, borderBottom: '1px solid #e5e5e5', alignItems: 'center' }}>
+                      <div style={{ padding: '8px 14px', display: 'flex', alignItems: 'center', gap: 8, fontWeight: 600, fontSize: 13 }}>
+                        <span className="avatar sm">{u?.name[0]}</span>
+                        {u?.name}
+                      </div>
+                      <select value={a.role_name ?? ''} onChange={e => {
+                        const role = uniqueRoles.find(r => r.name === e.target.value)
+                        setAssignment(uid, 'role_name', e.target.value)
+                        if (role?.side) setAssignment(uid, 'side', role.side)
+                      }} style={{ margin: '6px', fontSize: 13, padding: '5px 8px', border: '1.5px solid #ccc' }}>
+                        <option value="">— No role —</option>
+                        {uniqueRoles.map(r => <option key={r.name} value={r.name}>{r.name}</option>)}
+                        <option value="Observer">Observer</option>
+                      </select>
+                      <select value={a.side ?? ''} onChange={e => setAssignment(uid, 'side', e.target.value)}
+                        style={{ margin: '6px', fontSize: 13, padding: '5px 8px', border: '1.5px solid #ccc' }}>
+                        <option value="">— No side —</option>
+                        <option value="proposition">Proposition</option>
+                        <option value="opposition">Opposition</option>
+                        <option value="government">Government</option>
+                        <option value="neutral">Neutral</option>
+                      </select>
                     </div>
-                    <select
-                      className="manual-role-select"
-                      value={assignment?.role_name ?? ''}
-                      onChange={(e) => {
-                        const roleName = e.target.value
-                        const roleObj = uniqueRoles.find((r) => r.name === roleName)
-                        setAssignment(uid, { role_name: roleName || null, side: roleObj?.side ?? null })
-                      }}
-                    >
-                      <option value="">— No role —</option>
-                      {uniqueRoles.map((r) => (
-                        <option key={r.name} value={r.name}>{r.name} ({r.side})</option>
-                      ))}
-                    </select>
-                  </div>
-                )
-              })}
-            </div>
+                  )
+                })}
+              </div>
+            )}
           </div>
         )}
 
@@ -354,16 +388,13 @@ export default function NewSession() {
               <dt>Title</dt><dd>{form.title}</dd>
               <dt>Date</dt><dd>{form.scheduled_at || 'TBC'}</dd>
               <dt>Location</dt><dd>{form.location || 'TBC'}</dd>
-              <dt>Role assignment</dt><dd>{form.auto_assign_roles ? 'Random' : 'Manual'}</dd>
+              <dt>Role assignment</dt><dd>{form.auto_assign_roles ? 'Auto-assigned' : 'Manual'}</dd>
               <dt>Participants</dt>
               <dd>
                 {form.participant_ids.map((id) => {
                   const name = users.find((u) => u.id === id)?.name ?? `#${id}`
-                  if (!form.auto_assign_roles) {
-                    const role = form.manual_assignments[id]?.role_name
-                    return role ? `${name} (${role})` : name
-                  }
-                  return name
+                  const role = assignments[id]?.role_name
+                  return role ? `${name} (${role})` : name
                 }).join(', ')}
               </dd>
             </dl>

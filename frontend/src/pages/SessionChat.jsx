@@ -24,14 +24,14 @@ export default function SessionChat() {
   const [messages, setMessages] = useState([])
   const [side, setSide] = useState(null)
   const [input, setInput] = useState('')
-  const [status, setStatus] = useState('connecting') // connecting | open | closed | error | forbidden
+  const [status, setStatus] = useState('connecting') // connecting | open | closed | error | forbidden | removed
   const [error, setError] = useState('')
   const wsRef = useRef(null)
   const bottomRef = useRef(null)
 
-  // Load session info + message history
-  useEffect(() => {
-    getSession(id).then((r) => setSession(r.data)).catch(() => {})
+  const loadHistory = () => {
+    setStatus('connecting')
+    setError('')
     getChatHistory(id)
       .then((r) => {
         setSide(r.data.side)
@@ -43,7 +43,13 @@ export default function SessionChat() {
         else setStatus('error')
         setError(err.response?.data?.detail || 'Could not load chat')
       })
-  }, [id])
+  }
+
+  // Load session info + message history
+  useEffect(() => {
+    getSession(id).then((r) => setSession(r.data)).catch(() => {})
+    loadHistory()
+  }, [id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Open WebSocket once we know the side and session isn't completed
   useEffect(() => {
@@ -65,6 +71,8 @@ export default function SessionChat() {
         setMessages((prev) => [...prev, data])
       } else if (data.type === 'system') {
         setMessages((prev) => [...prev, { ...data, isSystem: true }])
+      } else if (data.type === 'removed') {
+        setStatus('removed')
       } else if (data.type === 'error') {
         setError(data.detail)
       } else if (data.type === 'joined') {
@@ -76,7 +84,7 @@ export default function SessionChat() {
     ws.onerror = () => setStatus('error')
     ws.onclose = (e) => {
       if (e.code === 4001) { setStatus('error'); setError('Authentication failed.') }
-      else if (e.code === 4003) { setStatus('forbidden'); setError('You are not a participant in this session.') }
+      else if (e.code === 4003) { setStatus(s => s === 'removed' ? 'removed' : 'forbidden') }
       else if (status !== 'closed') setStatus('error')
     }
 
@@ -148,10 +156,18 @@ export default function SessionChat() {
             <div className="chat-room-status" style={{ background: status === 'open' ? '#22c55e' : '#aaa' }} />
           </div>
 
+          {/* Removed from session */}
+          {status === 'removed' && (
+            <div className="alert alert-error" style={{ margin: '12px 0' }}>
+              You have been removed from this session and can no longer send messages. Your previous messages are still visible to your team.
+            </div>
+          )}
+
           {/* Forbidden / error states */}
           {(status === 'forbidden' || status === 'error') && (
-            <div className="alert alert-error" style={{ margin: '12px 0' }}>
-              {error || 'Could not connect to chat.'}
+            <div className="alert alert-error" style={{ margin: '12px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+              <span>{status === 'forbidden' ? 'You are not a participant in this session. If you were just added, click Refresh.' : (error || 'Could not connect to chat.')}</span>
+              <button className="btn btn-ghost" style={{ flexShrink: 0, fontSize: 12 }} onClick={loadHistory}>Refresh</button>
             </div>
           )}
 
@@ -204,7 +220,7 @@ export default function SessionChat() {
             <div ref={bottomRef} />
           </div>
 
-          {/* Input */}
+          {/* Input — hidden once removed or session closed */}
           {status === 'open' && (
             <div className="chat-input-row">
               <textarea

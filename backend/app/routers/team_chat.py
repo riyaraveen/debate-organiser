@@ -8,6 +8,7 @@ from app.models.user import User
 from app.models.session import Session, SessionParticipant
 from app.models.team_message import TeamMessage
 from app.services.auth import get_current_user, SECRET_KEY, ALGORITHM
+from app.services.notifications import notify_users
 
 router = APIRouter(prefix="/api/sessions", tags=["team-chat"])
 
@@ -15,31 +16,51 @@ router = APIRouter(prefix="/api/sessions", tags=["team-chat"])
 # ── In-memory connection manager ─────────────────────────────────────────────
 class _ConnectionManager:
     def __init__(self):
-        # room_key → list of (websocket, user_name) tuples
-        self._rooms: Dict[str, List[Tuple[WebSocket, str]]] = {}
+        # room_key → list of (websocket, user_name, user_id) tuples
+        self._rooms: Dict[str, List[Tuple[WebSocket, str, int]]] = {}
 
     def _key(self, session_id: int, side: str) -> str:
         return f"{session_id}:{side}"
 
-    async def connect(self, ws: WebSocket, session_id: int, side: str, user_name: str):
+    async def connect(self, ws: WebSocket, session_id: int, side: str, user_name: str, user_id: int):
         await ws.accept()
         key = self._key(session_id, side)
-        self._rooms.setdefault(key, []).append((ws, user_name))
+        self._rooms.setdefault(key, []).append((ws, user_name, user_id))
 
     def disconnect(self, ws: WebSocket, session_id: int, side: str):
         key = self._key(session_id, side)
-        self._rooms[key] = [(w, n) for w, n in self._rooms.get(key, []) if w is not ws]
+        self._rooms[key] = [(w, n, uid) for w, n, uid in self._rooms.get(key, []) if w is not ws]
 
     async def broadcast(self, session_id: int, side: str, payload: dict):
         key = self._key(session_id, side)
         dead = []
-        for ws, _ in self._rooms.get(key, []):
+        for ws, _, __ in self._rooms.get(key, []):
             try:
                 await ws.send_json(payload)
             except Exception:
                 dead.append(ws)
         # Clean up dead connections
-        self._rooms[key] = [(w, n) for w, n in self._rooms.get(key, []) if w not in dead]
+        self._rooms[key] = [(w, n, uid) for w, n, uid in self._rooms.get(key, []) if w not in dead]
+
+    def connected_user_ids(self, session_id: int, side: str) -> set[int]:
+        """Return the set of user_ids currently connected to this room."""
+        key = self._key(session_id, side)
+        return {uid for _, _, uid in self._rooms.get(key, [])}
+
+    async def kick_user(self, session_id: int, user_id: int):
+        """Close all WebSocket connections for a user across all sides of a session."""
+        prefix = f"{session_id}:"
+        for key in list(self._rooms.keys()):
+            if not key.startswith(prefix):
+                continue
+            to_kick = [ws for ws, _, uid in self._rooms[key] if uid == user_id]
+            for ws in to_kick:
+                try:
+                    await ws.send_json({"type": "removed", "detail": "You have been removed from this session."})
+                    await ws.close(code=4003)
+                except Exception:
+                    pass
+            self._rooms[key] = [(w, n, uid) for w, n, uid in self._rooms[key] if uid != user_id]
 
 
 manager = _ConnectionManager()
@@ -137,7 +158,7 @@ async def chat_ws(
         await websocket.close(code=4004)
         return
 
-    await manager.connect(websocket, session_id, side, user.name)
+    await manager.connect(websocket, session_id, side, user.name, user.id)
 
     # Send join confirmation
     await websocket.send_json({
@@ -171,6 +192,23 @@ async def chat_ws(
             db.add(msg)
             db.commit()
             db.refresh(msg)
+
+            # Notify side members who are offline (not currently connected)
+            online_ids = manager.connected_user_ids(session_id, side)
+            all_side_ids = {
+                p.user_id for p in db.query(SessionParticipant).filter(
+                    SessionParticipant.session_id == session_id,
+                    SessionParticipant.side == side,
+                ).all()
+            }
+            offline_ids = list(all_side_ids - online_ids - {user.id})
+            if offline_ids:
+                preview = content[:60] + ("…" if len(content) > 60 else "")
+                notify_users(
+                    db, offline_ids,
+                    f"{user.name}: {preview}",
+                    link=f"/sessions/{session_id}/chat",
+                )
 
             # Broadcast to all room members
             await manager.broadcast(session_id, side, {

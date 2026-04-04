@@ -1,11 +1,13 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { register } from '../api'
 import { useAuth } from '../context/AuthContext'
 import { BookOpen, Eye, EyeOff } from 'lucide-react'
 
 export default function Register() {
-  const [form, setForm] = useState({ name: '', email: '', password: '', grade: '' })
+  const [searchParams] = useSearchParams()
+  const codeFromUrl = searchParams.get('code') || ''
+  const [form, setForm] = useState({ name: '', email: '', password: '', grade: '', invite_code: codeFromUrl })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
@@ -58,6 +60,10 @@ export default function Register() {
           </label>
           <label>Grade / Year (optional)
             <input value={form.grade} onChange={set('grade')} placeholder="e.g. Grade 10, Year 12" />
+          </label>
+          <label>Invite Code {codeFromUrl ? <span style={{ fontSize: 11, color: '#1A8040', fontWeight: 600 }}>✓ pre-filled from link</span> : <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>(optional)</span>}
+            <input value={form.invite_code} onChange={set('invite_code')} placeholder="e.g. AB3X9K2M"
+              style={codeFromUrl ? { background: '#d4edda' } : {}} />
           </label>
           <button type="submit" className="btn btn-primary" disabled={loading}>
             {loading ? 'Creating account…' : 'Create account'}

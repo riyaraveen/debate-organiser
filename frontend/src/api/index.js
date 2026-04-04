@@ -17,9 +17,10 @@ export const addAvailability = (date) => api.post('/api/users/me/availability', 
 export const removeAvailability = (date) => api.delete(`/api/users/me/availability/${date}`)
 
 // Formats
-export const getFormats = () => api.get('/api/formats/')
+export const getFormats = (all = false) => api.get('/api/formats/', { params: all ? { all: true } : {} })
 export const getFormat = (id) => api.get(`/api/formats/${id}`)
 export const createFormat = (data) => api.post('/api/formats/', data)
+export const updateFormat = (id, data) => api.patch(`/api/formats/${id}`, data)
 export const toggleFormat = (id) => api.patch(`/api/formats/${id}/toggle`)
 
 // Topics
@@ -79,3 +80,14 @@ export const deleteTemplate = (id) => api.delete(`/api/templates/${id}`)
 export const getEvents    = ()       => api.get('/api/events/')
 export const createEvent  = (data)   => api.post('/api/events/', data)
 export const deleteEvent  = (id)     => api.delete(`/api/events/${id}`)
+
+// Announcements
+export const getAnnouncements    = ()       => api.get('/api/announcements/')
+export const createAnnouncement  = (data)   => api.post('/api/announcements/', data)
+export const deleteAnnouncement  = (id)     => api.delete(`/api/announcements/${id}`)
+
+// Invite codes
+export const getInvites         = ()     => api.get('/api/invites/')
+export const createInvite       = ()     => api.post('/api/invites/')
+export const deactivateInvite   = (id)   => api.delete(`/api/invites/${id}`)
+export const validateInvite     = (code) => api.get(`/api/invites/validate/${code}`)
