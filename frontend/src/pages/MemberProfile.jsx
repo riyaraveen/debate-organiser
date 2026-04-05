@@ -170,30 +170,34 @@ export default function MemberProfile() {
             <div className="profile-avatar-lg" style={{ background: color }}>
               {member.name[0].toUpperCase()}
             </div>
-            <h2 className="profile-sidebar-name">{member.name}</h2>
-            {isMe && <span style={{ fontSize: 11, background: 'var(--yellow)', padding: '2px 8px', fontWeight: 800 }}>YOU</span>}
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
+            <h2 className="profile-sidebar-name">
+              {member.name}
+              {isMe && <span style={{ fontSize: 10, background: 'var(--yellow)', padding: '2px 7px', fontWeight: 800, marginLeft: 8, verticalAlign: 'middle' }}>YOU</span>}
+            </h2>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
               <span className={`badge ${member.role === 'admin' ? 'badge-red' : 'badge-blue'}`}>{member.role}</span>
               <span className="badge badge-gray">{member.proficiency || 'beginner'}</span>
             </div>
-            <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4, display: 'flex', alignItems: 'center', gap: 5 }}>
-              <Mail size={12}/> {member.email}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+              <div style={{ fontSize: 13, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Mail size={12}/> {member.email}
+              </div>
+              {member.phone && (
+                <div style={{ fontSize: 13, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Phone size={12}/> {member.phone}
+                </div>
+              )}
+              {member.school && (
+                <div style={{ fontSize: 13, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <School size={12}/> {member.school}
+                </div>
+              )}
+              {member.grade && (
+                <div style={{ fontSize: 13, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <GraduationCap size={12}/> {member.grade}
+                </div>
+              )}
             </div>
-            {member.phone && (
-              <div style={{ fontSize: 13, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 5 }}>
-                <Phone size={12}/> {member.phone}
-              </div>
-            )}
-            {member.school && (
-              <div style={{ fontSize: 13, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 5 }}>
-                <School size={12}/> {member.school}
-              </div>
-            )}
-            {member.grade && (
-              <div style={{ fontSize: 13, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 5 }}>
-                <GraduationCap size={12}/> {member.grade}
-              </div>
-            )}
           </div>
 
           {/* W/L/D quick stats */}
@@ -210,12 +214,10 @@ export default function MemberProfile() {
               <span className="profile-stat-num" style={{ color: 'var(--red)' }}>{losses}</span>
               <span className="profile-stat-label">Losses</span>
             </div>
-            {draws > 0 && (
-              <div className="profile-stat-row">
-                <span className="profile-stat-num" style={{ color: '#888' }}>{draws}</span>
-                <span className="profile-stat-label">Draws</span>
-              </div>
-            )}
+            <div className="profile-stat-row">
+              <span className="profile-stat-num" style={{ color: '#888' }}>{draws}</span>
+              <span className="profile-stat-label">Draws</span>
+            </div>
             {stats?.avg_score != null && (
               <div className="profile-stat-row">
                 <span className="profile-stat-num">{stats.avg_score}</span>
@@ -232,9 +234,9 @@ export default function MemberProfile() {
 
           {/* Bio */}
           {member.bio && (
-            <div style={{ borderTop: '1px solid #E8E8E8', paddingTop: 14 }}>
-              <div className="profile-sidebar-section-label" style={{ marginBottom: 6 }}>Bio</div>
-              <p style={{ fontSize: 13, margin: 0, color: 'var(--text-muted)', lineHeight: 1.5 }}>{member.bio}</p>
+            <div>
+              <div className="profile-sidebar-section-label" style={{ marginBottom: 8 }}>Bio</div>
+              <p style={{ fontSize: 13, margin: 0, color: 'var(--text-muted)', lineHeight: 1.6 }}>{member.bio}</p>
             </div>
           )}
         </aside>

@@ -144,12 +144,12 @@ export default function Profile() {
           <div className="profile-sidebar-identity">
             <div className="profile-avatar-lg">{user?.name?.[0]?.toUpperCase()}</div>
             <h2 className="profile-sidebar-name">{user?.name}</h2>
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
               <span className={`badge ${user?.role === 'admin' ? 'badge-red' : 'badge-blue'}`}>{user?.role}</span>
               <span className="badge badge-gray">{user?.proficiency || 'beginner'}</span>
             </div>
-            <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 8, display: 'flex', alignItems: 'center', gap: 5 }}>
-              <Mail size={13}/> {user?.email}
+            <div style={{ fontSize: 13, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Mail size={12}/> {user?.email}
             </div>
           </div>
 
@@ -158,16 +158,16 @@ export default function Profile() {
             <div className="profile-sidebar-stats">
               <div className="profile-stat-row">
                 <span className="profile-stat-num">{stats.sessions_attended ?? 0}</span>
-                <span className="profile-stat-label">Sessions attended</span>
+                <span className="profile-stat-label">Sessions</span>
               </div>
               <div className="profile-stat-row">
                 <span className="profile-stat-num" style={{ color: 'var(--blue)' }}>{availability.filter(d => d >= now.toISOString().slice(0, 10)).length}</span>
-                <span className="profile-stat-label">Available dates</span>
+                <span className="profile-stat-label">Available</span>
               </div>
               {stats.avg_score != null && (
                 <div className="profile-stat-row">
                   <span className="profile-stat-num">{stats.avg_score}</span>
-                  <span className="profile-stat-label">Avg speaker score</span>
+                  <span className="profile-stat-label">Avg score</span>
                 </div>
               )}
             </div>
