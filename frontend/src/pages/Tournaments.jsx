@@ -10,7 +10,7 @@ export default function Tournaments() {
   const [schools, setSchools] = useState([])
   const [loading, setLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
-  const [form, setForm] = useState({ name: '', description: '', format: 'single_elimination', school_ids: [], scheduled_at: '' })
+  const [form, setForm] = useState({ name: '', description: '', format: 'single_elimination', school_ids: [], scheduled_at: '', end_date: '', location: '', details: '', hosting_school_id: '' })
   // Seeding order for new tournament
   const [seedOrder, setSeedOrder] = useState([])
   const [showSeeding, setShowSeeding] = useState(false)
@@ -48,6 +48,8 @@ export default function Tournaments() {
     try {
       const payload = { ...form }
       if (payload.scheduled_at) payload.scheduled_at = new Date(payload.scheduled_at).toISOString()
+      if (payload.end_date) payload.end_date = new Date(payload.end_date).toISOString()
+      if (!payload.hosting_school_id) delete payload.hosting_school_id
       const res = await createTournament(payload)
       navigate(`/tournaments/${res.data.id}`)
     } catch (err) {
@@ -103,9 +105,41 @@ export default function Tournaments() {
             </div>
           </div>
 
-          <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em' }}>Date
-            <input type="datetime-local" value={form.scheduled_at}
-              onChange={e => setForm({ ...form, scheduled_at: e.target.value })} style={{ width: '100%' }} />
+          {/* Dates */}
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', width: '100%' }}>
+            <label style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+              Start Date
+              <input type="datetime-local" value={form.scheduled_at}
+                onChange={e => setForm({ ...form, scheduled_at: e.target.value })} style={{ width: '100%' }} />
+            </label>
+            <label style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+              End Date <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(leave blank if single day)</span>
+              <input type="datetime-local" value={form.end_date}
+                onChange={e => setForm({ ...form, end_date: e.target.value })} style={{ width: '100%' }} />
+            </label>
+          </div>
+
+          {/* Location & hosting school */}
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', width: '100%' }}>
+            <label style={{ flex: 2, display: 'flex', flexDirection: 'column', gap: 4, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+              Location / Venue
+              <input className="input" placeholder="e.g. Oakridge Academy Main Hall, London" value={form.location}
+                onChange={e => setForm({ ...form, location: e.target.value })} style={{ width: '100%' }} />
+            </label>
+            <label style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+              Hosting School
+              <select value={form.hosting_school_id} onChange={e => setForm({ ...form, hosting_school_id: e.target.value })} style={{ width: '100%' }}>
+                <option value="">None</option>
+                {schools.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+            </label>
+          </div>
+
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+            Additional Details
+            <textarea placeholder="Travel info, dress code, schedule, rules, parking, etc." value={form.details}
+              onChange={e => setForm({ ...form, details: e.target.value })}
+              style={{ border: '2px solid #121212', padding: '8px 12px', font: 'inherit', width: '100%', resize: 'vertical', outline: 'none' }} rows={3} />
           </label>
 
           {/* School selection */}

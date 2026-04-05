@@ -8,8 +8,10 @@ from datetime import datetime
 from app.db.database import get_db
 from app.models.school import School
 from app.models.tournament import Tournament
+from app.models.tournament_announcement import TournamentAnnouncement
+from app.models.user import User
 from app.models.club import ClubMembership
-from app.services.auth import get_club_membership, require_club_admin
+from app.services.auth import get_club_membership, require_club_admin, get_current_user
 
 router = APIRouter(prefix="/api/schools", tags=["schools"])
 tournament_router = APIRouter(prefix="/api/tournaments", tags=["tournaments"])
@@ -41,6 +43,10 @@ class TournamentCreate(BaseModel):
     format: Optional[str] = "single_elimination"
     school_ids: Optional[List[int]] = []
     scheduled_at: Optional[datetime] = None
+    end_date: Optional[datetime] = None
+    location: Optional[str] = None
+    details: Optional[str] = None
+    hosting_school_id: Optional[int] = None
 
 
 class TournamentUpdate(BaseModel):
@@ -48,11 +54,29 @@ class TournamentUpdate(BaseModel):
     description: Optional[str] = None
     status: Optional[str] = None
     scheduled_at: Optional[datetime] = None
+    end_date: Optional[datetime] = None
+    location: Optional[str] = None
+    details: Optional[str] = None
+    hosting_school_id: Optional[int] = None
 
 
 class TournamentSchoolsUpdate(BaseModel):
     school_ids: List[int]
     regenerate_bracket: bool = False
+
+
+class AnnouncementCreate(BaseModel):
+    message: str
+
+
+class AnnouncementOut(BaseModel):
+    id: int
+    message: str
+    created_by_name: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
 
 
 class TournamentOut(BaseModel):
@@ -64,6 +88,10 @@ class TournamentOut(BaseModel):
     bracket: Optional[str]
     school_ids: Optional[str]
     scheduled_at: Optional[datetime]
+    end_date: Optional[datetime]
+    location: Optional[str]
+    details: Optional[str]
+    hosting_school_id: Optional[int]
     created_at: Optional[datetime]
 
     class Config:
@@ -156,6 +184,10 @@ def create_tournament(body: TournamentCreate, db: Session = Depends(get_db), mem
         school_ids=json.dumps(body.school_ids or []),
         bracket=json.dumps(bracket),
         scheduled_at=body.scheduled_at,
+        end_date=body.end_date,
+        location=body.location,
+        details=body.details,
+        hosting_school_id=body.hosting_school_id,
         club_id=membership.club_id,
     )
     db.add(t)
@@ -240,3 +272,51 @@ def get_school_stats(db: Session = Depends(get_db), membership: ClubMembership =
             if loser:
                 stats.setdefault(loser, {"wins": 0, "losses": 0})["losses"] += 1
     return stats
+
+
+# ── Tournament announcements ──────────────────────────
+
+@tournament_router.get("/{tournament_id}/announcements")
+def list_announcements(tournament_id: int, db: Session = Depends(get_db), membership: ClubMembership = Depends(get_club_membership)):
+    t = db.query(Tournament).filter(Tournament.id == tournament_id, Tournament.club_id == membership.club_id).first()
+    if not t:
+        raise HTTPException(status_code=404, detail="Tournament not found")
+    anns = db.query(TournamentAnnouncement).filter(
+        TournamentAnnouncement.tournament_id == tournament_id
+    ).order_by(TournamentAnnouncement.created_at.desc()).all()
+    user_ids = list({a.created_by for a in anns})
+    users = {u.id: u for u in db.query(User).filter(User.id.in_(user_ids)).all()}
+    return [
+        {"id": a.id, "message": a.message, "created_by_name": users.get(a.created_by, User()).name or "Unknown", "created_at": a.created_at}
+        for a in anns
+    ]
+
+
+@tournament_router.post("/{tournament_id}/announcements", status_code=201)
+def create_announcement(tournament_id: int, body: AnnouncementCreate, db: Session = Depends(get_db), membership: ClubMembership = Depends(require_club_admin), current_user: User = Depends(get_current_user)):
+    t = db.query(Tournament).filter(Tournament.id == tournament_id, Tournament.club_id == membership.club_id).first()
+    if not t:
+        raise HTTPException(status_code=404, detail="Tournament not found")
+    ann = TournamentAnnouncement(
+        tournament_id=tournament_id,
+        club_id=membership.club_id,
+        message=body.message,
+        created_by=current_user.id,
+    )
+    db.add(ann)
+    db.commit()
+    db.refresh(ann)
+    return {"id": ann.id, "message": ann.message, "created_by_name": current_user.name, "created_at": ann.created_at}
+
+
+@tournament_router.delete("/{tournament_id}/announcements/{ann_id}", status_code=204)
+def delete_announcement(tournament_id: int, ann_id: int, db: Session = Depends(get_db), membership: ClubMembership = Depends(require_club_admin)):
+    ann = db.query(TournamentAnnouncement).filter(
+        TournamentAnnouncement.id == ann_id,
+        TournamentAnnouncement.tournament_id == tournament_id,
+        TournamentAnnouncement.club_id == membership.club_id,
+    ).first()
+    if not ann:
+        raise HTTPException(status_code=404, detail="Announcement not found")
+    db.delete(ann)
+    db.commit()

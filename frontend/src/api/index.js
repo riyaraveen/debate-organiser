@@ -128,3 +128,8 @@ export const updateTournament     = (id, data)      => api.patch(`/api/tournamen
 export const deleteTournament     = (id)            => api.delete(`/api/tournaments/${id}`)
 export const updateBracket        = (id, bracket)   => api.patch(`/api/tournaments/${id}/bracket`, bracket)
 export const updateTournamentSchools = (id, data)   => api.patch(`/api/tournaments/${id}/schools`, data)
+
+// Tournament announcements
+export const getTournamentAnnouncements = (id)       => api.get(`/api/tournaments/${id}/announcements`)
+export const createTournamentAnnouncement = (id, data) => api.post(`/api/tournaments/${id}/announcements`, data)
+export const deleteTournamentAnnouncement = (tid, aid) => api.delete(`/api/tournaments/${tid}/announcements/${aid}`)

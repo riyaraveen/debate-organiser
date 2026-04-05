@@ -1,12 +1,26 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { ArrowLeft, Trash2, Plus, X, RefreshCw, Trophy } from 'lucide-react'
-import { getTournament, updateTournament, deleteTournament, updateBracket, updateTournamentSchools, getSchools, getTopics } from '../api'
+import { getTournament, updateTournament, deleteTournament, updateBracket, updateTournamentSchools, getSchools, getTopics, getTournamentAnnouncements, createTournamentAnnouncement, deleteTournamentAnnouncement } from '../api'
 import api from '../api/client'
 import { useClub } from '../context/ClubContext'
 
 const STATUS_COLOR = { draft: '#b45309', active: '#1040C0', completed: '#1a7a3c' }
 const STATUS_BG    = { draft: '#fef3c7', active: '#dbeafe', completed: '#dcfce7' }
+
+function formatDateRange(start, end) {
+  if (!start) return null
+  const fmt = (d, opts) => new Date(d).toLocaleDateString('en-GB', opts)
+  const startStr = fmt(start, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
+  if (!end) return startStr
+  const s = new Date(start), e = new Date(end)
+  // Same day
+  if (s.toDateString() === e.toDateString()) return startStr
+  // Same month+year
+  if (s.getMonth() === e.getMonth() && s.getFullYear() === e.getFullYear())
+    return `${fmt(start, { weekday: 'short', day: 'numeric' })} – ${fmt(end, { day: 'numeric', month: 'short', year: 'numeric' })}`
+  return `${fmt(start, { day: 'numeric', month: 'short' })} – ${fmt(end, { day: 'numeric', month: 'short', year: 'numeric' })}`
+}
 
 // ── Bracket helpers ───────────────────────────────────────────────────────────
 
@@ -308,6 +322,8 @@ export default function TournamentDetail() {
   const [schools, setSchools] = useState([])
   const [sessions, setSessions] = useState([])
   const [topics, setTopics] = useState([])
+  const [announcements, setAnnouncements] = useState([])
+  const [annMsg, setAnnMsg] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -319,11 +335,12 @@ export default function TournamentDetail() {
 
   const load = useCallback(async () => {
     try {
-      const [tRes, sRes, sessRes, topRes] = await Promise.all([
+      const [tRes, sRes, sessRes, topRes, annRes] = await Promise.all([
         getTournament(id),
         getSchools(),
         api.get('/api/sessions/'),
         getTopics({ is_go: true }),
+        getTournamentAnnouncements(id),
       ])
       setTournament(tRes.data)
       setBracket(tRes.data.bracket ? JSON.parse(tRes.data.bracket) : null)
@@ -331,6 +348,7 @@ export default function TournamentDetail() {
       setSchools(sRes.data)
       setSessions(sessRes.data)
       setTopics(topRes.data)
+      setAnnouncements(annRes.data)
     } catch {
       setError('Failed to load tournament')
     } finally {
@@ -383,6 +401,23 @@ export default function TournamentDetail() {
     }
   }
 
+  const handlePostAnnouncement = async (e) => {
+    e.preventDefault()
+    if (!annMsg.trim()) return
+    try {
+      const res = await createTournamentAnnouncement(id, { message: annMsg.trim() })
+      setAnnouncements(prev => [res.data, ...prev])
+      setAnnMsg('')
+    } catch {
+      setError('Failed to post announcement')
+    }
+  }
+
+  const handleDeleteAnnouncement = async (annId) => {
+    await deleteTournamentAnnouncement(id, annId)
+    setAnnouncements(prev => prev.filter(a => a.id !== annId))
+  }
+
   if (loading) return <div className="loading">Loading…</div>
   if (!tournament) return <div className="page-container"><p className="text-muted">Tournament not found.</p></div>
 
@@ -415,8 +450,16 @@ export default function TournamentDetail() {
               <span className="badge badge-gray" style={{ fontSize: 12 }}>{tournament.format?.replace('_', ' ')}</span>
               <span style={{ fontSize: 13, color: '#92400e' }}>🏫 {selectedSchoolIds.length} schools</span>
               {tournament.scheduled_at && (
-                <span style={{ fontSize: 13, color: '#777' }}>
-                  📅 {new Date(tournament.scheduled_at).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+                <span style={{ fontSize: 13, color: '#92400e' }}>
+                  📅 {formatDateRange(tournament.scheduled_at, tournament.end_date)}
+                </span>
+              )}
+              {tournament.location && (
+                <span style={{ fontSize: 13, color: '#92400e' }}>📍 {tournament.location}</span>
+              )}
+              {tournament.hosting_school_id && (
+                <span style={{ fontSize: 13, color: '#92400e' }}>
+                  🏫 Hosted by {schools.find(s => s.id === tournament.hosting_school_id)?.name || 'Unknown'}
                 </span>
               )}
               {saving && <span style={{ fontSize: 12, color: '#b45309' }}>Saving…</span>}
@@ -514,6 +557,64 @@ export default function TournamentDetail() {
               </button>
               <button className="btn btn-ghost" style={{ fontSize: 12 }} onClick={() => setShowSeeding(false)}>Cancel</button>
             </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Additional Details ─────────────────────────────────── */}
+      {tournament.details && (
+        <div style={{ marginBottom: 32, background: '#f0fdf4', border: '2px solid #86efac', borderRadius: 6, padding: '16px 20px' }}>
+          <div style={{ fontWeight: 800, textTransform: 'uppercase', fontSize: 12, letterSpacing: '0.07em', color: '#166534', marginBottom: 10 }}>
+            📋 Additional Details
+          </div>
+          <div style={{ fontSize: 14, color: '#14532d', lineHeight: 1.65, whiteSpace: 'pre-wrap' }}>{tournament.details}</div>
+        </div>
+      )}
+
+      {/* ── Announcements ──────────────────────────────────────── */}
+      <div style={{ marginBottom: 32 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, paddingBottom: 10, borderBottom: '2px solid #e5e7eb' }}>
+          <span style={{ fontSize: 16 }}>📢</span>
+          <h2 style={{ fontWeight: 800, textTransform: 'uppercase', fontSize: 13, letterSpacing: '0.08em', margin: 0 }}>Announcements</h2>
+          <span style={{ fontSize: 12, color: '#888' }}>{announcements.length > 0 ? `${announcements.length} posted` : 'None yet'}</span>
+        </div>
+
+        {isAdmin && (
+          <form onSubmit={handlePostAnnouncement} style={{ marginBottom: 16, display: 'flex', gap: 8 }}>
+            <textarea
+              value={annMsg}
+              onChange={e => setAnnMsg(e.target.value)}
+              placeholder="Post an update — venue change, schedule, travel info, reminders…"
+              rows={2}
+              style={{ flex: 1, border: '2px solid #d97706', borderRadius: 4, padding: '8px 12px', font: 'inherit', fontSize: 13, outline: 'none', resize: 'vertical', background: '#fffbf0' }}
+            />
+            <button type="submit" className="btn btn-primary"
+              style={{ alignSelf: 'flex-end', background: '#b45309', borderColor: '#92400e', flexShrink: 0 }}>
+              Post
+            </button>
+          </form>
+        )}
+
+        {announcements.length === 0 ? (
+          <p style={{ fontSize: 13, color: '#888', fontStyle: 'italic' }}>No announcements yet.</p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {announcements.map(a => (
+              <div key={a.id} style={{ background: '#fffbf0', border: '2px solid #f0c020', borderRadius: 6, padding: '12px 16px', position: 'relative' }}>
+                <div style={{ fontSize: 13, lineHeight: 1.55, whiteSpace: 'pre-wrap', color: '#1c1c1c' }}>{a.message}</div>
+                <div style={{ marginTop: 8, fontSize: 11, color: '#92400e', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span>— {a.created_by_name}</span>
+                  <span>·</span>
+                  <span>{new Date(a.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                  {isAdmin && (
+                    <button onClick={() => handleDeleteAnnouncement(a.id)}
+                      style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: '#c00', fontSize: 12 }}>
+                      <Trash2 size={13} />
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>

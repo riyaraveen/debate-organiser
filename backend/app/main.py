@@ -51,6 +51,10 @@ if DATABASE_URL.startswith("sqlite"):
     _add_column_if_missing("users",               "reset_token_expiry","DATETIME")
     _add_column_if_missing("schools",             "club_id",           "INTEGER")
     _add_column_if_missing("tournaments",         "club_id",           "INTEGER")
+    _add_column_if_missing("tournaments",         "end_date",          "DATETIME")
+    _add_column_if_missing("tournaments",         "location",          "VARCHAR")
+    _add_column_if_missing("tournaments",         "details",           "TEXT")
+    _add_column_if_missing("tournaments",         "hosting_school_id", "INTEGER")
 
 # ── Seed a default club for existing data ────────────────────────────────────
 from sqlalchemy.orm import Session as DBSession
