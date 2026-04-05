@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { ArrowLeft, Trash2, Plus, X, RefreshCw, Trophy } from 'lucide-react'
-import { getTournament, updateTournament, deleteTournament, updateBracket, updateTournamentSchools, getSchools } from '../api'
+import { getTournament, updateTournament, deleteTournament, updateBracket, updateTournamentSchools, getSchools, getTopics } from '../api'
 import api from '../api/client'
 import { useClub } from '../context/ClubContext'
 
@@ -35,8 +35,10 @@ function schoolName(id, schools) {
   return schools.find(s => s.id === id)?.name ?? `School #${id}`
 }
 
-function MatchCard({ match, schools, sessions, canEdit, onPickWinner }) {
+function MatchCard({ match, schools, sessions, topics, canEdit, onPickWinner, onSetTopic }) {
   const [linkingSession, setLinkingSession] = useState(false)
+  const [editingTopic, setEditingTopic] = useState(false)
+  const [topicDraft, setTopicDraft] = useState(match.topic || '')
   const [pendingWinner, setPendingWinner] = useState(null)
   const linked = match.session_id ? sessions.find(s => s.id === match.session_id) : null
   const isBye = !match.team_a || !match.team_b
@@ -57,8 +59,67 @@ function MatchCard({ match, schools, sessions, canEdit, onPickWinner }) {
     setPendingWinner(null)
   }
 
+  const saveTopic = (value) => {
+    setEditingTopic(false)
+    onSetTopic(value.trim())
+  }
+
   return (
     <div className={`bracket-match-card ${match.winner ? 'bracket-match-done' : ''}`}>
+
+      {/* Motion / topic */}
+      {match.topic ? (
+        <div style={{ marginBottom: 8, padding: '6px 8px', background: '#fef3c7', border: '1.5px solid #f0c020', borderRadius: 4 }}>
+          <div style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#92400e', marginBottom: 2 }}>Motion</div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: '#78350f', lineHeight: 1.35 }}>{match.topic}</div>
+          {canEdit && (
+            <button onClick={() => { setTopicDraft(match.topic); setEditingTopic(true) }}
+              style={{ fontSize: 10, color: '#b45309', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0 0', textDecoration: 'underline' }}>
+              Change
+            </button>
+          )}
+        </div>
+      ) : canEdit ? (
+        <button onClick={() => { setTopicDraft(''); setEditingTopic(true) }}
+          style={{ width: '100%', marginBottom: 8, padding: '5px 8px', background: 'none', border: '1.5px dashed #d97706', borderRadius: 4, color: '#b45309', fontSize: 11, fontWeight: 700, cursor: 'pointer', textAlign: 'left' }}>
+          + Set motion / topic
+        </button>
+      ) : null}
+
+      {/* Topic editor */}
+      {editingTopic && (
+        <div style={{ marginBottom: 10, padding: '10px', background: '#fffbf0', border: '2px solid #d97706', borderRadius: 4 }}>
+          <div style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#92400e', marginBottom: 6 }}>Set Motion</div>
+          <input
+            className="input"
+            value={topicDraft}
+            onChange={e => setTopicDraft(e.target.value)}
+            placeholder="Type a motion or pick from bank below…"
+            style={{ width: '100%', marginBottom: 6, fontSize: 12 }}
+            autoFocus
+            onKeyDown={e => { if (e.key === 'Enter') saveTopic(topicDraft); if (e.key === 'Escape') setEditingTopic(false) }}
+          />
+          {topics.length > 0 && (
+            <div style={{ maxHeight: 130, overflowY: 'auto', marginBottom: 8, display: 'flex', flexDirection: 'column', gap: 3 }}>
+              {topics.filter(t => !topicDraft || t.text.toLowerCase().includes(topicDraft.toLowerCase())).slice(0, 12).map(t => (
+                <button key={t.id} type="button"
+                  onClick={() => saveTopic(t.text)}
+                  style={{ textAlign: 'left', background: 'white', border: '1px solid #e5e7eb', borderRadius: 3, padding: '4px 8px', fontSize: 11, color: '#374151', cursor: 'pointer' }}
+                  onMouseOver={e => e.currentTarget.style.background = '#fef3c7'}
+                  onMouseOut={e => e.currentTarget.style.background = 'white'}>
+                  {t.text}
+                </button>
+              ))}
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button className="btn btn-primary" style={{ fontSize: 11, padding: '4px 10px', background: '#b45309', borderColor: '#92400e' }} onClick={() => saveTopic(topicDraft)}>Set</button>
+            <button className="btn btn-ghost" style={{ fontSize: 11, padding: '4px 10px' }} onClick={() => setEditingTopic(false)}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {/* Teams */}
       <div
         className={`bracket-team ${match.winner === match.team_a ? 'bracket-winner' : ''} ${canEdit && !match.winner && !isBye ? 'bracket-team-clickable' : ''}`}
         onClick={() => handleClick(match.team_a)}
@@ -74,14 +135,16 @@ function MatchCard({ match, schools, sessions, canEdit, onPickWinner }) {
         {match.team_b ? schoolName(match.team_b, schools) : <span className="text-muted">BYE</span>}
         {match.winner === match.team_b && <span className="bracket-check"> ✓</span>}
       </div>
+
       {linked && (
-        <div style={{ fontSize: 11, color: '#555', marginTop: 4, borderTop: '1px solid #eee', paddingTop: 4 }}>
-          Session: {linked.topic_text || 'Untitled'}
+        <div style={{ fontSize: 11, color: '#555', marginTop: 6, borderTop: '1px solid #f0c020', paddingTop: 5 }}>
+          📎 Session: {linked.topic_text || 'Untitled'}
         </div>
       )}
+
       {linkingSession && (
-        <div style={{ marginTop: 8, borderTop: '2px solid #121212', paddingTop: 8 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 6 }}>Link a session (optional)</div>
+        <div style={{ marginTop: 8, borderTop: '2px solid #d97706', paddingTop: 8 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 6, color: '#92400e' }}>Link a session (optional)</div>
           <select style={{ width: '100%', marginBottom: 6 }} defaultValue="" onChange={e => confirmWinner(e.target.value ? Number(e.target.value) : null)}>
             <option value="">No session</option>
             {sessions.map(s => <option key={s.id} value={s.id}>{s.topic_text || `Session #${s.id}`}</option>)}
@@ -93,11 +156,17 @@ function MatchCard({ match, schools, sessions, canEdit, onPickWinner }) {
   )
 }
 
-function SingleEliminationBracket({ bracket, schools, sessions, canEdit, onUpdate }) {
+function SingleEliminationBracket({ bracket, schools, sessions, topics, canEdit, onUpdate }) {
   const handlePickWinner = (roundIdx, matchIdx, winnerId, sessionId) => {
     const updated = advanceSingleElim(bracket, roundIdx, matchIdx, winnerId)
     if (sessionId) updated.rounds[roundIdx].matches[matchIdx].session_id = sessionId
     onUpdate(updated)
+  }
+
+  const handleSetTopic = (roundIdx, matchIdx, topic) => {
+    const b = JSON.parse(JSON.stringify(bracket))
+    b.rounds[roundIdx].matches[matchIdx].topic = topic
+    onUpdate(b)
   }
 
   return (
@@ -111,8 +180,10 @@ function SingleEliminationBracket({ bracket, schools, sessions, canEdit, onUpdat
               match={m}
               schools={schools}
               sessions={sessions}
+              topics={topics}
               canEdit={canEdit}
               onPickWinner={(wid, sid) => handlePickWinner(ri, mi, wid, sid)}
+              onSetTopic={(topic) => handleSetTopic(ri, mi, topic)}
             />
           ))}
         </div>
@@ -121,13 +192,19 @@ function SingleEliminationBracket({ bracket, schools, sessions, canEdit, onUpdat
   )
 }
 
-function RoundRobinBracket({ bracket, schools, sessions, canEdit, onUpdate }) {
+function RoundRobinBracket({ bracket, schools, sessions, topics, canEdit, onUpdate }) {
   const matches = bracket.matches || []
 
   const handlePickWinner = (matchIdx, winnerId, sessionId) => {
     const updated = recordRoundRobin(bracket, matchIdx, winnerId)
     if (sessionId) updated.matches[matchIdx].session_id = sessionId
     onUpdate(updated)
+  }
+
+  const handleSetTopic = (matchIdx, topic) => {
+    const b = JSON.parse(JSON.stringify(bracket))
+    b.matches[matchIdx].topic = topic
+    onUpdate(b)
   }
 
   // Compute standings
@@ -173,8 +250,10 @@ function RoundRobinBracket({ bracket, schools, sessions, canEdit, onUpdate }) {
             match={m}
             schools={schools}
             sessions={sessions}
+            topics={topics}
             canEdit={canEdit}
             onPickWinner={(wid, sid) => handlePickWinner(mi, wid, sid)}
+            onSetTopic={(topic) => handleSetTopic(mi, topic)}
           />
         ))}
       </div>
@@ -228,6 +307,7 @@ export default function TournamentDetail() {
   const [bracket, setBracket] = useState(null)
   const [schools, setSchools] = useState([])
   const [sessions, setSessions] = useState([])
+  const [topics, setTopics] = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -239,16 +319,18 @@ export default function TournamentDetail() {
 
   const load = useCallback(async () => {
     try {
-      const [tRes, sRes, sessRes] = await Promise.all([
+      const [tRes, sRes, sessRes, topRes] = await Promise.all([
         getTournament(id),
         getSchools(),
         api.get('/api/sessions/'),
+        getTopics({ is_go: true }),
       ])
       setTournament(tRes.data)
       setBracket(tRes.data.bracket ? JSON.parse(tRes.data.bracket) : null)
       setSelectedSchoolIds(tRes.data.school_ids ? JSON.parse(tRes.data.school_ids) : [])
       setSchools(sRes.data)
       setSessions(sessRes.data)
+      setTopics(topRes.data)
     } catch {
       setError('Failed to load tournament')
     } finally {
@@ -456,10 +538,10 @@ export default function TournamentDetail() {
             <p>No bracket generated yet. Add schools and use "Set seeding &amp; regenerate" above.</p>
           </div>
         ) : bracket.format === 'round_robin' ? (
-          <RoundRobinBracket bracket={bracket} schools={schools} sessions={sessions}
+          <RoundRobinBracket bracket={bracket} schools={schools} sessions={sessions} topics={topics}
             canEdit={isAdmin && tournament.status !== 'completed'} onUpdate={saveBracket} />
         ) : (
-          <SingleEliminationBracket bracket={bracket} schools={schools} sessions={sessions}
+          <SingleEliminationBracket bracket={bracket} schools={schools} sessions={sessions} topics={topics}
             canEdit={isAdmin && tournament.status !== 'completed'} onUpdate={saveBracket} />
         )}
       </div>

@@ -85,18 +85,28 @@ export default function Tournaments() {
           <textarea placeholder="Description (optional)" value={form.description}
             onChange={e => setForm({ ...form, description: e.target.value })}
             style={{ border: '2px solid #121212', padding: '8px 12px', font: 'inherit', width: '100%', resize: 'vertical', outline: 'none' }} rows={2} />
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', width: '100%' }}>
-            <label style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em' }}>Format
-              <select value={form.format} onChange={e => setForm({ ...form, format: e.target.value })} style={{ width: '100%' }}>
-                <option value="single_elimination">Single Elimination</option>
-                <option value="round_robin">Round Robin</option>
-              </select>
-            </label>
-            <label style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em' }}>Date
-              <input type="datetime-local" value={form.scheduled_at}
-                onChange={e => setForm({ ...form, scheduled_at: e.target.value })} style={{ width: '100%' }} />
-            </label>
+          {/* Format picker */}
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>Format</div>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              {[
+                { value: 'single_elimination', label: 'Single Elimination', icon: '🏆', desc: 'Lose once and you\'re out. Winners advance through the bracket until one champion remains. Best for quick, high-stakes tournaments.' },
+                { value: 'round_robin', label: 'Round Robin', icon: '🔄', desc: 'Every school debates every other school. The team with the most wins at the end takes the title. Best for thorough, fair competition.' },
+              ].map(f => (
+                <button key={f.value} type="button"
+                  onClick={() => setForm({ ...form, format: f.value })}
+                  style={{ flex: 1, minWidth: 200, textAlign: 'left', padding: '12px 14px', border: `2px solid ${form.format === f.value ? '#b45309' : '#ccc'}`, borderRadius: 6, background: form.format === f.value ? '#fffbf0' : 'white', cursor: 'pointer', boxShadow: form.format === f.value ? '3px 3px 0 #f0c020' : 'none', transition: 'all 0.1s' }}>
+                  <div style={{ fontWeight: 800, fontSize: 14, marginBottom: 4 }}>{f.icon} {f.label}</div>
+                  <div style={{ fontSize: 12, color: '#666', lineHeight: 1.4 }}>{f.desc}</div>
+                </button>
+              ))}
+            </div>
           </div>
+
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em' }}>Date
+            <input type="datetime-local" value={form.scheduled_at}
+              onChange={e => setForm({ ...form, scheduled_at: e.target.value })} style={{ width: '100%' }} />
+          </label>
 
           {/* School selection */}
           <div>
