@@ -70,7 +70,8 @@ export const getUserStats = (userId) => api.get(`/api/users/${userId}/stats`)
 
 // Notes
 export const getMyNote = (sessionId) => api.get(`/api/sessions/${sessionId}/notes/me`)
-export const saveMyNote = (sessionId, content) => api.put(`/api/sessions/${sessionId}/notes/me`, { content })
+export const saveMyNote = (sessionId, content, is_private = false) => api.put(`/api/sessions/${sessionId}/notes/me`, { content, is_private })
+export const getNoteVersions = (sessionId) => api.get(`/api/sessions/${sessionId}/notes/me/versions`)
 export const getTeamNotes = (sessionId) => api.get(`/api/sessions/${sessionId}/team-notes`)
 export const getUserNote = (sessionId, userId) => api.get(`/api/sessions/${sessionId}/notes/${userId}`)
 export const notifyCalendar = (sessionId) => api.post(`/api/sessions/${sessionId}/notify-calendar`)

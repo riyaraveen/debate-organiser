@@ -55,6 +55,7 @@ if DATABASE_URL.startswith("sqlite"):
     _add_column_if_missing("tournaments",         "location",          "VARCHAR")
     _add_column_if_missing("tournaments",         "details",           "TEXT")
     _add_column_if_missing("tournaments",         "hosting_school_id", "INTEGER")
+    _add_column_if_missing("session_notes",       "is_private",        "INTEGER DEFAULT 0")
 
 # ── Seed a default club for existing data ────────────────────────────────────
 from sqlalchemy.orm import Session as DBSession

@@ -5,7 +5,7 @@ from .topic import Topic
 from .session import Session, SessionParticipant
 from .notification import Notification
 from .club_settings import ClubSettings
-from .session_note import SessionNote
+from .session_note import SessionNote, SessionNoteVersion
 from .school import School
 from .tournament import Tournament
 from .tournament_announcement import TournamentAnnouncement

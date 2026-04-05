@@ -159,39 +159,59 @@ async def update_session(
 
 
 @router.get("/{session_id}/team-notes")
-def get_team_notes(session_id: int, db: DBSession = Depends(get_db), _: ClubMembership = Depends(get_club_membership)):
+def get_team_notes(session_id: int, db: DBSession = Depends(get_db), membership: ClubMembership = Depends(get_club_membership), current_user: User = Depends(get_current_user)):
     from app.models.session_note import SessionNote
+    # Exclude private notes from other users
     notes = db.query(SessionNote).filter(
         SessionNote.session_id == session_id,
-        SessionNote.content != ""
+        SessionNote.content != "",
+        (SessionNote.is_private == False) | (SessionNote.user_id == current_user.id),
     ).all()
     user_ids = [n.user_id for n in notes]
     users_by_id = {u.id: u for u in db.query(User).filter(User.id.in_(user_ids)).all()} if user_ids else {}
+    # Fetch participant role/side for each user
+    participants = db.query(SessionParticipant).filter(
+        SessionParticipant.session_id == session_id,
+        SessionParticipant.user_id.in_(user_ids),
+    ).all()
+    participant_by_user = {p.user_id: p for p in participants}
     return [
         {
             "user_id": n.user_id,
             "user_name": users_by_id[n.user_id].name if n.user_id in users_by_id else f"User #{n.user_id}",
             "content": n.content,
+            "is_private": n.is_private,
             "updated_at": str(n.updated_at),
+            "role": participant_by_user[n.user_id].role_name if n.user_id in participant_by_user else None,
+            "side": participant_by_user[n.user_id].side if n.user_id in participant_by_user else None,
         }
         for n in notes
     ]
 
 
 @router.get("/{session_id}/notes/{user_id}")
-def get_user_note(session_id: int, user_id: int, db: DBSession = Depends(get_db), _: ClubMembership = Depends(get_club_membership)):
+def get_user_note(session_id: int, user_id: int, db: DBSession = Depends(get_db), membership: ClubMembership = Depends(get_club_membership), current_user: User = Depends(get_current_user)):
     from app.models.session_note import SessionNote
     from app.models.user import User as UserModel
     note = db.query(SessionNote).filter(
         SessionNote.session_id == session_id,
         SessionNote.user_id == user_id,
     ).first()
+    # Block access to private notes from other users
+    if note and note.is_private and note.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="These notes are private")
     u = db.query(UserModel).filter(UserModel.id == user_id).first()
+    participant = db.query(SessionParticipant).filter(
+        SessionParticipant.session_id == session_id,
+        SessionParticipant.user_id == user_id,
+    ).first()
     return {
         "user_id": user_id,
         "user_name": u.name if u else f"User #{user_id}",
         "content": note.content if note else "",
         "updated_at": str(note.updated_at) if note else None,
+        "role": participant.role_name if participant else None,
+        "side": participant.side if participant else None,
     }
 
 

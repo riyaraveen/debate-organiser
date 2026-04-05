@@ -45,7 +45,22 @@ export default function TeamMemberNotes() {
                 {note?.user_name?.[0]?.toUpperCase()}
               </div>
               <div>
-                <div style={{ color: 'white', fontWeight: 800, fontSize: 14 }}>{note?.user_name}</div>
+                <div style={{ color: 'white', fontWeight: 800, fontSize: 14, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  {note?.user_name}
+                  {note?.role && (
+                    <span style={{ fontSize: 10, fontWeight: 700, background: '#fef3c7', color: '#92400e', border: '1px solid #f0c020', borderRadius: 3, padding: '1px 6px' }}>
+                      {note.role}
+                    </span>
+                  )}
+                  {note?.side && (
+                    <span style={{ fontSize: 10, fontWeight: 700, borderRadius: 3, padding: '1px 6px',
+                      ...(note.side === 'proposition' ? { background: '#dbeafe', color: '#1e40af' }
+                        : note.side === 'opposition' ? { background: '#fde8e8', color: '#991b1b' }
+                        : { background: '#f3f4f6', color: '#374151' }) }}>
+                      {note.side}
+                    </span>
+                  )}
+                </div>
                 {note?.updated_at && (
                   <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11 }}>
                     Last updated {new Date(note.updated_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
