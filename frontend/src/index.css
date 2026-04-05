@@ -2459,6 +2459,20 @@ label > span,
   cursor: default;
 }
 
+.member-session-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 1.5px solid #E8E8E8;
+  text-decoration: none;
+  color: var(--black);
+  transition: border-color 0.15s;
+  min-width: 0;
+}
+.member-session-row:hover { border-color: var(--blue); }
+
 /* ── Settings page ────────────────────────────────── */
 .settings-page { max-width: 560px; margin: 0 auto; }
 .settings-body { }
