@@ -520,10 +520,10 @@ export default function SessionDetail() {
               {myParticipant.role_name
                 ? <span className="badge badge-yellow">{myParticipant.role_name}</span>
                 : <span className="badge badge-gray">No role assigned</span>}
-              {myParticipant.side === 'proposition' && <span className="badge badge-blue">Proposition</span>}
-              {myParticipant.side === 'opposition'  && <span className="badge badge-red">Opposition</span>}
-              {myParticipant.side && !['proposition','opposition'].includes(myParticipant.side) && (
-                <span className="badge badge-gray">{myParticipant.side}</span>
+              {myParticipant.side && myParticipant.side.toLowerCase() !== myParticipant.role_name?.toLowerCase() && (
+                <span className={`badge ${myParticipant.side === 'proposition' ? 'badge-blue' : myParticipant.side === 'opposition' ? 'badge-red' : 'badge-gray'}`}>
+                  {myParticipant.side}
+                </span>
               )}
             </div>
           </div>
