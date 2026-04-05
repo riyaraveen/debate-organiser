@@ -558,6 +558,7 @@ input:focus, select:focus, textarea:focus {
 .badge-gray   { background: #888;          color: white; }
 .badge-purple { background: #7030D0;       color: white; }
 .badge-orange { background: #D06010;       color: white; }
+.badge-yellow { background: var(--yellow); color: var(--black); }
 
 /* ── Alerts ───────────────────────────────────────── */
 .alert {
@@ -2078,6 +2079,100 @@ input:focus, select:focus, textarea:focus {
   letter-spacing: 0.07em;
   color: var(--black);
   text-decoration: underline;
+}
+
+/* ── Dashboard: today highlight ──────────────────── */
+.session-card-today {
+  border-left: 4px solid var(--yellow) !important;
+}
+
+/* ── Dashboard: onboarding ────────────────────────── */
+.dash-onboard {
+  padding: 32px 28px;
+  border-bottom: var(--border-w) solid var(--black);
+}
+.dash-onboard-title {
+  font-size: 18px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 10px;
+}
+.dash-onboard-body {
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1.7;
+  max-width: 480px;
+  margin-bottom: 20px;
+}
+.dash-onboard-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* ── Dashboard: tournament list ───────────────────── */
+.dash-tournament-list { display: flex; flex-direction: column; }
+.dash-tournament-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-bottom: 1px solid #EAEAEA;
+  text-decoration: none;
+  color: var(--text);
+  transition: background 0.1s;
+}
+.dash-tournament-item:hover { background: var(--off-white); }
+.dash-tournament-name {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dash-tournament-date {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* ── Dashboard: win/loss record ───────────────────── */
+.dash-wl-row {
+  display: flex;
+  align-items: stretch;
+  border-top: var(--border-w) solid var(--black);
+}
+.dash-wl-block {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 8px;
+  gap: 4px;
+}
+.dash-wl-win  { background: #F0FFF4; }
+.dash-wl-loss { background: #FFF5F5; }
+.dash-wl-num {
+  font-size: 28px;
+  font-weight: 900;
+  line-height: 1;
+}
+.dash-wl-win  .dash-wl-num { color: #1A8040; }
+.dash-wl-loss .dash-wl-num { color: var(--red); }
+.dash-wl-label {
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+}
+.dash-wl-divider {
+  width: var(--border-w);
+  background: var(--black);
+  flex-shrink: 0;
 }
 
 /* ── Input label utility ──────────────────────────── */
