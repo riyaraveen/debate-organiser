@@ -6,7 +6,21 @@ from pydantic import BaseModel
 from app.db.database import get_db
 from app.models.user import User
 from app.models.club import Club, ClubMembership
+from app.models.topic import Topic, TopicSource, ProficiencyLevel
 from app.services.auth import get_current_user, get_club_membership, require_club_admin
+
+_DEFAULT_TOPICS = [
+    {"text": "This house would ban social media for under-16s", "category": "Technology", "proficiency": ProficiencyLevel.beginner},
+    {"text": "This house believes that artificial intelligence will do more harm than good", "category": "Technology", "proficiency": ProficiencyLevel.intermediate},
+    {"text": "This house would make voting compulsory", "category": "Politics", "proficiency": ProficiencyLevel.beginner},
+    {"text": "This house believes that celebrities have a responsibility to be role models", "category": "Society", "proficiency": ProficiencyLevel.beginner},
+    {"text": "This house would abolish zoos", "category": "Environment", "proficiency": ProficiencyLevel.beginner},
+    {"text": "This house believes that economic growth should be prioritised over environmental protection", "category": "Environment", "proficiency": ProficiencyLevel.intermediate},
+    {"text": "This house would legalise the sale of human organs", "category": "Ethics", "proficiency": ProficiencyLevel.advanced},
+    {"text": "This house believes that schools should teach financial literacy as a core subject", "category": "Education", "proficiency": ProficiencyLevel.beginner},
+    {"text": "This house would introduce a universal basic income", "category": "Economics", "proficiency": ProficiencyLevel.intermediate},
+    {"text": "This house believes that the media does more harm than good", "category": "Society", "proficiency": ProficiencyLevel.intermediate},
+]
 
 router = APIRouter(prefix="/api/clubs", tags=["clubs"])
 
@@ -69,6 +83,8 @@ def create_club(body: ClubCreate, db: Session = Depends(get_db), current_user: U
     db.flush()
     membership = ClubMembership(club_id=club.id, user_id=current_user.id, role="owner")
     db.add(membership)
+    for t in _DEFAULT_TOPICS:
+        db.add(Topic(club_id=club.id, source=TopicSource.admin, is_go=True, **t))
     db.commit()
     db.refresh(club)
     return ClubOut(id=club.id, name=club.name, role="owner")
