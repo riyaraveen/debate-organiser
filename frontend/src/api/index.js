@@ -112,3 +112,19 @@ export const getInvites         = ()     => api.get('/api/invites/')
 export const createInvite       = ()     => api.post('/api/invites/')
 export const deactivateInvite   = (id)   => api.delete(`/api/invites/${id}`)
 export const validateInvite     = (code) => api.get(`/api/invites/validate/${code}`)
+
+// Schools
+export const getSchools    = ()              => api.get('/api/schools/')
+export const createSchool  = (data)          => api.post('/api/schools/', data)
+export const updateSchool  = (id, data)      => api.patch(`/api/schools/${id}`, data)
+export const deleteSchool  = (id)            => api.delete(`/api/schools/${id}`)
+export const getSchoolStats = ()             => api.get('/api/tournaments/school-stats')
+
+// Tournaments
+export const getTournaments       = ()              => api.get('/api/tournaments/')
+export const getTournament        = (id)            => api.get(`/api/tournaments/${id}`)
+export const createTournament     = (data)          => api.post('/api/tournaments/', data)
+export const updateTournament     = (id, data)      => api.patch(`/api/tournaments/${id}`, data)
+export const deleteTournament     = (id)            => api.delete(`/api/tournaments/${id}`)
+export const updateBracket        = (id, bracket)   => api.patch(`/api/tournaments/${id}/bracket`, bracket)
+export const updateTournamentSchools = (id, data)   => api.patch(`/api/tournaments/${id}/schools`, data)

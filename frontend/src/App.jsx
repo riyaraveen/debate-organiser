@@ -19,6 +19,7 @@ import ClubSettings from './pages/ClubSettings'
 import Formats from './pages/Formats'
 import Practice from './pages/Practice'
 import Tournaments from './pages/Tournaments'
+import TournamentDetail from './pages/TournamentDetail'
 import Schools from './pages/Schools'
 import SessionNotes from './pages/SessionNotes'
 import SessionAI from './pages/SessionAI'
@@ -77,6 +78,11 @@ export default function App() {
         <Route path="tournaments" element={
           <ProtectedRoute adminOnly>
             <Tournaments />
+          </ProtectedRoute>
+        } />
+        <Route path="tournaments/:id" element={
+          <ProtectedRoute adminOnly>
+            <TournamentDetail />
           </ProtectedRoute>
         } />
         <Route path="schools" element={

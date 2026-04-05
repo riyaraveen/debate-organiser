@@ -50,6 +50,11 @@ class TournamentUpdate(BaseModel):
     scheduled_at: Optional[datetime] = None
 
 
+class TournamentSchoolsUpdate(BaseModel):
+    school_ids: List[int]
+    regenerate_bracket: bool = False
+
+
 class TournamentOut(BaseModel):
     id: int
     name: str
@@ -189,3 +194,49 @@ def update_bracket(tournament_id: int, bracket: dict, db: Session = Depends(get_
     db.commit()
     db.refresh(t)
     return t
+
+
+@tournament_router.delete("/{tournament_id}", status_code=204)
+def delete_tournament(tournament_id: int, db: Session = Depends(get_db), membership: ClubMembership = Depends(require_club_admin)):
+    t = db.query(Tournament).filter(Tournament.id == tournament_id, Tournament.club_id == membership.club_id).first()
+    if not t:
+        raise HTTPException(status_code=404, detail="Tournament not found")
+    db.delete(t)
+    db.commit()
+
+
+@tournament_router.patch("/{tournament_id}/schools", response_model=TournamentOut)
+def update_tournament_schools(tournament_id: int, body: TournamentSchoolsUpdate, db: Session = Depends(get_db), membership: ClubMembership = Depends(require_club_admin)):
+    """Update which schools are in a tournament, optionally regenerating the bracket."""
+    t = db.query(Tournament).filter(Tournament.id == tournament_id, Tournament.club_id == membership.club_id).first()
+    if not t:
+        raise HTTPException(status_code=404, detail="Tournament not found")
+    t.school_ids = json.dumps(body.school_ids)
+    if body.regenerate_bracket:
+        t.bracket = json.dumps(_generate_bracket(body.school_ids, t.format or "single_elimination"))
+    db.commit()
+    db.refresh(t)
+    return t
+
+
+@tournament_router.get("/school-stats")
+def get_school_stats(db: Session = Depends(get_db), membership: ClubMembership = Depends(get_club_membership)):
+    """Return win/loss record per school across all tournaments in the club."""
+    tournaments = db.query(Tournament).filter(Tournament.club_id == membership.club_id).all()
+    stats: dict = {}
+    for t in tournaments:
+        if not t.bracket:
+            continue
+        bracket = json.loads(t.bracket)
+        matches = bracket.get("matches", []) if bracket.get("format") == "round_robin" else [
+            m for r in bracket.get("rounds", []) for m in r.get("matches", [])
+        ]
+        for m in matches:
+            if not m.get("winner"):
+                continue
+            winner = m["winner"]
+            loser = m["team_b"] if winner == m["team_a"] else m["team_a"]
+            stats.setdefault(winner, {"wins": 0, "losses": 0})["wins"] += 1
+            if loser:
+                stats.setdefault(loser, {"wins": 0, "losses": 0})["losses"] += 1
+    return stats

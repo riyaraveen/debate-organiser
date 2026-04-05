@@ -1,25 +1,31 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import api from '../api/client'
-import { Plus, Trash2, Trophy } from 'lucide-react'
+import { Plus, Trash2, Trophy, Pencil, Check, X } from 'lucide-react'
+import { getSchools, createSchool, updateSchool, deleteSchool, getSchoolStats } from '../api'
 import PageHero from '../components/ui/PageHero'
 
 export default function Schools() {
   const [schools, setSchools] = useState([])
+  const [stats, setStats] = useState({})
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ name: '', city: '', contact_email: '', description: '' })
+  const [editingId, setEditingId] = useState(null)
+  const [editForm, setEditForm] = useState({})
   const [error, setError] = useState('')
 
   useEffect(() => {
-    api.get('/api/schools/').then(r => setSchools(r.data)).finally(() => setLoading(false))
+    Promise.all([
+      getSchools().then(r => setSchools(r.data)),
+      getSchoolStats().then(r => setStats(r.data)).catch(() => {}),
+    ]).finally(() => setLoading(false))
   }, [])
 
   const handleCreate = async (e) => {
     e.preventDefault()
     setError('')
     try {
-      const res = await api.post('/api/schools/', form)
+      const res = await createSchool(form)
       setSchools(prev => [...prev, res.data])
       setForm({ name: '', city: '', contact_email: '', description: '' })
       setShowForm(false)
@@ -28,9 +34,24 @@ export default function Schools() {
     }
   }
 
+  const startEdit = (s) => {
+    setEditingId(s.id)
+    setEditForm({ name: s.name, city: s.city || '', contact_email: s.contact_email || '', description: s.description || '' })
+  }
+
+  const saveEdit = async (id) => {
+    try {
+      const res = await updateSchool(id, editForm)
+      setSchools(prev => prev.map(s => s.id === id ? res.data : s))
+      setEditingId(null)
+    } catch {
+      setError('Failed to save changes')
+    }
+  }
+
   const handleDelete = async (id) => {
     if (!confirm('Remove this school?')) return
-    await api.delete(`/api/schools/${id}`)
+    await deleteSchool(id)
     setSchools(prev => prev.filter(s => s.id !== id))
   }
 
@@ -49,6 +70,7 @@ export default function Schools() {
           <circle cx="370" cy="44" r="50" fill="white" opacity="0.06"/>
         </svg>
       </PageHero>
+
       <div className="page-top-bar">
         <span className="text-muted" style={{ fontSize: 13 }}>{schools.length} schools registered</span>
         <div style={{ display: 'flex', gap: 8 }}>
@@ -64,11 +86,11 @@ export default function Schools() {
           <h4 style={{ fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', fontSize: 13 }}>Add School</h4>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
             <input className="input" placeholder="School name *" value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })} style={{ flex: 2 }} required />
+              onChange={e => setForm({ ...form, name: e.target.value })} style={{ flex: 2 }} required />
             <input className="input" placeholder="City" value={form.city}
-              onChange={(e) => setForm({ ...form, city: e.target.value })} style={{ flex: 1 }} />
+              onChange={e => setForm({ ...form, city: e.target.value })} style={{ flex: 1 }} />
             <input className="input" placeholder="Contact email" type="email" value={form.contact_email}
-              onChange={(e) => setForm({ ...form, contact_email: e.target.value })} style={{ flex: 2 }} />
+              onChange={e => setForm({ ...form, contact_email: e.target.value })} style={{ flex: 2 }} />
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <button type="submit" className="btn btn-primary">Add School</button>
@@ -85,21 +107,70 @@ export default function Schools() {
       ) : (
         <table className="data-table">
           <thead>
-            <tr><th>School</th><th>City</th><th>Contact</th><th>Actions</th></tr>
+            <tr><th>School</th><th>City</th><th>Contact</th><th>Record</th><th>Actions</th></tr>
           </thead>
           <tbody>
-            {schools.map(s => (
-              <tr key={s.id}>
-                <td><div style={{ fontWeight: 700 }}>{s.name}</div>{s.description && <div style={{ fontSize: 12, color: '#555' }}>{s.description}</div>}</td>
-                <td>{s.city || <span className="text-muted">—</span>}</td>
-                <td>{s.contact_email || <span className="text-muted">—</span>}</td>
-                <td>
-                  <div className="action-cell">
-                    <button className="icon-btn danger" onClick={() => handleDelete(s.id)}><Trash2 size={15} /></button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+            {schools.map(s => {
+              const record = stats[s.id] || { wins: 0, losses: 0 }
+              const isEditing = editingId === s.id
+              return (
+                <tr key={s.id}>
+                  <td>
+                    {isEditing ? (
+                      <input className="input" value={editForm.name}
+                        onChange={e => setEditForm({ ...editForm, name: e.target.value })}
+                        style={{ width: '100%' }} />
+                    ) : (
+                      <div style={{ fontWeight: 700 }}>{s.name}</div>
+                    )}
+                  </td>
+                  <td>
+                    {isEditing ? (
+                      <input className="input" value={editForm.city} placeholder="City"
+                        onChange={e => setEditForm({ ...editForm, city: e.target.value })}
+                        style={{ width: '100%' }} />
+                    ) : (
+                      s.city || <span className="text-muted">—</span>
+                    )}
+                  </td>
+                  <td>
+                    {isEditing ? (
+                      <input className="input" value={editForm.contact_email} placeholder="Email" type="email"
+                        onChange={e => setEditForm({ ...editForm, contact_email: e.target.value })}
+                        style={{ width: '100%' }} />
+                    ) : (
+                      s.contact_email || <span className="text-muted">—</span>
+                    )}
+                  </td>
+                  <td>
+                    {record.wins + record.losses > 0 ? (
+                      <span style={{ fontSize: 13, fontWeight: 700 }}>
+                        <span style={{ color: '#1a7a3c' }}>{record.wins}W</span>
+                        {' – '}
+                        <span style={{ color: '#c00' }}>{record.losses}L</span>
+                      </span>
+                    ) : (
+                      <span className="text-muted" style={{ fontSize: 12 }}>No matches</span>
+                    )}
+                  </td>
+                  <td>
+                    <div className="action-cell">
+                      {isEditing ? (
+                        <>
+                          <button className="icon-btn" onClick={() => saveEdit(s.id)}><Check size={15} /></button>
+                          <button className="icon-btn" onClick={() => setEditingId(null)}><X size={15} /></button>
+                        </>
+                      ) : (
+                        <>
+                          <button className="icon-btn" onClick={() => startEdit(s)}><Pencil size={14} /></button>
+                          <button className="icon-btn danger" onClick={() => handleDelete(s.id)}><Trash2 size={15} /></button>
+                        </>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       )}
