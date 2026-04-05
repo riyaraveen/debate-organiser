@@ -56,6 +56,7 @@ class SessionUpdate(BaseModel):
     winner_team: Optional[str] = None
     result_notes: Optional[str] = None
     additional_notes: Optional[str] = None
+    location_maps: Optional[bool] = None
 
 
 class SessionOut(BaseModel):
@@ -72,6 +73,7 @@ class SessionOut(BaseModel):
     winner_team: Optional[str]
     result_notes: Optional[str]
     additional_notes: Optional[str]
+    location_maps: Optional[bool]
     participants: List[ParticipantOut] = []
 
     class Config:

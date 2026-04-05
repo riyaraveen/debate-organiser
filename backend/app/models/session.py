@@ -26,6 +26,7 @@ class Session(Base):
     mode = Column(Enum(SessionMode), nullable=False)
     scheduled_at = Column(DateTime, nullable=True)
     location = Column(String, nullable=True)      # offline: venue; online: meet link
+    location_maps = Column(Boolean, default=True, nullable=True)  # show Google Maps link for in-person
     status = Column(Enum(SessionStatus), default=SessionStatus.draft)
     created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
     winner_team = Column(String, nullable=True)   # proposition / opposition
