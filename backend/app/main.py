@@ -90,6 +90,22 @@ def _seed_default_club():
         db.commit()
 
 _seed_default_club()
+
+
+def _seed_default_topics():
+    """Insert default topics into any club that has no topics yet."""
+    from app.models.topic import Topic, TopicSource, ProficiencyLevel
+    from app.routers.clubs import _DEFAULT_TOPICS
+    with DBSession(bind=engine) as db:
+        clubs = db.query(Club).all()
+        for club in clubs:
+            if db.query(Topic).filter(Topic.club_id == club.id).count() > 0:
+                continue
+            for t in _DEFAULT_TOPICS:
+                db.add(Topic(club_id=club.id, source=TopicSource.admin, is_go=True, **t))
+        db.commit()
+
+_seed_default_topics()
 # ─────────────────────────────────────────────────────────────────────────────
 
 # ── APScheduler: session reminders every hour ────────────────────────────────
