@@ -158,23 +158,48 @@ async def update_session(
     return _enrich_session(session, db)
 
 
+DEBATING_SIDES = {'proposition', 'opposition'}
+
+
 @router.get("/{session_id}/team-notes")
 def get_team_notes(session_id: int, db: DBSession = Depends(get_db), membership: ClubMembership = Depends(get_club_membership), current_user: User = Depends(get_current_user)):
     from app.models.session_note import SessionNote
-    # Exclude private notes from other users
+
+    # Determine the current user's side in this session
+    my_participant = db.query(SessionParticipant).filter(
+        SessionParticipant.session_id == session_id,
+        SessionParticipant.user_id == current_user.id,
+    ).first()
+
+    # Supporting roles (or not a participant) cannot see any team notes
+    if not my_participant or my_participant.side not in DEBATING_SIDES:
+        return []
+
+    my_side = my_participant.side
+
+    # Collect user IDs on the same debating side
+    same_side_ids = {
+        p.user_id for p in db.query(SessionParticipant).filter(
+            SessionParticipant.session_id == session_id,
+            SessionParticipant.side == my_side,
+        ).all()
+    }
+
+    # Return non-empty, same-side notes; still respect individual privacy flag
     notes = db.query(SessionNote).filter(
         SessionNote.session_id == session_id,
         SessionNote.content != "",
+        SessionNote.user_id.in_(same_side_ids),
         (SessionNote.is_private == False) | (SessionNote.user_id == current_user.id),
     ).all()
+
     user_ids = [n.user_id for n in notes]
     users_by_id = {u.id: u for u in db.query(User).filter(User.id.in_(user_ids)).all()} if user_ids else {}
-    # Fetch participant role/side for each user
-    participants = db.query(SessionParticipant).filter(
+    participant_by_user = {p.user_id: p for p in db.query(SessionParticipant).filter(
         SessionParticipant.session_id == session_id,
         SessionParticipant.user_id.in_(user_ids),
-    ).all()
-    participant_by_user = {p.user_id: p for p in participants}
+    ).all()}
+
     return [
         {
             "user_id": n.user_id,
@@ -193,25 +218,39 @@ def get_team_notes(session_id: int, db: DBSession = Depends(get_db), membership:
 def get_user_note(session_id: int, user_id: int, db: DBSession = Depends(get_db), membership: ClubMembership = Depends(get_club_membership), current_user: User = Depends(get_current_user)):
     from app.models.session_note import SessionNote
     from app.models.user import User as UserModel
+
+    # Determine both sides
+    my_participant = db.query(SessionParticipant).filter(
+        SessionParticipant.session_id == session_id,
+        SessionParticipant.user_id == current_user.id,
+    ).first()
+    target_participant = db.query(SessionParticipant).filter(
+        SessionParticipant.session_id == session_id,
+        SessionParticipant.user_id == user_id,
+    ).first()
+
+    # Block access unless both are on the same debating side
+    my_side = my_participant.side if my_participant else None
+    target_side = target_participant.side if target_participant else None
+    if my_side not in DEBATING_SIDES or target_side not in DEBATING_SIDES or my_side != target_side:
+        raise HTTPException(status_code=403, detail="You can only view notes from members on your team")
+
     note = db.query(SessionNote).filter(
         SessionNote.session_id == session_id,
         SessionNote.user_id == user_id,
     ).first()
-    # Block access to private notes from other users
+
     if note and note.is_private and note.user_id != current_user.id:
         raise HTTPException(status_code=403, detail="These notes are private")
+
     u = db.query(UserModel).filter(UserModel.id == user_id).first()
-    participant = db.query(SessionParticipant).filter(
-        SessionParticipant.session_id == session_id,
-        SessionParticipant.user_id == user_id,
-    ).first()
     return {
         "user_id": user_id,
         "user_name": u.name if u else f"User #{user_id}",
         "content": note.content if note else "",
         "updated_at": str(note.updated_at) if note else None,
-        "role": participant.role_name if participant else None,
-        "side": participant.side if participant else None,
+        "role": target_participant.role_name if target_participant else None,
+        "side": target_side,
     }
 
 
