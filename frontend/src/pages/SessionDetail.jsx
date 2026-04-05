@@ -1,10 +1,17 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { getSession, updateSession, deleteSession, createSession, getFormat, notifyCalendar, getUsers, addParticipant, removeParticipant, updateParticipant, getTemplates, createTemplate, updateAttendance, getSessionScores, createScore } from '../api'
+import { getSession, updateSession, deleteSession, createSession, getFormat, getFormats, notifyCalendar, getUsers, addParticipant, removeParticipant, updateParticipant, getTemplates, createTemplate, updateAttendance, getSessionScores, createScore } from '../api'
 import { useToast } from '../context/ToastContext'
 import { useAuth } from '../context/AuthContext'
 import { Calendar, MapPin, Users, Edit2, Trash2, Trophy, Link as LinkIcon, FileText, Sparkles, MessageCircle, ArrowLeft, UserMinus, UserPlus, RefreshCw, Check, X, Copy, Timer } from 'lucide-react'
 import PageHero from '../components/ui/PageHero'
+
+const STATUS_COLORS = {
+  scheduled: 'badge-blue',
+  draft:     'badge-gray',
+  completed: 'badge-green',
+  cancelled: 'badge-red',
+}
 
 export default function SessionDetail() {
   const { id } = useParams()
@@ -27,6 +34,9 @@ export default function SessionDetail() {
   const [scores, setScores] = useState([])
   const [scoreForm, setScoreForm] = useState({ subject_user_id: '', score: '', notes: '' })
   const [scoringLoading, setScoringLoading] = useState(false)
+  const [allFormats, setAllFormats] = useState([])
+  const [savingTemplate, setSavingTemplate] = useState(false)
+  const [templateNameInput, setTemplateNameInput] = useState('')
 
   useEffect(() => {
     getSession(id)
@@ -38,6 +48,8 @@ export default function SessionDetail() {
           scheduled_at: res.data.scheduled_at ? res.data.scheduled_at.slice(0, 16) : '',
           location: res.data.location || '',
           status: res.data.status,
+          mode: res.data.mode,
+          format_id: res.data.format_id,
           additional_notes: res.data.additional_notes || '',
         })
         return getFormat(res.data.format_id)
@@ -47,6 +59,7 @@ export default function SessionDetail() {
       .finally(() => setLoading(false))
 
     getSessionScores(id).then(r => setScores(r.data)).catch(() => {})
+    getFormats(true).then(r => setAllFormats(r.data)).catch(() => {})
   }, [id])
 
   const handleSave = async () => {
@@ -75,15 +88,25 @@ export default function SessionDetail() {
   }
 
   const handleDelete = async () => {
-    await deleteSession(id)
-    navigate('/sessions')
+    try {
+      await deleteSession(id)
+      navigate('/sessions')
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to delete session')
+      setConfirmDelete(false)
+    }
   }
 
   const handleSaveTemplate = async () => {
-    const name = window.prompt('Template name:', session.title)
-    if (!name) return
-    await createTemplate({ name, format_id: session.format_id, mode: session.mode, location: session.location || '' })
-    toast.success(`Template "${name}" saved.`)
+    if (!templateNameInput.trim()) return
+    try {
+      await createTemplate({ name: templateNameInput.trim(), format_id: session.format_id, mode: session.mode, location: session.location || '' })
+      toast.success(`Template "${templateNameInput.trim()}" saved.`)
+      setSavingTemplate(false)
+      setTemplateNameInput('')
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to save template')
+    }
   }
 
   const handleDuplicate = async () => {
@@ -231,7 +254,22 @@ export default function SessionDetail() {
                 <>
                   <button className="btn btn-ghost" onClick={() => setEditing(true)}><Edit2 size={15} /> Edit</button>
                   <button className="btn btn-ghost" onClick={handleDuplicate}><Copy size={15} /> Duplicate</button>
-                  <button className="btn btn-ghost" onClick={handleSaveTemplate}><FileText size={15} /> Save as Template</button>
+                  {savingTemplate ? (
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                      <input
+                        autoFocus
+                        placeholder="Template name…"
+                        value={templateNameInput}
+                        onChange={e => setTemplateNameInput(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') handleSaveTemplate(); if (e.key === 'Escape') { setSavingTemplate(false); setTemplateNameInput('') } }}
+                        style={{ fontSize: 13, padding: '4px 8px', flex: 1 }}
+                      />
+                      <button className="btn btn-primary" style={{ padding: '4px 10px' }} onClick={handleSaveTemplate}><Check size={13}/></button>
+                      <button className="btn btn-ghost" style={{ padding: '4px 10px' }} onClick={() => { setSavingTemplate(false); setTemplateNameInput('') }}><X size={13}/></button>
+                    </div>
+                  ) : (
+                    <button className="btn btn-ghost" onClick={() => { setSavingTemplate(true); setTemplateNameInput(session.title) }}><FileText size={15}/> Save as Template</button>
+                  )}
                   {confirmDelete ? (
                     <div style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 13 }}>
                       <span style={{ fontWeight: 700 }}>Delete session?</span>
@@ -304,12 +342,25 @@ export default function SessionDetail() {
 
         <div className="detail-section">
           <h4>Format</h4>
-          <p>{format?.name ?? `Format #${session.format_id}`}</p>
+          {editing ? (
+            <select value={editForm.format_id} onChange={e => setEditForm({ ...editForm, format_id: parseInt(e.target.value) })}>
+              {allFormats.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
+            </select>
+          ) : (
+            <p>{format?.name ?? `Format #${session.format_id}`}</p>
+          )}
         </div>
 
         <div className="detail-section">
           <h4>Mode</h4>
-          <span className={`badge ${session.mode === 'online' ? 'badge-purple' : 'badge-orange'}`}>{session.mode}</span>
+          {editing ? (
+            <select value={editForm.mode} onChange={e => setEditForm({ ...editForm, mode: e.target.value })}>
+              <option value="in-person">In-person</option>
+              <option value="online">Online</option>
+            </select>
+          ) : (
+            <span className={`badge ${session.mode === 'online' ? 'badge-purple' : 'badge-orange'}`}>{session.mode}</span>
+          )}
         </div>
 
         <div className="detail-section">
@@ -321,7 +372,7 @@ export default function SessionDetail() {
               ))}
             </select>
           ) : (
-            <span className={`badge badge-blue`}>{session.status}</span>
+            <span className={`badge ${STATUS_COLORS[session.status] ?? 'badge-gray'}`}>{session.status}</span>
           )}
         </div>
 
@@ -446,7 +497,7 @@ export default function SessionDetail() {
             <thead>
               <tr>
                 <th>Name</th><th>Role</th><th>Side</th>
-                {isAdmin && <th>Attended</th>}
+                <th>Attended</th>
                 {editingParticipants && <th></th>}
               </tr>
             </thead>
@@ -478,16 +529,20 @@ export default function SessionDetail() {
                   </td>
                   <td>{p.role_name ?? '—'}</td>
                   <td>{p.side ?? '—'}</td>
-                  {isAdmin && (
-                    <td style={{ textAlign: 'center' }}>
+                  <td style={{ textAlign: 'center' }}>
+                    {isAdmin ? (
                       <input type="checkbox"
                         checked={p.attended === true}
-                        onChange={(e) => handleAttendance(p.id, e.target.checked)}
+                        onChange={e => handleAttendance(p.id, e.target.checked)}
                         style={{ cursor: 'pointer' }}
-                        title={p.attended === null || p.attended === undefined ? 'Not marked' : p.attended ? 'Attended' : 'Absent'}
+                        title={p.attended == null ? 'Not marked' : p.attended ? 'Attended' : 'Absent'}
                       />
-                    </td>
-                  )}
+                    ) : (
+                      <span title={p.attended == null ? 'Not marked' : p.attended ? 'Attended' : 'Absent'}>
+                        {p.attended === true ? '✓' : p.attended === false ? '✗' : '—'}
+                      </span>
+                    )}
+                  </td>
                   {editingParticipants && (
                     <td style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
                       <button className="btn btn-ghost" title="Replace" style={{ padding: '4px 8px' }}
@@ -613,11 +668,11 @@ export default function SessionDetail() {
             </div>
           </div>
 
-          {/* Speaker scoring — admin only */}
-          {isAdmin && (
+          {/* Speaker scores — visible to all; add form admin-only */}
+          {(scores.length > 0 || isAdmin) && (
             <div style={{ marginTop: 20 }}>
               <span className="summary-block-label">Speaker Scores</span>
-              {scores.length > 0 && (
+              {scores.length > 0 ? (
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, marginTop: 8, marginBottom: 12 }}>
                   <thead>
                     <tr style={{ borderBottom: '2px solid #121212' }}>
@@ -636,28 +691,32 @@ export default function SessionDetail() {
                     ))}
                   </tbody>
                 </table>
+              ) : (
+                <p className="text-muted" style={{ fontSize: 13, margin: '8px 0' }}>No scores recorded yet.</p>
               )}
-              <form onSubmit={handleCreateScore} style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-end', marginTop: 8 }}>
-                <select value={scoreForm.subject_user_id}
-                  onChange={e => setScoreForm(f => ({ ...f, subject_user_id: e.target.value }))}
-                  style={{ fontSize: 13, padding: '4px 8px' }} required>
-                  <option value="">Speaker…</option>
-                  {session.participants?.map(p => (
-                    <option key={p.id} value={p.user_id}>{p.user?.name ?? `User #${p.user_id}`}</option>
-                  ))}
-                </select>
-                <input type="number" min={0} max={100} placeholder="Score (0–100)"
-                  value={scoreForm.score}
-                  onChange={e => setScoreForm(f => ({ ...f, score: e.target.value }))}
-                  style={{ width: 120, fontSize: 13, padding: '4px 8px' }} required />
-                <input type="text" placeholder="Notes (optional)"
-                  value={scoreForm.notes}
-                  onChange={e => setScoreForm(f => ({ ...f, notes: e.target.value }))}
-                  style={{ flex: 1, minWidth: 120, fontSize: 13, padding: '4px 8px' }} />
-                <button type="submit" className="btn btn-primary" style={{ fontSize: 12, padding: '4px 12px' }} disabled={scoringLoading}>
-                  {scoringLoading ? '…' : 'Save'}
-                </button>
-              </form>
+              {isAdmin && (
+                <form onSubmit={handleCreateScore} style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-end', marginTop: 8 }}>
+                  <select value={scoreForm.subject_user_id}
+                    onChange={e => setScoreForm(f => ({ ...f, subject_user_id: e.target.value }))}
+                    style={{ fontSize: 13, padding: '4px 8px' }} required>
+                    <option value="">Speaker…</option>
+                    {session.participants?.map(p => (
+                      <option key={p.id} value={p.user_id}>{p.user?.name ?? `User #${p.user_id}`}</option>
+                    ))}
+                  </select>
+                  <input type="number" min={0} max={100} placeholder="Score (0–100)"
+                    value={scoreForm.score}
+                    onChange={e => setScoreForm(f => ({ ...f, score: e.target.value }))}
+                    style={{ width: 120, fontSize: 13, padding: '4px 8px' }} required />
+                  <input type="text" placeholder="Notes (optional)"
+                    value={scoreForm.notes}
+                    onChange={e => setScoreForm(f => ({ ...f, notes: e.target.value }))}
+                    style={{ flex: 1, minWidth: 120, fontSize: 13, padding: '4px 8px' }} />
+                  <button type="submit" className="btn btn-primary" style={{ fontSize: 12, padding: '4px 12px' }} disabled={scoringLoading}>
+                    {scoringLoading ? '…' : 'Save'}
+                  </button>
+                </form>
+              )}
             </div>
           )}
         </div>
