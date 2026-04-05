@@ -1320,7 +1320,7 @@ input:focus, select:focus, textarea:focus {
 }
 
 /* ── Learn ────────────────────────────────────────── */
-.learn-body { display: flex; flex-direction: column; gap: 16px; }
+.learn-body { display: flex; flex-direction: column; gap: 16px; width: 100%; }
 .learn-tabs {
   display: flex;
   flex-wrap: wrap;
@@ -1354,10 +1354,10 @@ input:focus, select:focus, textarea:focus {
   margin-bottom: 28px;
   line-height: 1.7;
   font-size: 14px;
-  max-width: 640px;
+  width: 100%;
 }
 
-.fallacies-list { display: flex; flex-direction: column; gap: 10px; }
+.fallacies-list { display: flex; flex-direction: column; gap: 10px; width: 100%; }
 .fallacy-card {
   background: white;
   border: var(--border-w) solid var(--black);
