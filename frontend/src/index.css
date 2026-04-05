@@ -2349,9 +2349,9 @@ label > span,
 }
 
 /* ── Tournament bracket ───────────────────────────── */
-.bracket-se { display: flex; gap: 16px; overflow-x: auto; padding-bottom: 8px; }
-.bracket-round { display: flex; flex-direction: column; gap: 8px; min-width: 200px; }
-.bracket-round-label { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); margin-bottom: 4px; }
+.bracket-se { display: flex; gap: 32px; overflow-x: auto; padding-bottom: 16px; align-items: flex-start; }
+.bracket-round { display: flex; flex-direction: column; gap: 14px; min-width: 220px; }
+.bracket-round-label { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; color: #b45309; background: #fef3c7; border: 1.5px solid #f0c020; border-radius: 4px; padding: 3px 10px; margin-bottom: 8px; display: inline-block; }
 .bracket-match {
   display: flex;
   align-items: center;

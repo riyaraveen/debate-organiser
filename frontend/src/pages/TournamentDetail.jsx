@@ -4,7 +4,6 @@ import { ArrowLeft, Trash2, Plus, X, RefreshCw, Trophy } from 'lucide-react'
 import { getTournament, updateTournament, deleteTournament, updateBracket, updateTournamentSchools, getSchools } from '../api'
 import api from '../api/client'
 import { useClub } from '../context/ClubContext'
-import PageHero from '../components/ui/PageHero'
 
 const STATUS_COLOR = { draft: '#b45309', active: '#1040C0', completed: '#1a7a3c' }
 const STATUS_BG    = { draft: '#fef3c7', active: '#dbeafe', completed: '#dcfce7' }
@@ -313,88 +312,96 @@ export default function TournamentDetail() {
 
   return (
     <div className="page-container">
-      {/* Hero banner */}
-      <PageHero
-        title={tournament.name}
-        subtitle={tournament.description || (tournament.format === 'round_robin' ? 'Round Robin' : 'Single Elimination') + ' · ' + selectedSchoolIds.length + ' schools'}
-        color="#b45309"
-      >
-        <svg viewBox="0 0 400 88" preserveAspectRatio="xMidYMid slice">
-          <polygon points="300,4 340,72 260,72" fill="#F0C020" opacity="0.55"/>
-          <polygon points="340,16 368,68 312,68" fill="#fff" opacity="0.15"/>
-          <circle cx="80" cy="44" r="60" fill="#F0C020" opacity="0.12"/>
-          <circle cx="370" cy="88" r="50" fill="#fff" opacity="0.08"/>
-        </svg>
-      </PageHero>
 
-      {/* Action bar */}
-      <div className="page-top-bar" style={{ marginBottom: 20 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Link to="/tournaments" className="btn btn-ghost" style={{ padding: '5px 10px' }}>
-            <ArrowLeft size={15} />
+      {/* ── Header ─────────────────────────────────────────────── */}
+      <div style={{ background: '#fffbf0', border: '2px solid #f0c020', borderRadius: 8, padding: '20px 24px', marginBottom: 28, boxShadow: '4px 4px 0 #f0c020' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+          <Link to="/tournaments" className="btn btn-ghost" style={{ padding: '6px 10px', flexShrink: 0, marginTop: 2 }}>
+            <ArrowLeft size={16} />
           </Link>
-          <span style={{ fontSize: 13, fontWeight: 700, color: statusColor, background: statusBg, border: `1.5px solid ${statusColor}`, borderRadius: 4, padding: '2px 10px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-            {tournament.status}
-          </span>
-          {tournament.scheduled_at && (
-            <span style={{ fontSize: 13, color: '#777' }}>
-              {new Date(tournament.scheduled_at).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
-            </span>
-          )}
-          {saving && <span style={{ fontSize: 12, color: '#888' }}>Saving…</span>}
-        </div>
-        {isAdmin && (
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button className="btn btn-primary" style={{ background: '#b45309', borderColor: '#b45309', display: 'flex', alignItems: 'center', gap: 6 }} onClick={handleStatusChange}>
-              <Trophy size={14} /> {STATUS_LABEL[tournament.status]}
-            </button>
-            <button className="btn btn-ghost" style={{ padding: '6px 10px', color: '#c00' }} onClick={handleDelete}>
-              <Trash2 size={15} />
-            </button>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h1 style={{ fontWeight: 900, fontSize: 26, margin: '0 0 6px', color: '#78350f', lineHeight: 1.15 }}>
+              {tournament.name}
+            </h1>
+            {tournament.description && (
+              <p style={{ margin: '0 0 12px', color: '#92400e', fontSize: 14 }}>{tournament.description}</p>
+            )}
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: statusColor, background: statusBg, border: `1.5px solid ${statusColor}`, borderRadius: 4, padding: '2px 10px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                {tournament.status}
+              </span>
+              <span className="badge badge-gray" style={{ fontSize: 12 }}>{tournament.format?.replace('_', ' ')}</span>
+              <span style={{ fontSize: 13, color: '#92400e' }}>🏫 {selectedSchoolIds.length} schools</span>
+              {tournament.scheduled_at && (
+                <span style={{ fontSize: 13, color: '#777' }}>
+                  📅 {new Date(tournament.scheduled_at).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+                </span>
+              )}
+              {saving && <span style={{ fontSize: 12, color: '#b45309' }}>Saving…</span>}
+            </div>
           </div>
-        )}
+          {isAdmin && (
+            <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+              <button
+                className="btn btn-primary"
+                style={{ background: '#b45309', borderColor: '#92400e', display: 'flex', alignItems: 'center', gap: 6 }}
+                onClick={handleStatusChange}
+              >
+                <Trophy size={14} /> {STATUS_LABEL[tournament.status]}
+              </button>
+              <button className="btn btn-ghost" style={{ padding: '6px 10px', color: '#c00' }} onClick={handleDelete}>
+                <Trash2 size={15} />
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
-      {error && <div className="alert alert-error" style={{ marginBottom: 16 }}>{error}</div>}
+      {error && <div className="alert alert-error" style={{ marginBottom: 20 }}>{error}</div>}
 
-      {/* Schools section */}
-      <div style={{ marginBottom: 28, background: '#fffbf0', border: '2px solid #f0c020', borderRadius: 6, padding: '16px 20px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-          <h3 style={{ fontWeight: 800, textTransform: 'uppercase', fontSize: 12, letterSpacing: '0.06em', margin: 0, color: '#92400e' }}>🏫 Schools</h3>
+      {/* ── Schools ────────────────────────────────────────────── */}
+      <div style={{ marginBottom: 32 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+          <h2 style={{ fontWeight: 800, textTransform: 'uppercase', fontSize: 13, letterSpacing: '0.08em', margin: 0, color: '#92400e' }}>
+            🏫 Competing Schools
+          </h2>
           {isAdmin && (
             <button className="btn btn-ghost" style={{ fontSize: 11, padding: '3px 10px' }} onClick={() => setShowSchoolEditor(!showSchoolEditor)}>
-              {showSchoolEditor ? 'Cancel' : 'Edit'}
+              {showSchoolEditor ? 'Cancel' : 'Edit Schools'}
             </button>
           )}
         </div>
 
         {!showSchoolEditor ? (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {tournamentSchools.length === 0
-              ? <span className="text-muted" style={{ fontSize: 13 }}>No schools added.</span>
-              : tournamentSchools.map(s => <span key={s.id} className="badge badge-purple">{s.name}</span>)
+              ? <span className="text-muted" style={{ fontSize: 13 }}>No schools added yet.</span>
+              : tournamentSchools.map((s, i) => (
+                  <span key={s.id} style={{ background: '#ede9fe', border: '2px solid #7c3aed', borderRadius: 4, padding: '4px 14px', fontSize: 13, fontWeight: 700, color: '#4c1d95', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ color: '#a78bfa', fontSize: 11, fontWeight: 800 }}>#{i + 1}</span> {s.name}
+                  </span>
+                ))
             }
           </div>
         ) : (
-          <div style={{ border: '2px solid #121212', padding: 16, borderRadius: 4 }}>
-            <div style={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>Selected</div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+          <div style={{ border: '2px solid #d97706', borderRadius: 6, padding: 20, background: '#fffbf0' }}>
+            <div style={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 10, color: '#92400e' }}>Selected</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 16 }}>
               {selectedSchoolIds.map(sid => {
                 const s = schools.find(sc => sc.id === sid)
                 return s ? (
-                  <button key={sid} type="button" className="badge badge-purple"
-                    style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
+                  <button key={sid} type="button"
+                    style={{ background: '#ede9fe', border: '2px solid #7c3aed', borderRadius: 4, padding: '4px 12px', fontSize: 13, fontWeight: 700, color: '#4c1d95', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
                     onClick={() => setSelectedSchoolIds(prev => prev.filter(x => x !== sid))}>
-                    {s.name} <X size={10} />
+                    {s.name} <X size={11} />
                   </button>
                 ) : null
               })}
             </div>
-
             {availableToAdd.length > 0 && (
               <>
-                <div style={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>Add</div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+                <div style={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 10, color: '#92400e' }}>Add school</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 16 }}>
                   {availableToAdd.map(s => (
                     <button key={s.id} type="button" className="topic-chip"
                       onClick={() => setSelectedSchoolIds(prev => [...prev, s.id])}>
@@ -404,8 +411,7 @@ export default function TournamentDetail() {
                 </div>
               </>
             )}
-
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', borderTop: '1px solid #f0c020', paddingTop: 14 }}>
               <button className="btn btn-ghost" style={{ fontSize: 12 }} onClick={() => handleUpdateSchools(false)}>
                 Save (keep bracket)
               </button>
@@ -418,14 +424,10 @@ export default function TournamentDetail() {
         )}
 
         {showSeeding && (
-          <div style={{ border: '2px solid #121212', padding: 16, borderRadius: 4, marginTop: 12 }}>
-            <SeedingEditor
-              selectedIds={selectedSchoolIds}
-              schools={schools}
-              onChange={setSelectedSchoolIds}
-            />
-            <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-              <button className="btn btn-primary" style={{ fontSize: 12 }} onClick={() => handleUpdateSchools(true)}>
+          <div style={{ border: '2px solid #d97706', borderRadius: 6, padding: 20, background: '#fffbf0', marginTop: 12 }}>
+            <SeedingEditor selectedIds={selectedSchoolIds} schools={schools} onChange={setSelectedSchoolIds} />
+            <div style={{ display: 'flex', gap: 8, marginTop: 16, borderTop: '1px solid #f0c020', paddingTop: 14 }}>
+              <button className="btn btn-primary" style={{ fontSize: 12, background: '#b45309', borderColor: '#92400e' }} onClick={() => handleUpdateSchools(true)}>
                 Regenerate Bracket
               </button>
               <button className="btn btn-ghost" style={{ fontSize: 12 }} onClick={() => setShowSeeding(false)}>Cancel</button>
@@ -434,34 +436,31 @@ export default function TournamentDetail() {
         )}
       </div>
 
-      {/* Bracket */}
+      {/* ── Bracket ────────────────────────────────────────────── */}
       <div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, borderBottom: '3px solid #f0c020', paddingBottom: 10 }}>
-          <Trophy size={16} style={{ color: '#b45309' }} />
-          <h3 style={{ fontWeight: 800, textTransform: 'uppercase', fontSize: 13, letterSpacing: '0.06em', margin: 0, color: '#92400e' }}>Bracket</h3>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, paddingBottom: 12, borderBottom: '3px solid #f0c020' }}>
+          <Trophy size={18} style={{ color: '#b45309' }} />
+          <h2 style={{ fontWeight: 800, textTransform: 'uppercase', fontSize: 13, letterSpacing: '0.08em', margin: 0, color: '#92400e' }}>
+            Bracket
+          </h2>
           {isAdmin && tournament.status !== 'completed' && (
-            <span style={{ fontWeight: 400, fontSize: 11, color: '#888' }}>— click a school to record the winner</span>
+            <span style={{ fontWeight: 500, fontSize: 12, color: '#b45309', background: '#fef3c7', border: '1px solid #f0c020', borderRadius: 4, padding: '1px 8px' }}>
+              Click a school name to record the winner
+            </span>
           )}
         </div>
 
         {!bracket ? (
-          <p className="text-muted">No bracket generated yet.</p>
+          <div className="empty-state-card">
+            <span className="empty-icon">🏆</span>
+            <p>No bracket generated yet. Add schools and use "Set seeding &amp; regenerate" above.</p>
+          </div>
         ) : bracket.format === 'round_robin' ? (
-          <RoundRobinBracket
-            bracket={bracket}
-            schools={schools}
-            sessions={sessions}
-            canEdit={isAdmin && tournament.status !== 'completed'}
-            onUpdate={saveBracket}
-          />
+          <RoundRobinBracket bracket={bracket} schools={schools} sessions={sessions}
+            canEdit={isAdmin && tournament.status !== 'completed'} onUpdate={saveBracket} />
         ) : (
-          <SingleEliminationBracket
-            bracket={bracket}
-            schools={schools}
-            sessions={sessions}
-            canEdit={isAdmin && tournament.status !== 'completed'}
-            onUpdate={saveBracket}
-          />
+          <SingleEliminationBracket bracket={bracket} schools={schools} sessions={sessions}
+            canEdit={isAdmin && tournament.status !== 'completed'} onUpdate={saveBracket} />
         )}
       </div>
     </div>
