@@ -85,16 +85,16 @@ export default function Tournaments() {
           <textarea placeholder="Description (optional)" value={form.description}
             onChange={e => setForm({ ...form, description: e.target.value })}
             style={{ border: '2px solid #121212', padding: '8px 12px', font: 'inherit', width: '100%', resize: 'vertical', outline: 'none' }} rows={2} />
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-            <label style={{ flex: 1 }}>Format
-              <select value={form.format} onChange={e => setForm({ ...form, format: e.target.value })}>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', width: '100%' }}>
+            <label style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em' }}>Format
+              <select value={form.format} onChange={e => setForm({ ...form, format: e.target.value })} style={{ width: '100%' }}>
                 <option value="single_elimination">Single Elimination</option>
                 <option value="round_robin">Round Robin</option>
               </select>
             </label>
-            <label style={{ flex: 1 }}>Date
+            <label style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em' }}>Date
               <input type="datetime-local" value={form.scheduled_at}
-                onChange={e => setForm({ ...form, scheduled_at: e.target.value })} />
+                onChange={e => setForm({ ...form, scheduled_at: e.target.value })} style={{ width: '100%' }} />
             </label>
           </div>
 
