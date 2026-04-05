@@ -1,9 +1,13 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { ArrowLeft, Trash2, Plus, X, RefreshCw } from 'lucide-react'
+import { ArrowLeft, Trash2, Plus, X, RefreshCw, Trophy } from 'lucide-react'
 import { getTournament, updateTournament, deleteTournament, updateBracket, updateTournamentSchools, getSchools } from '../api'
 import api from '../api/client'
 import { useClub } from '../context/ClubContext'
+import PageHero from '../components/ui/PageHero'
+
+const STATUS_COLOR = { draft: '#b45309', active: '#1040C0', completed: '#1a7a3c' }
+const STATUS_BG    = { draft: '#fef3c7', active: '#dbeafe', completed: '#dcfce7' }
 
 // ── Bracket helpers ───────────────────────────────────────────────────────────
 
@@ -304,52 +308,59 @@ export default function TournamentDetail() {
   const tournamentSchools = selectedSchoolIds.map(sid => schools.find(s => s.id === sid)).filter(Boolean)
   const availableToAdd = schools.filter(s => !selectedSchoolIds.includes(s.id))
 
+  const statusColor = STATUS_COLOR[tournament.status] || '#555'
+  const statusBg    = STATUS_BG[tournament.status]    || '#f5f5f5'
+
   return (
     <div className="page-container">
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 24 }}>
-        <Link to="/tournaments" className="btn btn-ghost" style={{ padding: '6px 10px' }}>
-          <ArrowLeft size={16} />
-        </Link>
-        <div style={{ flex: 1 }}>
-          <h1 style={{ fontWeight: 900, fontSize: 22, margin: 0 }}>{tournament.name}</h1>
-          {tournament.description && <p style={{ margin: '4px 0 0', color: '#555', fontSize: 14 }}>{tournament.description}</p>}
-        </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          {saving && <span style={{ fontSize: 12, color: '#888' }}>Saving…</span>}
-          <span className={`badge ${tournament.status === 'active' ? 'badge-blue' : tournament.status === 'completed' ? 'badge-green' : 'badge-gray'}`}>
+      {/* Hero banner */}
+      <PageHero
+        title={tournament.name}
+        subtitle={tournament.description || (tournament.format === 'round_robin' ? 'Round Robin' : 'Single Elimination') + ' · ' + selectedSchoolIds.length + ' schools'}
+        color="#b45309"
+      >
+        <svg viewBox="0 0 400 88" preserveAspectRatio="xMidYMid slice">
+          <polygon points="300,4 340,72 260,72" fill="#F0C020" opacity="0.55"/>
+          <polygon points="340,16 368,68 312,68" fill="#fff" opacity="0.15"/>
+          <circle cx="80" cy="44" r="60" fill="#F0C020" opacity="0.12"/>
+          <circle cx="370" cy="88" r="50" fill="#fff" opacity="0.08"/>
+        </svg>
+      </PageHero>
+
+      {/* Action bar */}
+      <div className="page-top-bar" style={{ marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <Link to="/tournaments" className="btn btn-ghost" style={{ padding: '5px 10px' }}>
+            <ArrowLeft size={15} />
+          </Link>
+          <span style={{ fontSize: 13, fontWeight: 700, color: statusColor, background: statusBg, border: `1.5px solid ${statusColor}`, borderRadius: 4, padding: '2px 10px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
             {tournament.status}
           </span>
-          {isAdmin && (
-            <>
-              <button className="btn btn-primary" style={{ fontSize: 12 }} onClick={handleStatusChange}>
-                {STATUS_LABEL[tournament.status]}
-              </button>
-              <button className="btn btn-ghost" style={{ padding: '6px 10px', color: '#c00' }} onClick={handleDelete}>
-                <Trash2 size={15} />
-              </button>
-            </>
+          {tournament.scheduled_at && (
+            <span style={{ fontSize: 13, color: '#777' }}>
+              {new Date(tournament.scheduled_at).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+            </span>
           )}
+          {saving && <span style={{ fontSize: 12, color: '#888' }}>Saving…</span>}
         </div>
+        {isAdmin && (
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn btn-primary" style={{ background: '#b45309', borderColor: '#b45309', display: 'flex', alignItems: 'center', gap: 6 }} onClick={handleStatusChange}>
+              <Trophy size={14} /> {STATUS_LABEL[tournament.status]}
+            </button>
+            <button className="btn btn-ghost" style={{ padding: '6px 10px', color: '#c00' }} onClick={handleDelete}>
+              <Trash2 size={15} />
+            </button>
+          </div>
+        )}
       </div>
 
       {error && <div className="alert alert-error" style={{ marginBottom: 16 }}>{error}</div>}
 
-      {/* Meta info */}
-      <div style={{ display: 'flex', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>
-        <span className="badge badge-gray">{tournament.format?.replace('_', ' ')}</span>
-        {tournament.scheduled_at && (
-          <span style={{ fontSize: 13, color: '#555' }}>
-            {new Date(tournament.scheduled_at).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
-          </span>
-        )}
-        <span style={{ fontSize: 13, color: '#555' }}>{selectedSchoolIds.length} schools</span>
-      </div>
-
       {/* Schools section */}
-      <div style={{ marginBottom: 28 }}>
+      <div style={{ marginBottom: 28, background: '#fffbf0', border: '2px solid #f0c020', borderRadius: 6, padding: '16px 20px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-          <h3 style={{ fontWeight: 800, textTransform: 'uppercase', fontSize: 12, letterSpacing: '0.06em', margin: 0 }}>Schools</h3>
+          <h3 style={{ fontWeight: 800, textTransform: 'uppercase', fontSize: 12, letterSpacing: '0.06em', margin: 0, color: '#92400e' }}>🏫 Schools</h3>
           {isAdmin && (
             <button className="btn btn-ghost" style={{ fontSize: 11, padding: '3px 10px' }} onClick={() => setShowSchoolEditor(!showSchoolEditor)}>
               {showSchoolEditor ? 'Cancel' : 'Edit'}
@@ -425,14 +436,13 @@ export default function TournamentDetail() {
 
       {/* Bracket */}
       <div>
-        <h3 style={{ fontWeight: 800, textTransform: 'uppercase', fontSize: 12, letterSpacing: '0.06em', marginBottom: 16 }}>
-          Bracket
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, borderBottom: '3px solid #f0c020', paddingBottom: 10 }}>
+          <Trophy size={16} style={{ color: '#b45309' }} />
+          <h3 style={{ fontWeight: 800, textTransform: 'uppercase', fontSize: 13, letterSpacing: '0.06em', margin: 0, color: '#92400e' }}>Bracket</h3>
           {isAdmin && tournament.status !== 'completed' && (
-            <span style={{ fontWeight: 400, fontSize: 11, color: '#888', marginLeft: 8, textTransform: 'none', letterSpacing: 0 }}>
-              — click a school to record the winner
-            </span>
+            <span style={{ fontWeight: 400, fontSize: 11, color: '#888' }}>— click a school to record the winner</span>
           )}
-        </h3>
+        </div>
 
         {!bracket ? (
           <p className="text-muted">No bracket generated yet.</p>

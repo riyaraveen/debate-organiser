@@ -2370,19 +2370,20 @@ label > span,
 
 /* Interactive bracket cards */
 .bracket-match-card {
-  border: 2px solid var(--black);
-  background: white;
-  padding: 10px 12px;
+  border: 2px solid #d97706;
+  background: #fffbf0;
+  padding: 12px 14px;
   font-size: 13px;
-  box-shadow: var(--shadow-sm);
+  box-shadow: 3px 3px 0 #f0c020;
+  border-radius: 4px;
 }
-.bracket-match-card.bracket-match-done { background: #f8fff8; border-color: #2a7a3c; }
-.bracket-team { padding: 4px 0; display: flex; align-items: center; gap: 6px; }
-.bracket-team-clickable { cursor: pointer; }
-.bracket-team-clickable:hover { color: var(--blue); text-decoration: underline; }
+.bracket-match-card.bracket-match-done { background: #f0fdf4; border-color: #2a7a3c; box-shadow: 3px 3px 0 #86efac; }
+.bracket-team { padding: 5px 0; display: flex; align-items: center; gap: 6px; font-weight: 600; }
+.bracket-team-clickable { cursor: pointer; border-radius: 3px; padding: 4px 6px; margin: -4px -6px; }
+.bracket-team-clickable:hover { background: #fef3c7; color: #92400e; }
 .bracket-winner { color: #1a7a3c; font-weight: 800; }
 .bracket-check { color: #1a7a3c; font-size: 12px; }
-.bracket-vs-divider { font-size: 10px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; border-top: 1px dashed #ccc; border-bottom: 1px dashed #ccc; padding: 2px 0; margin: 2px 0; }
+.bracket-vs-divider { font-size: 10px; font-weight: 800; color: #d97706; text-transform: uppercase; border-top: 1px dashed #f0c020; border-bottom: 1px dashed #f0c020; padding: 3px 0; margin: 2px 0; letter-spacing: 0.1em; }
 .badge-red { background: #fde8e8; color: #c00; border: 1.5px solid #c00; font-size: 11px; font-weight: 800; border-radius: 4px; padding: 1px 7px; display: inline-block; }
 
 /* ── Team workspace ───────────────────────────────── */
