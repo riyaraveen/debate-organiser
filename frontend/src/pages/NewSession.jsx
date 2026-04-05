@@ -50,6 +50,7 @@ export default function NewSession() {
     title: '',
     scheduled_at: '',
     location: '',
+    location_maps: true,
     participant_ids: [],
     auto_assign_roles: true,
   })
@@ -137,6 +138,7 @@ export default function NewSession() {
         title: form.title,
         scheduled_at: form.scheduled_at ? new Date(form.scheduled_at).toISOString() : null,
         location: form.location,
+        location_maps: form.location_maps,
         participant_ids: form.participant_ids,
         auto_assign_roles: false,
         manual_assignments: form.participant_ids.map(uid => ({
@@ -374,6 +376,16 @@ export default function NewSession() {
                 onChange={(e) => set('location', e.target.value)}
                 placeholder={form.mode === 'online' ? 'https://meet.google.com/...' : 'Room 12, Main Building'} />
             </label>
+            {form.mode !== 'online' && form.location && (
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer', userSelect: 'none', fontWeight: 'normal' }}>
+                <input type="checkbox"
+                  checked={form.location_maps}
+                  onChange={e => set('location_maps', e.target.checked)}
+                  style={{ cursor: 'pointer' }}
+                />
+                Show "View on Maps" link for participants
+              </label>
+            )}
           </div>
         )}
 
@@ -387,7 +399,7 @@ export default function NewSession() {
               <dt>Mode</dt><dd>{form.mode}</dd>
               <dt>Title</dt><dd>{form.title}</dd>
               <dt>Date</dt><dd>{form.scheduled_at || 'TBC'}</dd>
-              <dt>Location</dt><dd>{form.location || 'TBC'}</dd>
+              <dt>Location</dt><dd>{form.location || 'TBC'}{form.mode !== 'online' && form.location && !form.location_maps ? ' (no maps link)' : ''}</dd>
               <dt>Role assignment</dt><dd>{form.auto_assign_roles ? 'Auto-assigned' : 'Manual'}</dd>
               <dt>Participants</dt>
               <dd>
