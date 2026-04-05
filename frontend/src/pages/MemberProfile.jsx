@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { getUser, getSessions, getAvailability, addAvailability, removeAvailability, updateProfile } from '../api'
+import { getUser, getSessions, getAvailability, addAvailability, removeAvailability, updateProfile, getUserStats } from '../api'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
 import { ArrowLeft, Mail, GraduationCap, Phone, School, Trophy, Calendar, Edit2, Check, X } from 'lucide-react'
@@ -89,6 +89,7 @@ export default function MemberProfile() {
   const toast = useToast()
   const [member, setMember] = useState(null)
   const [sessions, setSessions] = useState([])
+  const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
   const [editingBio, setEditingBio] = useState(false)
   const [bioForm, setBioForm] = useState({ bio: '', phone: '', grade: '', school: '', proficiency: '' })
@@ -103,6 +104,7 @@ export default function MemberProfile() {
       })
       .catch(() => {})
       .finally(() => setLoading(false))
+    getUserStats(id).then(r => setStats(r.data)).catch(() => {})
   }, [id])
 
   const handleSaveBio = async () => {
@@ -259,6 +261,49 @@ export default function MemberProfile() {
             </div>
           ))}
         </div>
+
+        {/* Server-authoritative stats */}
+        {stats && (
+          <div style={{ border: '3px solid #121212', padding: 20, marginBottom: 24 }}>
+            <h3 style={{ marginTop: 0 }}><Trophy size={16} /> Debate Stats</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 12 }}>
+              <div style={{ border: '2px solid #e5e5e5', padding: '12px 10px', textAlign: 'center' }}>
+                <div style={{ fontSize: 22, fontWeight: 900, color: 'var(--blue)' }}>
+                  {stats.sessions_attended}/{stats.total_sessions}
+                </div>
+                <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)' }}>
+                  Attended
+                </div>
+              </div>
+              {stats.avg_score !== null && (
+                <div style={{ border: '2px solid #e5e5e5', padding: '12px 10px', textAlign: 'center' }}>
+                  <div style={{ fontSize: 22, fontWeight: 900, color: '#1A8040' }}>{stats.avg_score}</div>
+                  <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)' }}>
+                    Avg Score
+                  </div>
+                </div>
+              )}
+            </div>
+            {stats.roles_played.length > 0 && (
+              <div style={{ marginTop: 12 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)' }}>Roles played</span>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 4 }}>
+                  {stats.roles_played.map(r => <span key={r} className="badge badge-gray">{r}</span>)}
+                </div>
+              </div>
+            )}
+            {stats.sides_played.length > 0 && (
+              <div style={{ marginTop: 8 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)' }}>Sides debated</span>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 4 }}>
+                  {stats.sides_played.map(s => (
+                    <span key={s} className={`badge ${s === 'proposition' ? 'badge-blue' : s === 'opposition' ? 'badge-red' : 'badge-gray'}`}>{s}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Availability calendar */}
         <div style={{ border: '3px solid #121212', padding: 20, marginBottom: 24 }}>

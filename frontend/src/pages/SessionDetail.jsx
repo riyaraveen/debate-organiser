@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { getSession, updateSession, deleteSession, createSession, getFormat, notifyCalendar, getUsers, addParticipant, removeParticipant, updateParticipant, getTemplates, createTemplate } from '../api'
+import { getSession, updateSession, deleteSession, createSession, getFormat, notifyCalendar, getUsers, addParticipant, removeParticipant, updateParticipant, getTemplates, createTemplate, updateAttendance, getSessionScores, createScore } from '../api'
 import { useToast } from '../context/ToastContext'
 import { useAuth } from '../context/AuthContext'
 import { Calendar, MapPin, Users, Edit2, Trash2, Trophy, Link as LinkIcon, FileText, Sparkles, MessageCircle, ArrowLeft, UserMinus, UserPlus, RefreshCw, Check, X, Copy, Timer } from 'lucide-react'
@@ -24,6 +24,9 @@ export default function SessionDetail() {
   const [addForm, setAddForm] = useState({ user_id: '', role_name: '', side: '' })
   const [replacingId, setReplacingId] = useState(null)
   const [replaceUserId, setReplaceUserId] = useState('')
+  const [scores, setScores] = useState([])
+  const [scoreForm, setScoreForm] = useState({ subject_user_id: '', score: '', notes: '' })
+  const [scoringLoading, setScoringLoading] = useState(false)
 
   useEffect(() => {
     getSession(id)
@@ -43,6 +46,7 @@ export default function SessionDetail() {
       .catch(() => {})
       .finally(() => setLoading(false))
 
+    getSessionScores(id).then(r => setScores(r.data)).catch(() => {})
   }, [id])
 
   const handleSave = async () => {
@@ -146,6 +150,37 @@ export default function SessionDetail() {
       dates: `${dtStr}/${dtEnd}`,
     })
     return `https://calendar.google.com/calendar/render?${params}`
+  }
+
+  const handleAttendance = async (participantId, attended) => {
+    await updateAttendance(id, participantId, attended)
+    setSession(s => ({
+      ...s,
+      participants: s.participants.map(p => p.id === participantId ? { ...p, attended } : p),
+    }))
+  }
+
+  const handleCreateScore = async (e) => {
+    e.preventDefault()
+    if (!scoreForm.subject_user_id || scoreForm.score === '') return
+    setScoringLoading(true)
+    try {
+      const res = await createScore(id, {
+        subject_user_id: parseInt(scoreForm.subject_user_id),
+        score: parseInt(scoreForm.score),
+        notes: scoreForm.notes || null,
+      })
+      setScores(prev => {
+        const idx = prev.findIndex(s => s.subject_user_id === res.data.subject_user_id && s.scorer_id === res.data.scorer_id)
+        if (idx >= 0) { const next = [...prev]; next[idx] = res.data; return next }
+        return [...prev, res.data]
+      })
+      setScoreForm({ subject_user_id: '', score: '', notes: '' })
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to save score')
+    } finally {
+      setScoringLoading(false)
+    }
   }
 
   if (loading) return <div className="loading">Loading…</div>
@@ -411,6 +446,7 @@ export default function SessionDetail() {
             <thead>
               <tr>
                 <th>Name</th><th>Role</th><th>Side</th>
+                {isAdmin && <th>Attended</th>}
                 {editingParticipants && <th></th>}
               </tr>
             </thead>
@@ -442,6 +478,16 @@ export default function SessionDetail() {
                   </td>
                   <td>{p.role_name ?? '—'}</td>
                   <td>{p.side ?? '—'}</td>
+                  {isAdmin && (
+                    <td style={{ textAlign: 'center' }}>
+                      <input type="checkbox"
+                        checked={p.attended === true}
+                        onChange={(e) => handleAttendance(p.id, e.target.checked)}
+                        style={{ cursor: 'pointer' }}
+                        title={p.attended === null || p.attended === undefined ? 'Not marked' : p.attended ? 'Attended' : 'Absent'}
+                      />
+                    </td>
+                  )}
                   {editingParticipants && (
                     <td style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
                       <button className="btn btn-ghost" title="Replace" style={{ padding: '4px 8px' }}
@@ -560,10 +606,60 @@ export default function SessionDetail() {
                   <span>{p.user?.name}</span>
                   {p.role_name && <span className="badge badge-gray">{p.role_name}</span>}
                   {p.side && <span className={`badge ${p.side === 'proposition' ? 'badge-blue' : 'badge-red'}`}>{p.side}</span>}
+                  {p.attended === true && <span className="badge badge-green" style={{ fontSize: 10 }}>attended</span>}
+                  {p.attended === false && <span className="badge badge-red" style={{ fontSize: 10 }}>absent</span>}
                 </div>
               ))}
             </div>
           </div>
+
+          {/* Speaker scoring — admin only */}
+          {isAdmin && (
+            <div style={{ marginTop: 20 }}>
+              <span className="summary-block-label">Speaker Scores</span>
+              {scores.length > 0 && (
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, marginTop: 8, marginBottom: 12 }}>
+                  <thead>
+                    <tr style={{ borderBottom: '2px solid #121212' }}>
+                      <th style={{ textAlign: 'left', padding: '4px 8px' }}>Speaker</th>
+                      <th style={{ textAlign: 'center', padding: '4px 8px' }}>Score</th>
+                      <th style={{ textAlign: 'left', padding: '4px 8px' }}>Notes</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {scores.map(s => (
+                      <tr key={s.id} style={{ borderBottom: '1px solid #e5e5e5' }}>
+                        <td style={{ padding: '4px 8px' }}>{s.subject_user_name ?? `User #${s.subject_user_id}`}</td>
+                        <td style={{ padding: '4px 8px', textAlign: 'center', fontWeight: 700 }}>{s.score}</td>
+                        <td style={{ padding: '4px 8px', color: 'var(--text-muted)', fontSize: 12 }}>{s.notes ?? '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+              <form onSubmit={handleCreateScore} style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-end', marginTop: 8 }}>
+                <select value={scoreForm.subject_user_id}
+                  onChange={e => setScoreForm(f => ({ ...f, subject_user_id: e.target.value }))}
+                  style={{ fontSize: 13, padding: '4px 8px' }} required>
+                  <option value="">Speaker…</option>
+                  {session.participants?.map(p => (
+                    <option key={p.id} value={p.user_id}>{p.user?.name ?? `User #${p.user_id}`}</option>
+                  ))}
+                </select>
+                <input type="number" min={0} max={100} placeholder="Score (0–100)"
+                  value={scoreForm.score}
+                  onChange={e => setScoreForm(f => ({ ...f, score: e.target.value }))}
+                  style={{ width: 120, fontSize: 13, padding: '4px 8px' }} required />
+                <input type="text" placeholder="Notes (optional)"
+                  value={scoreForm.notes}
+                  onChange={e => setScoreForm(f => ({ ...f, notes: e.target.value }))}
+                  style={{ flex: 1, minWidth: 120, fontSize: 13, padding: '4px 8px' }} />
+                <button type="submit" className="btn btn-primary" style={{ fontSize: 12, padding: '4px 12px' }} disabled={scoringLoading}>
+                  {scoringLoading ? '…' : 'Save'}
+                </button>
+              </form>
+            </div>
+          )}
         </div>
       )}
         </div>{/* end session-main */}

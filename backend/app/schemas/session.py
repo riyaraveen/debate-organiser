@@ -16,10 +16,15 @@ class ParticipantOut(BaseModel):
     user_id: int
     role_name: Optional[str]
     side: Optional[str]
+    attended: Optional[bool] = None
     user: Optional[UserOut] = None
 
     class Config:
         from_attributes = True
+
+
+class AttendanceUpdate(BaseModel):
+    attended: bool
 
 
 class ManualAssignment(BaseModel):

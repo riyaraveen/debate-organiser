@@ -14,3 +14,4 @@ from .availability import UserAvailability
 from .template import SessionTemplate
 from .announcement import Announcement
 from .invite_code import InviteCode
+from .speaker_score import SpeakerScore

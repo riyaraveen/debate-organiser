@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, func, Boolean
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, func, Boolean
 from app.db.database import Base
 
 
@@ -13,4 +13,5 @@ class Tournament(Base):
     bracket = Column(Text, nullable=True)           # JSON string: teams, rounds, results
     school_ids = Column(Text, nullable=True)        # JSON list of participating school IDs
     scheduled_at = Column(DateTime, nullable=True)
+    club_id = Column(Integer, ForeignKey("clubs.id"), nullable=True)
     created_at = Column(DateTime, server_default=func.now())

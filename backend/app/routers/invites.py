@@ -14,8 +14,10 @@ from app.services.auth import get_club_membership, require_club_admin
 router = APIRouter(prefix="/api/invites", tags=["invites"])
 
 
+_SAFE_CHARS = "ACDEFGHJKLMNPQRTUVWXY34679"  # no O/0, I/1, B/8, S/5, Z/2
+
 def _generate_code() -> str:
-    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+    return ''.join(random.choices(_SAFE_CHARS, k=8))
 
 
 class InviteOut(BaseModel):

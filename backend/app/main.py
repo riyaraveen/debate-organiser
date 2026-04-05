@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routers import auth, users, topics, formats, sessions, notifications, settings, notes, ai, events
@@ -8,39 +9,50 @@ from app.routers.invites import router as invites_router
 from app.routers.schools import router as schools_router, tournament_router
 from app.routers.team_chat import router as team_chat_router
 from app.routers.clubs import router as clubs_router
-from app.db.database import engine
+from app.routers.scores import router as scores_router
+from app.routers.ws_notifications import router as ws_notifications_router
+from app.db.database import engine, DATABASE_URL
 from app.db import database
 import app.models  # noqa: F401 — registers all models with Base
 from app.db.database import Base, engine
 
-# Create any new tables that don't exist yet (non-destructive)
-Base.metadata.create_all(bind=engine)
+# ── Create tables (SQLite dev only; Postgres uses Alembic) ──────────────────
+if DATABASE_URL.startswith("sqlite"):
+    Base.metadata.create_all(bind=engine)
 
-# Add any new columns that don't exist yet (non-destructive ALTER TABLE)
+# ── Non-destructive column migrations (SQLite only) ──────────────────────────
 from sqlalchemy import text, inspect as sa_inspect
 
-
 def _add_column_if_missing(table: str, column: str, col_type: str):
-    cols = [c["name"] for c in sa_inspect(engine).get_columns(table)]
-    if column not in cols:
-        with engine.connect() as conn:
-            conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {column} {col_type}"))
-            conn.commit()
+    try:
+        cols = [c["name"] for c in sa_inspect(engine).get_columns(table)]
+        if column not in cols:
+            with engine.connect() as conn:
+                conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {column} {col_type}"))
+                conn.commit()
+    except Exception:
+        pass  # Table may not exist yet on first run
 
 
-_add_column_if_missing("sessions",        "additional_notes",  "VARCHAR")
-_add_column_if_missing("notifications",   "notification_type", "VARCHAR")
-_add_column_if_missing("notifications",   "ref_key",           "VARCHAR")
-_add_column_if_missing("sessions",        "club_id",           "INTEGER")
-_add_column_if_missing("debate_formats",  "club_id",           "INTEGER")
-_add_column_if_missing("topics",          "club_id",           "INTEGER")
-_add_column_if_missing("club_settings",   "club_id",           "INTEGER")
-_add_column_if_missing("calendar_events", "club_id",           "INTEGER")
-_add_column_if_missing("announcements",   "club_id",           "INTEGER")
-_add_column_if_missing("invite_codes",    "club_id",           "INTEGER")
-_add_column_if_missing("session_templates", "club_id",         "INTEGER")
+if DATABASE_URL.startswith("sqlite"):
+    _add_column_if_missing("sessions",            "additional_notes",  "VARCHAR")
+    _add_column_if_missing("notifications",       "notification_type", "VARCHAR")
+    _add_column_if_missing("notifications",       "ref_key",           "VARCHAR")
+    _add_column_if_missing("sessions",            "club_id",           "INTEGER")
+    _add_column_if_missing("debate_formats",      "club_id",           "INTEGER")
+    _add_column_if_missing("topics",              "club_id",           "INTEGER")
+    _add_column_if_missing("club_settings",       "club_id",           "INTEGER")
+    _add_column_if_missing("calendar_events",     "club_id",           "INTEGER")
+    _add_column_if_missing("announcements",       "club_id",           "INTEGER")
+    _add_column_if_missing("invite_codes",        "club_id",           "INTEGER")
+    _add_column_if_missing("session_templates",   "club_id",           "INTEGER")
+    _add_column_if_missing("session_participants","attended",          "INTEGER")
+    _add_column_if_missing("users",               "reset_token",       "VARCHAR")
+    _add_column_if_missing("users",               "reset_token_expiry","DATETIME")
+    _add_column_if_missing("schools",             "club_id",           "INTEGER")
+    _add_column_if_missing("tournaments",         "club_id",           "INTEGER")
 
-# ── Seed a default club for existing data ──────────────────────────────────
+# ── Seed a default club for existing data ────────────────────────────────────
 from sqlalchemy.orm import Session as DBSession
 from app.models.club import Club, ClubMembership
 from app.models.user import User
@@ -50,23 +62,20 @@ def _seed_default_club():
         if db.query(Club).count() > 0:
             return  # Already migrated
 
-        # Find an existing admin user to be the owner, or use the first user
         owner = db.query(User).filter(User.role == "admin").first() or db.query(User).first()
         if not owner:
-            return  # No users yet — fresh install, nothing to migrate
+            return  # Fresh install — nothing to migrate
 
         club = Club(name="My Debate Club", slug="my-debate-club", created_by=owner.id)
         db.add(club)
         db.flush()
 
-        # Make all existing users members of the default club
         users = db.query(User).all()
         for u in users:
             role = "owner" if u.id == owner.id else ("admin" if u.role == "admin" else "member")
             membership = ClubMembership(club_id=club.id, user_id=u.id, role=role)
             db.add(membership)
 
-        # Assign all existing data to this club
         db.execute(text(f"UPDATE sessions SET club_id = {club.id} WHERE club_id IS NULL"))
         db.execute(text(f"UPDATE topics SET club_id = {club.id} WHERE club_id IS NULL"))
         db.execute(text(f"UPDATE club_settings SET club_id = {club.id} WHERE club_id IS NULL"))
@@ -74,15 +83,30 @@ def _seed_default_club():
         db.execute(text(f"UPDATE announcements SET club_id = {club.id} WHERE club_id IS NULL"))
         db.execute(text(f"UPDATE invite_codes SET club_id = {club.id} WHERE club_id IS NULL"))
         db.execute(text(f"UPDATE session_templates SET club_id = {club.id} WHERE club_id IS NULL"))
-        # debate_formats: only non-builtins get club_id; builtins stay NULL (global)
+        db.execute(text(f"UPDATE schools SET club_id = {club.id} WHERE club_id IS NULL"))
+        db.execute(text(f"UPDATE tournaments SET club_id = {club.id} WHERE club_id IS NULL"))
         db.execute(text(f"UPDATE debate_formats SET club_id = {club.id} WHERE club_id IS NULL AND is_builtin = 0"))
 
         db.commit()
 
 _seed_default_club()
-# ──────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────
 
-app = FastAPI(title="Debate Organiser API", version="1.0.0")
+# ── APScheduler: session reminders every hour ────────────────────────────────
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from app.routers.notifications import run_reminder_job
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    scheduler = AsyncIOScheduler()
+    scheduler.add_job(run_reminder_job, "interval", hours=1)
+    scheduler.start()
+    yield
+    scheduler.shutdown(wait=False)
+
+# ─────────────────────────────────────────────────────────────────────────────
+
+app = FastAPI(title="Debate Organiser API", version="1.0.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -98,7 +122,9 @@ app.include_router(users.router)
 app.include_router(topics.router)
 app.include_router(formats.router)
 app.include_router(sessions.router)
+app.include_router(scores_router)
 app.include_router(notifications.router)
+app.include_router(ws_notifications_router)
 app.include_router(settings.router)
 app.include_router(notes.router)
 app.include_router(ai.router)

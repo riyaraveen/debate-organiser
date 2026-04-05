@@ -1,9 +1,12 @@
-import { createContext, useContext, useState, useCallback } from 'react'
+import { createContext, useContext, useState, useCallback, useMemo } from 'react'
+import { useAuth } from './AuthContext'
 
 const ClubContext = createContext(null)
 
 export function ClubProvider({ children }) {
-  const [activeClub, setActiveClubState] = useState(() => {
+  const { clubs } = useAuth()
+
+  const [activeClubState, setActiveClubState] = useState(() => {
     try {
       const stored = localStorage.getItem('active_club')
       return stored ? JSON.parse(stored) : null
@@ -11,6 +14,14 @@ export function ClubProvider({ children }) {
       return null
     }
   })
+
+  // Always reflect the latest role from AuthContext so role changes are
+  // picked up without the user needing to re-select their club.
+  const activeClub = useMemo(() => {
+    if (!activeClubState) return null
+    const fresh = clubs.find(c => c.id === activeClubState.id)
+    return fresh ? { ...activeClubState, role: fresh.role } : activeClubState
+  }, [activeClubState, clubs])
 
   const setActiveClub = useCallback((club) => {
     if (club) {

@@ -1,12 +1,16 @@
 import re
+import secrets
+import hashlib
+from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.models.user import User
 from app.models.club import Club, ClubMembership
-from app.schemas.user import UserCreate, LoginRequest, TokenResponse, UserOut, ClubOut
+from app.schemas.user import UserCreate, LoginRequest, TokenResponse, MeResponse, UserOut, ClubOut
 from app.services.auth import hash_password, verify_password, create_access_token, get_current_user
 from app.models.invite_code import InviteCode
+from pydantic import BaseModel, EmailStr
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -18,12 +22,14 @@ def _slugify(name: str) -> str:
 
 def _get_user_clubs(user_id: int, db: Session) -> list[ClubOut]:
     memberships = db.query(ClubMembership).filter(ClubMembership.user_id == user_id).all()
-    result = []
-    for m in memberships:
-        club = db.query(Club).filter(Club.id == m.club_id).first()
-        if club:
-            result.append(ClubOut(id=club.id, name=club.name, role=m.role))
-    return result
+    if not memberships:
+        return []
+    club_ids = [m.club_id for m in memberships]
+    clubs_by_id = {c.id: c for c in db.query(Club).filter(Club.id.in_(club_ids)).all()}
+    return [
+        ClubOut(id=m.club_id, name=clubs_by_id[m.club_id].name, role=m.role)
+        for m in memberships if m.club_id in clubs_by_id
+    ]
 
 
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
@@ -94,8 +100,47 @@ def login(body: LoginRequest, db: Session = Depends(get_db)):
     return TokenResponse(access_token=token, user=UserOut.from_orm(user), clubs=clubs)
 
 
-@router.get("/me", response_model=TokenResponse)
+@router.get("/me", response_model=MeResponse)
 def me(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     clubs = _get_user_clubs(current_user.id, db)
-    token = create_access_token({"sub": str(current_user.id)})
-    return TokenResponse(access_token=token, user=UserOut.from_orm(current_user), clubs=clubs)
+    return MeResponse(user=UserOut.from_orm(current_user), clubs=clubs)
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
+
+
+def _hash_reset_token(raw: str) -> str:
+    return hashlib.sha256(raw.encode()).hexdigest()
+
+
+@router.post("/forgot-password", status_code=200)
+def forgot_password(body: ForgotPasswordRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == body.email).first()
+    if not user:
+        # Don't reveal whether the email exists
+        return {"detail": "If that email is registered, a reset token has been generated."}
+    raw_token = secrets.token_urlsafe(32)
+    user.reset_token = _hash_reset_token(raw_token)
+    user.reset_token_expiry = datetime.utcnow() + timedelta(hours=1)
+    db.commit()
+    # No email delivery — return the token directly for admin use
+    return {"reset_token": raw_token}
+
+
+@router.post("/reset-password", status_code=200)
+def reset_password(body: ResetPasswordRequest, db: Session = Depends(get_db)):
+    hashed = _hash_reset_token(body.token)
+    user = db.query(User).filter(User.reset_token == hashed).first()
+    if not user or not user.reset_token_expiry or user.reset_token_expiry < datetime.utcnow():
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+    user.hashed_password = hash_password(body.new_password)
+    user.reset_token = None
+    user.reset_token_expiry = None
+    db.commit()
+    return {"detail": "Password updated successfully"}

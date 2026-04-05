@@ -1,7 +1,8 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Bell } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { getNotifications, markAllRead, checkReminders } from '../../api'
+import { getNotifications, markAllRead } from '../../api'
+import { useNotificationSocket } from '../../hooks/useNotificationSocket'
 
 export default function Header({ title }) {
   const [notifications, setNotifications] = useState([])
@@ -12,7 +13,7 @@ export default function Header({ title }) {
   const firstFetchRef = useRef(true)
   const navigate      = useNavigate()
 
-  const fetchNotifications = () => {
+  const fetchNotifications = useCallback(() => {
     getNotifications().then((res) => {
       const data = res.data
       if (!firstFetchRef.current) {
@@ -23,16 +24,27 @@ export default function Header({ title }) {
       prevIdsRef.current = new Set(data.map(n => n.id))
       setNotifications(data)
     }).catch(() => {})
-  }
-
-  useEffect(() => {
-    // Check for upcoming session reminders, then load notifications
-    checkReminders().catch(() => {}).finally(() => {
-      fetchNotifications()
-    })
-    const interval = setInterval(fetchNotifications, 30000)
-    return () => clearInterval(interval)
   }, [])
+
+  // Initial load
+  useEffect(() => {
+    fetchNotifications()
+  }, [fetchNotifications])
+
+  // Real-time push via WebSocket — prepend new notification to state
+  useNotificationSocket(useCallback((payload) => {
+    const newNotif = {
+      id: Date.now(), // temporary id until next fetch syncs
+      message: payload.message,
+      link: payload.link,
+      is_read: false,
+      notification_type: null,
+    }
+    setNotifications(prev => [newNotif, ...prev])
+    setToast(newNotif)
+    // Re-fetch to get server-assigned id and deduplicate
+    setTimeout(fetchNotifications, 500)
+  }, [fetchNotifications]))
 
   useEffect(() => {
     const handler = (e) => {
@@ -67,7 +79,6 @@ export default function Header({ title }) {
     <header className="app-header">
       <div className="header-actions" ref={dropdownRef}>
 
-        {/* Toast — sits to the left of the bell, disappears when dropdown opens */}
         {toast && !open && (
           <div className={`header-toast ${isReminder(toast) ? 'header-toast-reminder' : ''}`}>
             <span className="header-toast-dot"/>

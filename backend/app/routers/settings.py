@@ -4,7 +4,7 @@ from typing import Optional
 from pydantic import BaseModel
 from app.db.database import get_db
 from app.models.club_settings import ClubSettings
-from app.models.club import ClubMembership
+from app.models.club import Club, ClubMembership
 from app.services.auth import get_club_membership, require_club_admin
 
 router = APIRouter(prefix="/api/settings", tags=["settings"])
@@ -29,7 +29,9 @@ class SettingsUpdate(BaseModel):
 def _get_or_create_settings(db: Session, club_id: int) -> ClubSettings:
     settings = db.query(ClubSettings).filter(ClubSettings.club_id == club_id).first()
     if not settings:
-        settings = ClubSettings(club_id=club_id, club_name="My Debate Club")
+        club = db.query(Club).filter(Club.id == club_id).first()
+        default_name = club.name if club else "My Debate Club"
+        settings = ClubSettings(club_id=club_id, club_name=default_name)
         db.add(settings)
         db.commit()
         db.refresh(settings)

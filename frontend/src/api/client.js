@@ -12,12 +12,16 @@ api.interceptors.request.use((config) => {
   return config
 })
 
+const AUTH_PATHS = ['/api/auth/login', '/api/auth/register', '/api/auth/forgot-password', '/api/auth/reset-password']
+
 api.interceptors.response.use(
   (res) => res,
   (err) => {
-    if (err.response?.status === 401) {
+    if (err.response?.status === 401 && !AUTH_PATHS.some(p => err.config?.url?.includes(p))) {
       localStorage.removeItem('token')
-      window.location.href = '/login'
+      localStorage.removeItem('active_club')
+      localStorage.removeItem('active_club_id')
+      window.location.href = '/login?reason=expired'
     }
     return Promise.reject(err)
   }

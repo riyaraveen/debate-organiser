@@ -59,3 +59,8 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
     user: UserOut
     clubs: list[ClubOut] = []
+
+
+class MeResponse(BaseModel):
+    user: UserOut
+    clubs: list[ClubOut] = []

@@ -6,7 +6,7 @@ from app.models.user import User
 from app.models.session import Session, SessionParticipant
 from app.models.debate_format import DebateFormat
 from app.models.topic import Topic
-from app.schemas.session import SessionCreate, SessionUpdate, SessionOut, ParticipantOut, ParticipantIn
+from app.schemas.session import SessionCreate, SessionUpdate, SessionOut, ParticipantOut, ParticipantIn, AttendanceUpdate
 from app.services.auth import get_current_user, require_admin, get_club_membership, require_club_admin
 from app.models.club import ClubMembership
 from app.services.role_assignment import assign_roles
@@ -22,16 +22,19 @@ def _enrich_session(session: Session, db: DBSession) -> dict:
     participants = db.query(SessionParticipant).filter(
         SessionParticipant.session_id == session.id
     ).all()
-    enriched_participants = []
-    for p in participants:
-        user = db.query(User).filter(User.id == p.user_id).first()
-        enriched_participants.append({
+    user_ids = [p.user_id for p in participants]
+    users_by_id = {u.id: u for u in db.query(User).filter(User.id.in_(user_ids)).all()} if user_ids else {}
+    enriched_participants = [
+        {
             "id": p.id,
             "user_id": p.user_id,
             "role_name": p.role_name,
             "side": p.side,
-            "user": user,
-        })
+            "attended": p.attended,
+            "user": users_by_id.get(p.user_id),
+        }
+        for p in participants
+    ]
     result = {c.name: getattr(session, c.name) for c in session.__table__.columns}
     result["participants"] = enriched_participants
     return result
@@ -52,7 +55,7 @@ def get_session(session_id: int, db: DBSession = Depends(get_db), membership: Cl
 
 
 @router.post("/", response_model=SessionOut, status_code=201)
-def create_session(body: SessionCreate, db: DBSession = Depends(get_db), current_user: User = Depends(get_current_user), membership: ClubMembership = Depends(require_club_admin)):
+async def create_session(body: SessionCreate, db: DBSession = Depends(get_db), current_user: User = Depends(get_current_user), membership: ClubMembership = Depends(require_club_admin)):
     # Snapshot topic text
     topic_text = body.topic_text
     if body.topic_id and not topic_text:
@@ -94,15 +97,15 @@ def create_session(body: SessionCreate, db: DBSession = Depends(get_db), current
         db.commit()
 
         # Notify participants
-        notify_users(db, body.participant_ids,
-                     f"You've been added to '{session.title}'. Check your role and session details.",
-                     link=f"/sessions/{session.id}")
+        await notify_users(db, body.participant_ids,
+                           f"You've been added to '{session.title}'. Check your role and session details.",
+                           link=f"/sessions/{session.id}")
 
     return _enrich_session(session, db)
 
 
 @router.patch("/{session_id}", response_model=SessionOut)
-def update_session(
+async def update_session(
     session_id: int,
     body: SessionUpdate,
     db: DBSession = Depends(get_db),
@@ -146,7 +149,7 @@ def update_session(
         participant_ids = [p.user_id for p in participants]
         if participant_ids:
             changes = ", ".join(_FIELD_LABELS.get(f, f) for f in changed_fields)
-            notify_users(
+            await notify_users(
                 db, participant_ids,
                 f"'{session.title}' was updated — {changes}.",
                 link=f"/sessions/{session_id}",
@@ -158,21 +161,21 @@ def update_session(
 @router.get("/{session_id}/team-notes")
 def get_team_notes(session_id: int, db: DBSession = Depends(get_db), _: ClubMembership = Depends(get_club_membership)):
     from app.models.session_note import SessionNote
-    from app.models.user import User as UserModel
     notes = db.query(SessionNote).filter(
         SessionNote.session_id == session_id,
         SessionNote.content != ""
     ).all()
-    result = []
-    for n in notes:
-        u = db.query(UserModel).filter(UserModel.id == n.user_id).first()
-        result.append({
+    user_ids = [n.user_id for n in notes]
+    users_by_id = {u.id: u for u in db.query(User).filter(User.id.in_(user_ids)).all()} if user_ids else {}
+    return [
+        {
             "user_id": n.user_id,
-            "user_name": u.name if u else f"User #{n.user_id}",
+            "user_name": users_by_id[n.user_id].name if n.user_id in users_by_id else f"User #{n.user_id}",
             "content": n.content,
             "updated_at": str(n.updated_at),
-        })
-    return result
+        }
+        for n in notes
+    ]
 
 
 @router.get("/{session_id}/notes/{user_id}")
@@ -193,7 +196,7 @@ def get_user_note(session_id: int, user_id: int, db: DBSession = Depends(get_db)
 
 
 @router.post("/{session_id}/notify-calendar", status_code=200)
-def notify_calendar(session_id: int, db: DBSession = Depends(get_db), _: ClubMembership = Depends(require_club_admin)):
+async def notify_calendar(session_id: int, db: DBSession = Depends(get_db), _: ClubMembership = Depends(require_club_admin)):
     """Send all participants a notification with the Google Calendar link."""
     session = db.query(Session).filter(Session.id == session_id).first()
     if not session:
@@ -203,7 +206,7 @@ def notify_calendar(session_id: int, db: DBSession = Depends(get_db), _: ClubMem
     participants = db.query(SessionParticipant).filter(SessionParticipant.session_id == session_id).all()
     participant_ids = [p.user_id for p in participants]
     if participant_ids:
-        notify_users(
+        await notify_users(
             db, participant_ids,
             f"📅 Calendar invite: '{session.title}' — add it to your Google Calendar",
             link=f"/sessions/{session_id}",
@@ -212,11 +215,14 @@ def notify_calendar(session_id: int, db: DBSession = Depends(get_db), _: ClubMem
 
 
 @router.delete("/{session_id}", status_code=204)
-def delete_session(session_id: int, db: DBSession = Depends(get_db), _: ClubMembership = Depends(require_club_admin)):
-    session = db.query(Session).filter(Session.id == session_id).first()
+def delete_session(session_id: int, db: DBSession = Depends(get_db), membership: ClubMembership = Depends(require_club_admin)):
+    from app.models.session_note import SessionNote
+    session = db.query(Session).filter(Session.id == session_id, Session.club_id == membership.club_id).first()
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
     db.query(SessionParticipant).filter(SessionParticipant.session_id == session_id).delete()
+    db.query(TeamMessage).filter(TeamMessage.session_id == session_id).delete()
+    db.query(SessionNote).filter(SessionNote.session_id == session_id).delete()
     db.delete(session)
     db.commit()
 
@@ -226,7 +232,7 @@ def delete_session(session_id: int, db: DBSession = Depends(get_db), _: ClubMemb
 # ---------------------------------------------------------------------------
 
 @router.post("/{session_id}/participants", response_model=ParticipantOut, status_code=201)
-def add_participant(
+async def add_participant(
     session_id: int,
     body: ParticipantIn,
     db: DBSession = Depends(get_db),
@@ -248,10 +254,10 @@ def add_participant(
     db.refresh(p)
     user = db.query(User).filter(User.id == p.user_id).first()
     role_str = f" as {p.role_name}" if p.role_name else ""
-    notify_users(db, [body.user_id],
-                 f"You've been added to '{session.title}'{role_str}.",
-                 link=f"/sessions/{session_id}/chat")
-    return {**{c.name: getattr(p, c.name) for c in p.__table__.columns}, "user": user}
+    await notify_users(db, [body.user_id],
+                       f"You've been added to '{session.title}'{role_str}.",
+                       link=f"/sessions/{session_id}/chat")
+    return {**{c.name: getattr(p, c.name) for c in p.__table__.columns}, "user": user, "attended": p.attended}
 
 
 @router.delete("/{session_id}/participants/{participant_id}", status_code=204)
@@ -301,6 +307,7 @@ async def update_participant(
 
     side_changed = body.side is not None and body.side != p.side
     user_changed = body.user_id != p.user_id
+    old_user_id = p.user_id  # capture before overwrite
 
     p.user_id = body.user_id
     if body.role_name is not None:
@@ -310,12 +317,34 @@ async def update_participant(
     db.commit()
     db.refresh(p)
 
-    # If the side changed (or the user slot was swapped), kick affected users
-    # so they reconnect to the correct room on next page load.
+    # Kick affected users so they reconnect to the correct room on next page load.
     if side_changed or user_changed:
-        await chat_manager.kick_user(session_id, p.user_id, reason="side_changed")
+        # Kick the original occupant (their side/slot changed).
+        await chat_manager.kick_user(session_id, old_user_id, reason="side_changed")
         if user_changed:
+            # Also kick the incoming user in case they were already connected under a different side.
             await chat_manager.kick_user(session_id, body.user_id, reason="side_changed")
 
+    user = db.query(User).filter(User.id == p.user_id).first()
+    return {**{c.name: getattr(p, c.name) for c in p.__table__.columns}, "user": user}
+
+
+@router.patch("/{session_id}/participants/{participant_id}/attendance", response_model=ParticipantOut)
+def mark_attendance(
+    session_id: int,
+    participant_id: int,
+    body: AttendanceUpdate,
+    db: DBSession = Depends(get_db),
+    _: ClubMembership = Depends(require_club_admin),
+):
+    p = db.query(SessionParticipant).filter(
+        SessionParticipant.id == participant_id,
+        SessionParticipant.session_id == session_id,
+    ).first()
+    if not p:
+        raise HTTPException(status_code=404, detail="Participant not found")
+    p.attended = body.attended
+    db.commit()
+    db.refresh(p)
     user = db.query(User).filter(User.id == p.user_id).first()
     return {**{c.name: getattr(p, c.name) for c in p.__table__.columns}, "user": user}

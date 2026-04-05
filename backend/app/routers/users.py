@@ -1,9 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List
+from sqlalchemy import func as sqlfunc
+from typing import List, Optional
 from app.db.database import get_db
 from app.models.user import User
 from app.models.club import ClubMembership
+from app.models.session import Session as DebateSession, SessionParticipant
+from app.models.speaker_score import SpeakerScore
 from app.schemas.user import UserOut, UserUpdate
 from app.services.auth import get_current_user, get_club_membership, require_club_admin
 from pydantic import BaseModel
@@ -71,3 +74,39 @@ def update_role(
     db.commit()
     db.refresh(user)
     return user
+
+
+@router.get("/{user_id}/stats")
+def get_user_stats(
+    user_id: int,
+    db: Session = Depends(get_db),
+    membership: ClubMembership = Depends(get_club_membership),
+):
+    participants = (
+        db.query(SessionParticipant)
+        .join(DebateSession, DebateSession.id == SessionParticipant.session_id)
+        .filter(
+            SessionParticipant.user_id == user_id,
+            DebateSession.club_id == membership.club_id,
+        )
+        .all()
+    )
+    total_sessions = len(participants)
+    sessions_attended = sum(1 for p in participants if p.attended is True)
+    roles_played = sorted({p.role_name for p in participants if p.role_name})
+    sides_played = sorted({p.side for p in participants if p.side})
+
+    avg_score_result = (
+        db.query(sqlfunc.avg(SpeakerScore.score))
+        .filter(SpeakerScore.subject_user_id == user_id)
+        .scalar()
+    )
+    avg_score = round(float(avg_score_result), 1) if avg_score_result is not None else None
+
+    return {
+        "sessions_attended": sessions_attended,
+        "total_sessions": total_sessions,
+        "roles_played": roles_played,
+        "sides_played": sides_played,
+        "avg_score": avg_score,
+    }

@@ -44,3 +44,4 @@ class SessionParticipant(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     role_name = Column(String, nullable=True)    # e.g. "First Speaker", "Chair"
     side = Column(String, nullable=True)         # proposition / opposition / neutral
+    attended = Column(Boolean, nullable=True)    # null=not yet marked, True=attended, False=absent

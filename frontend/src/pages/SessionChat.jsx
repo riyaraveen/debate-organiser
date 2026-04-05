@@ -28,6 +28,8 @@ export default function SessionChat() {
   const [error, setError] = useState('')
   const wsRef = useRef(null)
   const bottomRef = useRef(null)
+  const statusRef = useRef(status)
+  statusRef.current = status
 
   const loadHistory = () => {
     setStatus('connecting')
@@ -87,7 +89,7 @@ export default function SessionChat() {
     ws.onclose = (e) => {
       if (e.code === 4001) { setStatus('error'); setError('Authentication failed.') }
       else if (e.code === 4003) { setStatus(s => (s === 'removed' || s === 'side_changed') ? s : 'forbidden') }
-      else if (status !== 'closed') setStatus('error')
+      else if (statusRef.current !== 'closed') setStatus('error')
     }
 
     return () => ws.close()

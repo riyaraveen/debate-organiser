@@ -206,7 +206,7 @@ async def chat_ws(
             offline_ids = list(all_side_ids - online_ids - {user.id})
             if offline_ids:
                 preview = content[:60] + ("…" if len(content) > 60 else "")
-                notify_users(
+                await notify_users(
                     db, offline_ids,
                     f"{user.name}: {preview}",
                     link=f"/sessions/{session_id}/chat",

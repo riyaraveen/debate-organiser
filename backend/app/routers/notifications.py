@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime, timedelta
 
-from app.db.database import get_db
+from app.db.database import get_db, SessionLocal
 from app.models.user import User
 from app.models.notification import Notification
 from app.models.session import Session as DebateSession, SessionStatus, SessionParticipant
@@ -54,52 +54,44 @@ def mark_read(notification_id: int, db: Session = Depends(get_db), current_user:
     db.commit()
 
 
-@router.post("/check-reminders", status_code=204)
-def check_reminders(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    """
-    Creates session reminder notifications for all users.
-    Called by the frontend on load; uses ref_key to prevent duplicates.
-    Sends a reminder 2 days before and 1 day before each scheduled session.
-    """
-    now = datetime.utcnow()
-    windows = [
-        (timedelta(hours=23), timedelta(hours=25), "1day",  "is tomorrow"),
-        (timedelta(hours=47), timedelta(hours=49), "2days", "is in 2 days"),
-    ]
-
-    all_users = db.query(User).all()
-
-    for low, high, key_suffix, label in windows:
-        sessions = (
-            db.query(DebateSession)
-            .filter(
-                DebateSession.scheduled_at >= now + low,
-                DebateSession.scheduled_at <= now + high,
-                DebateSession.status.in_([SessionStatus.scheduled, SessionStatus.draft]),
+def run_reminder_job():
+    """Scheduled job: creates session reminder notifications. Runs via APScheduler."""
+    with SessionLocal() as db:
+        now = datetime.utcnow()
+        windows = [
+            (timedelta(hours=23), timedelta(hours=25), "1day",  "is tomorrow"),
+            (timedelta(hours=47), timedelta(hours=49), "2days", "is in 2 days"),
+        ]
+        all_users = db.query(User).all()
+        for low, high, key_suffix, label in windows:
+            sessions = (
+                db.query(DebateSession)
+                .filter(
+                    DebateSession.scheduled_at >= now + low,
+                    DebateSession.scheduled_at <= now + high,
+                    DebateSession.status.in_([SessionStatus.scheduled, SessionStatus.draft]),
+                )
+                .all()
             )
-            .all()
-        )
-
-        for session in sessions:
-            participant_user_ids = {
-                p.user_id for p in db.query(SessionParticipant)
-                .filter(SessionParticipant.session_id == session.id).all()
-            }
-            for user in all_users:
-                if user.id not in participant_user_ids:
-                    continue
-                ref_key = f"session_reminder_{session.id}_{key_suffix}"
-                exists = db.query(Notification).filter(
-                    Notification.user_id == user.id,
-                    Notification.ref_key == ref_key,
-                ).first()
-                if not exists:
-                    db.add(Notification(
-                        user_id=user.id,
-                        message=f'Upcoming session: "{session.title}" {label}',
-                        link=f"/sessions/{session.id}",
-                        notification_type="session_reminder",
-                        ref_key=ref_key,
-                    ))
-
-    db.commit()
+            for session in sessions:
+                participant_user_ids = {
+                    p.user_id for p in db.query(SessionParticipant)
+                    .filter(SessionParticipant.session_id == session.id).all()
+                }
+                for user in all_users:
+                    if user.id not in participant_user_ids:
+                        continue
+                    ref_key = f"session_reminder_{session.id}_{key_suffix}"
+                    exists = db.query(Notification).filter(
+                        Notification.user_id == user.id,
+                        Notification.ref_key == ref_key,
+                    ).first()
+                    if not exists:
+                        db.add(Notification(
+                            user_id=user.id,
+                            message=f'Upcoming session: "{session.title}" {label}',
+                            link=f"/sessions/{session.id}",
+                            notification_type="session_reminder",
+                            ref_key=ref_key,
+                        ))
+        db.commit()

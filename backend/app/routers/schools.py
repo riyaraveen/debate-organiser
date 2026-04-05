@@ -8,8 +8,8 @@ from datetime import datetime
 from app.db.database import get_db
 from app.models.school import School
 from app.models.tournament import Tournament
-from app.models.user import User
-from app.services.auth import get_current_user, require_admin
+from app.models.club import ClubMembership
+from app.services.auth import get_club_membership, require_club_admin
 
 router = APIRouter(prefix="/api/schools", tags=["schools"])
 tournament_router = APIRouter(prefix="/api/tournaments", tags=["tournaments"])
@@ -68,13 +68,13 @@ class TournamentOut(BaseModel):
 # ── School routes ─────────────────────────────────────
 
 @router.get("/", response_model=List[SchoolOut])
-def list_schools(db: Session = Depends(get_db), _: User = Depends(get_current_user)):
-    return db.query(School).all()
+def list_schools(db: Session = Depends(get_db), membership: ClubMembership = Depends(get_club_membership)):
+    return db.query(School).filter(School.club_id == membership.club_id).all()
 
 
 @router.post("/", response_model=SchoolOut, status_code=201)
-def create_school(body: SchoolCreate, db: Session = Depends(get_db), _: User = Depends(require_admin)):
-    school = School(**body.model_dump())
+def create_school(body: SchoolCreate, db: Session = Depends(get_db), membership: ClubMembership = Depends(require_club_admin)):
+    school = School(**body.model_dump(), club_id=membership.club_id)
     db.add(school)
     db.commit()
     db.refresh(school)
@@ -82,8 +82,8 @@ def create_school(body: SchoolCreate, db: Session = Depends(get_db), _: User = D
 
 
 @router.patch("/{school_id}", response_model=SchoolOut)
-def update_school(school_id: int, body: SchoolCreate, db: Session = Depends(get_db), _: User = Depends(require_admin)):
-    school = db.query(School).filter(School.id == school_id).first()
+def update_school(school_id: int, body: SchoolCreate, db: Session = Depends(get_db), membership: ClubMembership = Depends(require_club_admin)):
+    school = db.query(School).filter(School.id == school_id, School.club_id == membership.club_id).first()
     if not school:
         raise HTTPException(status_code=404, detail="School not found")
     for field, value in body.model_dump(exclude_none=True).items():
@@ -94,8 +94,8 @@ def update_school(school_id: int, body: SchoolCreate, db: Session = Depends(get_
 
 
 @router.delete("/{school_id}", status_code=204)
-def delete_school(school_id: int, db: Session = Depends(get_db), _: User = Depends(require_admin)):
-    school = db.query(School).filter(School.id == school_id).first()
+def delete_school(school_id: int, db: Session = Depends(get_db), membership: ClubMembership = Depends(require_club_admin)):
+    school = db.query(School).filter(School.id == school_id, School.club_id == membership.club_id).first()
     if not school:
         raise HTTPException(status_code=404, detail="School not found")
     db.delete(school)
@@ -119,7 +119,6 @@ def _generate_bracket(school_ids: List[int], fmt: str) -> dict:
     # Single elimination
     while len(teams) < 2:
         teams.append(None)
-    # Pad to power of 2
     import math
     n = 2 ** math.ceil(math.log2(max(len(teams), 2)))
     teams += [None] * (n - len(teams))
@@ -138,12 +137,12 @@ def _generate_bracket(school_ids: List[int], fmt: str) -> dict:
 
 
 @tournament_router.get("/", response_model=List[TournamentOut])
-def list_tournaments(db: Session = Depends(get_db), _: User = Depends(get_current_user)):
-    return db.query(Tournament).order_by(Tournament.created_at.desc()).all()
+def list_tournaments(db: Session = Depends(get_db), membership: ClubMembership = Depends(get_club_membership)):
+    return db.query(Tournament).filter(Tournament.club_id == membership.club_id).order_by(Tournament.created_at.desc()).all()
 
 
 @tournament_router.post("/", response_model=TournamentOut, status_code=201)
-def create_tournament(body: TournamentCreate, db: Session = Depends(get_db), _: User = Depends(require_admin)):
+def create_tournament(body: TournamentCreate, db: Session = Depends(get_db), membership: ClubMembership = Depends(require_club_admin)):
     bracket = _generate_bracket(body.school_ids or [], body.format or "single_elimination")
     t = Tournament(
         name=body.name,
@@ -152,6 +151,7 @@ def create_tournament(body: TournamentCreate, db: Session = Depends(get_db), _: 
         school_ids=json.dumps(body.school_ids or []),
         bracket=json.dumps(bracket),
         scheduled_at=body.scheduled_at,
+        club_id=membership.club_id,
     )
     db.add(t)
     db.commit()
@@ -160,16 +160,16 @@ def create_tournament(body: TournamentCreate, db: Session = Depends(get_db), _: 
 
 
 @tournament_router.get("/{tournament_id}", response_model=TournamentOut)
-def get_tournament(tournament_id: int, db: Session = Depends(get_db), _: User = Depends(get_current_user)):
-    t = db.query(Tournament).filter(Tournament.id == tournament_id).first()
+def get_tournament(tournament_id: int, db: Session = Depends(get_db), membership: ClubMembership = Depends(get_club_membership)):
+    t = db.query(Tournament).filter(Tournament.id == tournament_id, Tournament.club_id == membership.club_id).first()
     if not t:
         raise HTTPException(status_code=404, detail="Tournament not found")
     return t
 
 
 @tournament_router.patch("/{tournament_id}", response_model=TournamentOut)
-def update_tournament(tournament_id: int, body: TournamentUpdate, db: Session = Depends(get_db), _: User = Depends(require_admin)):
-    t = db.query(Tournament).filter(Tournament.id == tournament_id).first()
+def update_tournament(tournament_id: int, body: TournamentUpdate, db: Session = Depends(get_db), membership: ClubMembership = Depends(require_club_admin)):
+    t = db.query(Tournament).filter(Tournament.id == tournament_id, Tournament.club_id == membership.club_id).first()
     if not t:
         raise HTTPException(status_code=404, detail="Tournament not found")
     for field, value in body.model_dump(exclude_none=True).items():
@@ -180,9 +180,9 @@ def update_tournament(tournament_id: int, body: TournamentUpdate, db: Session = 
 
 
 @tournament_router.patch("/{tournament_id}/bracket")
-def update_bracket(tournament_id: int, bracket: dict, db: Session = Depends(get_db), _: User = Depends(require_admin)):
+def update_bracket(tournament_id: int, bracket: dict, db: Session = Depends(get_db), membership: ClubMembership = Depends(require_club_admin)):
     """Update bracket state (record match results)."""
-    t = db.query(Tournament).filter(Tournament.id == tournament_id).first()
+    t = db.query(Tournament).filter(Tournament.id == tournament_id, Tournament.club_id == membership.club_id).first()
     if not t:
         raise HTTPException(status_code=404, detail="Tournament not found")
     t.bracket = json.dumps(bracket)

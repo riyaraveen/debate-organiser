@@ -80,13 +80,16 @@ def list_members(
     db: Session = Depends(get_db),
     membership: ClubMembership = Depends(get_club_membership),
 ):
+    if club_id != membership.club_id:
+        raise HTTPException(status_code=403, detail="Access denied")
     memberships = db.query(ClubMembership).filter(ClubMembership.club_id == club_id).all()
-    result = []
-    for m in memberships:
-        user = db.query(User).filter(User.id == m.user_id).first()
-        if user:
-            result.append(MemberOut(user_id=user.id, name=user.name, email=user.email, role=m.role, grade=user.grade))
-    return result
+    user_ids = [m.user_id for m in memberships]
+    users_by_id = {u.id: u for u in db.query(User).filter(User.id.in_(user_ids)).all()} if user_ids else {}
+    return [
+        MemberOut(user_id=m.user_id, name=users_by_id[m.user_id].name, email=users_by_id[m.user_id].email,
+                  role=m.role, grade=users_by_id[m.user_id].grade)
+        for m in memberships if m.user_id in users_by_id
+    ]
 
 
 @router.patch("/{club_id}/members/{user_id}", response_model=MemberOut)
@@ -97,6 +100,8 @@ def update_member_role(
     db: Session = Depends(get_db),
     admin_membership: ClubMembership = Depends(require_club_admin),
 ):
+    if club_id != admin_membership.club_id:
+        raise HTTPException(status_code=403, detail="Access denied")
     if body.role not in ("admin", "member"):
         raise HTTPException(status_code=400, detail="Role must be 'admin' or 'member'")
     m = db.query(ClubMembership).filter(
@@ -120,6 +125,8 @@ def remove_member(
     db: Session = Depends(get_db),
     admin_membership: ClubMembership = Depends(require_club_admin),
 ):
+    if club_id != admin_membership.club_id:
+        raise HTTPException(status_code=403, detail="Access denied")
     m = db.query(ClubMembership).filter(
         ClubMembership.club_id == club_id,
         ClubMembership.user_id == user_id,

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { login } from '../api'
 import { useAuth } from '../context/AuthContext'
 import { BookOpen, Eye, EyeOff } from 'lucide-react'
@@ -11,6 +11,8 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false)
   const { loginSuccess } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
+  const sessionExpired = new URLSearchParams(location.search).get('reason') === 'expired'
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -35,6 +37,11 @@ export default function Login() {
           <h1>DebateOrg</h1>
         </div>
         <h2>Sign in to your club</h2>
+        {sessionExpired && (
+          <div className="alert" style={{ background: '#FFF3CD', border: '2px solid #121212', marginBottom: 12 }}>
+            Your session expired. Please sign in again.
+          </div>
+        )}
         {error && <div className="alert alert-error">{error}</div>}
         <form onSubmit={handleSubmit} className="auth-form">
           <label>Email
@@ -58,6 +65,9 @@ export default function Login() {
         </form>
         <p className="auth-link">
           Don't have an account? <Link to="/register">Register</Link>
+        </p>
+        <p className="auth-link">
+          <Link to="/forgot-password">Forgot password?</Link>
         </p>
       </div>
     </div>

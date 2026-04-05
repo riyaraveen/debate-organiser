@@ -49,10 +49,24 @@ export const removeParticipant = (sessionId, participantId) => api.delete(`/api/
 export const updateParticipant = (sessionId, participantId, data) => api.patch(`/api/sessions/${sessionId}/participants/${participantId}`, data)
 
 // Notifications
-export const getNotifications  = ()  => api.get('/api/notifications/')
-export const markAllRead       = ()  => api.post('/api/notifications/read-all')
-export const markRead          = (id) => api.post(`/api/notifications/${id}/read`)
-export const checkReminders    = ()  => api.post('/api/notifications/check-reminders')
+export const getNotifications = ()    => api.get('/api/notifications/')
+export const markAllRead      = ()    => api.post('/api/notifications/read-all')
+export const markRead         = (id)  => api.post(`/api/notifications/${id}/read`)
+
+// Auth — password reset
+export const forgotPassword  = (email)          => api.post('/api/auth/forgot-password', { email })
+export const resetPassword   = (token, newPassword) => api.post('/api/auth/reset-password', { token, new_password: newPassword })
+
+// Attendance
+export const updateAttendance = (sessionId, participantId, attended) =>
+  api.patch(`/api/sessions/${sessionId}/participants/${participantId}/attendance`, { attended })
+
+// Scores
+export const getSessionScores = (sessionId) => api.get(`/api/sessions/${sessionId}/scores`)
+export const createScore      = (sessionId, data) => api.post(`/api/sessions/${sessionId}/scores`, data)
+
+// Member stats
+export const getUserStats = (userId) => api.get(`/api/users/${userId}/stats`)
 
 // Notes
 export const getMyNote = (sessionId) => api.get(`/api/sessions/${sessionId}/notes/me`)

@@ -26,6 +26,8 @@ import SessionChat from './pages/SessionChat'
 import TeamMemberNotes from './pages/TeamMemberNotes'
 import MemberProfile from './pages/MemberProfile'
 import SessionTimer from './pages/SessionTimer'
+import ForgotPassword from './pages/ForgotPassword'
+import ResetPassword from './pages/ResetPassword'
 
 function ClubRequiredRoute({ children }) {
   const { user, loading } = useAuth()
@@ -42,6 +44,8 @@ export default function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/club-select" element={<ClubSelect />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
 
       <Route
         path="/"
