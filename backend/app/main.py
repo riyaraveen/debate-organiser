@@ -106,6 +106,26 @@ def _seed_default_topics():
         db.commit()
 
 _seed_default_topics()
+
+
+def _seed_default_schools():
+    """Insert 3 sample schools into any club that has no schools yet."""
+    from app.models.school import School
+    _DEFAULT_SCHOOLS = [
+        {"name": "Oakridge Academy", "city": "London", "contact_email": "debate@oakridge.ac.uk", "description": "Strong parliamentary tradition"},
+        {"name": "Westfield High", "city": "Manchester", "contact_email": "debate@westfield.sch.uk", "description": None},
+        {"name": "St. Catherine's College", "city": "Oxford", "contact_email": "debate@stcatherines.ox.ac.uk", "description": "Annual inter-collegiate champions"},
+    ]
+    with DBSession(bind=engine) as db:
+        clubs = db.query(Club).all()
+        for club in clubs:
+            if db.query(School).filter(School.club_id == club.id).count() > 0:
+                continue
+            for s in _DEFAULT_SCHOOLS:
+                db.add(School(club_id=club.id, **s))
+        db.commit()
+
+_seed_default_schools()
 # ─────────────────────────────────────────────────────────────────────────────
 
 # ── APScheduler: session reminders every hour ────────────────────────────────
