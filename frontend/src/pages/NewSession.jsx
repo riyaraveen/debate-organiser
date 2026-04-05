@@ -50,7 +50,7 @@ export default function NewSession() {
     title: '',
     scheduled_at: '',
     location: '',
-    location_maps: true,
+    maps_url: '',
     participant_ids: [],
     auto_assign_roles: true,
   })
@@ -138,7 +138,7 @@ export default function NewSession() {
         title: form.title,
         scheduled_at: form.scheduled_at ? new Date(form.scheduled_at).toISOString() : null,
         location: form.location,
-        location_maps: form.location_maps,
+        maps_url: form.maps_url || null,
         participant_ids: form.participant_ids,
         auto_assign_roles: false,
         manual_assignments: form.participant_ids.map(uid => ({
@@ -374,16 +374,13 @@ export default function NewSession() {
             <label>{form.mode === 'online' ? 'Meeting Link' : 'Location / Venue'}
               <input className="input" value={form.location}
                 onChange={(e) => set('location', e.target.value)}
-                placeholder={form.mode === 'online' ? 'https://meet.google.com/...' : 'Room 12, Main Building'} />
+                placeholder={form.mode === 'online' ? 'https://meet.google.com/...' : 'e.g. Room 12, Main Building'} />
             </label>
-            {form.mode !== 'online' && form.location && (
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer', userSelect: 'none', fontWeight: 'normal' }}>
-                <input type="checkbox"
-                  checked={form.location_maps}
-                  onChange={e => set('location_maps', e.target.checked)}
-                  style={{ cursor: 'pointer' }}
-                />
-                Show "View on Maps" link for participants
+            {form.mode !== 'online' && (
+              <label>Google Maps URL <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>(optional)</span>
+                <input className="input" value={form.maps_url}
+                  onChange={(e) => set('maps_url', e.target.value)}
+                  placeholder="Paste a Google Maps link — e.g. https://maps.google.com/..." />
               </label>
             )}
           </div>
@@ -399,7 +396,7 @@ export default function NewSession() {
               <dt>Mode</dt><dd>{form.mode}</dd>
               <dt>Title</dt><dd>{form.title}</dd>
               <dt>Date</dt><dd>{form.scheduled_at || 'TBC'}</dd>
-              <dt>Location</dt><dd>{form.location || 'TBC'}{form.mode !== 'online' && form.location && !form.location_maps ? ' (no maps link)' : ''}</dd>
+              <dt>Location</dt><dd>{form.location || 'TBC'}{form.mode !== 'online' && form.maps_url ? ' (Maps link added)' : ''}</dd>
               <dt>Role assignment</dt><dd>{form.auto_assign_roles ? 'Auto-assigned' : 'Manual'}</dd>
               <dt>Participants</dt>
               <dd>

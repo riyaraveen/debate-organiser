@@ -58,6 +58,7 @@ if DATABASE_URL.startswith("sqlite"):
     _add_column_if_missing("session_notes",       "is_private",        "INTEGER DEFAULT 0")
     _add_column_if_missing("session_notes",       "side_at_save",      "VARCHAR")
     _add_column_if_missing("sessions",            "location_maps",     "INTEGER DEFAULT 1")
+    _add_column_if_missing("sessions",            "maps_url",          "VARCHAR")
 
 # ── Seed a default club for existing data ────────────────────────────────────
 from sqlalchemy.orm import Session as DBSession

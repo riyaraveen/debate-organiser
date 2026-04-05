@@ -57,6 +57,7 @@ class SessionUpdate(BaseModel):
     result_notes: Optional[str] = None
     additional_notes: Optional[str] = None
     location_maps: Optional[bool] = None
+    maps_url: Optional[str] = None
 
 
 class SessionOut(BaseModel):
@@ -74,6 +75,7 @@ class SessionOut(BaseModel):
     result_notes: Optional[str]
     additional_notes: Optional[str]
     location_maps: Optional[bool]
+    maps_url: Optional[str]
     participants: List[ParticipantOut] = []
 
     class Config:

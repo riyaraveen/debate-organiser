@@ -52,7 +52,7 @@ export default function SessionDetail() {
           mode: res.data.mode,
           format_id: res.data.format_id,
           additional_notes: res.data.additional_notes || '',
-          location_maps: res.data.location_maps !== false,
+          maps_url: res.data.maps_url || '',
         })
         setResultForm({
           winner_team: res.data.winner_team || '',
@@ -458,16 +458,11 @@ export default function SessionDetail() {
           {editing ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <input value={editForm.location} onChange={e => setEditForm({ ...editForm, location: e.target.value })}
-                placeholder={editForm.mode === 'online' ? 'https://meet.google.com/...' : 'Venue name'} />
-              {editForm.mode !== 'online' && editForm.location && (
-                <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer', userSelect: 'none' }}>
-                  <input type="checkbox"
-                    checked={!!editForm.location_maps}
-                    onChange={e => setEditForm({ ...editForm, location_maps: e.target.checked })}
-                    style={{ cursor: 'pointer' }}
-                  />
-                  Show "View on Maps" link
-                </label>
+                placeholder={editForm.mode === 'online' ? 'https://meet.google.com/...' : 'Venue name or room'} />
+              {editForm.mode !== 'online' && (
+                <input value={editForm.maps_url} onChange={e => setEditForm({ ...editForm, maps_url: e.target.value })}
+                  placeholder="Google Maps URL (optional — paste from maps.google.com)"
+                  style={{ fontSize: 13 }} />
               )}
             </div>
           ) : session.location ? (
@@ -475,8 +470,8 @@ export default function SessionDetail() {
               ? <a href={session.location} target="_blank" rel="noreferrer" className="meet-link"><LinkIcon size={14}/> Join Meeting</a>
               : <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   <p>{session.location}</p>
-                  {session.location_maps !== false && (
-                    <a href={`https://maps.google.com/?q=${encodeURIComponent(session.location)}`} target="_blank" rel="noreferrer" className="meet-link" style={{ fontSize: 12 }}>
+                  {session.maps_url && (
+                    <a href={session.maps_url} target="_blank" rel="noreferrer" className="meet-link" style={{ fontSize: 12 }}>
                       <MapPin size={13}/> View on Maps
                     </a>
                   )}
