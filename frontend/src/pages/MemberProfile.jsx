@@ -200,6 +200,14 @@ export default function MemberProfile() {
             </div>
           </div>
 
+          {/* Bio */}
+          {member.bio && (
+            <div>
+              <div className="profile-sidebar-section-label" style={{ marginBottom: 8 }}>Bio</div>
+              <p style={{ fontSize: 13, margin: 0, color: 'var(--text-muted)', lineHeight: 1.6 }}>{member.bio}</p>
+            </div>
+          )}
+
           {/* W/L/D quick stats */}
           <div className="profile-sidebar-stats">
             <div className="profile-stat-row">
@@ -231,14 +239,6 @@ export default function MemberProfile() {
               </div>
             )}
           </div>
-
-          {/* Bio */}
-          {member.bio && (
-            <div>
-              <div className="profile-sidebar-section-label" style={{ marginBottom: 8 }}>Bio</div>
-              <p style={{ fontSize: 13, margin: 0, color: 'var(--text-muted)', lineHeight: 1.6 }}>{member.bio}</p>
-            </div>
-          )}
         </aside>
 
         {/* ── Main panel ── */}
