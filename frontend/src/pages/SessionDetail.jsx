@@ -37,6 +37,7 @@ export default function SessionDetail() {
   const [allFormats, setAllFormats] = useState([])
   const [savingTemplate, setSavingTemplate] = useState(false)
   const [templateNameInput, setTemplateNameInput] = useState('')
+  const [participantLoading, setParticipantLoading] = useState(false)
 
   useEffect(() => {
     getSession(id)
@@ -51,6 +52,10 @@ export default function SessionDetail() {
           mode: res.data.mode,
           format_id: res.data.format_id,
           additional_notes: res.data.additional_notes || '',
+        })
+        setResultForm({
+          winner_team: res.data.winner_team || '',
+          result_notes: res.data.result_notes || '',
         })
         return getFormat(res.data.format_id)
       })
@@ -110,54 +115,101 @@ export default function SessionDetail() {
   }
 
   const handleDuplicate = async () => {
-    const res = await createSession({
-      title: `${session.title} (copy)`,
-      format_id: session.format_id,
-      mode: session.mode,
-      topic_text: session.topic_text || '',
-      participant_ids: session.participants.map(p => p.user_id),
-      auto_assign_roles: true,
-    })
-    navigate(`/sessions/${res.data.id}`)
+    try {
+      const res = await createSession({
+        title: `${session.title} (copy)`,
+        format_id: session.format_id,
+        mode: session.mode,
+        topic_text: session.topic_text || '',
+        participant_ids: session.participants.map(p => p.user_id),
+        auto_assign_roles: true,
+      })
+      navigate(`/sessions/${res.data.id}`)
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to duplicate session')
+    }
   }
 
   const openParticipantEdit = async () => {
     if (!allMembers.length) {
-      const res = await getUsers()
-      setAllMembers(res.data)
+      try {
+        const res = await getUsers()
+        setAllMembers(res.data)
+      } catch {
+        toast.error('Failed to load members')
+        return
+      }
     }
     setEditingParticipants(true)
   }
 
   const handleRemoveParticipant = async (participantId) => {
-    await removeParticipant(id, participantId)
-    const res = await getSession(id)
-    setSession(res.data)
+    setParticipantLoading(true)
+    try {
+      await removeParticipant(id, participantId)
+      const res = await getSession(id)
+      setSession(res.data)
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to remove participant')
+    } finally {
+      setParticipantLoading(false)
+    }
   }
 
   const handleAddParticipant = async () => {
     if (!addForm.user_id) return
-    await addParticipant(id, {
-      user_id: parseInt(addForm.user_id),
-      role_name: addForm.role_name || null,
-      side: addForm.side || null,
-    })
-    setAddForm({ user_id: '', role_name: '', side: '' })
-    const res = await getSession(id)
-    setSession(res.data)
+    setParticipantLoading(true)
+    try {
+      await addParticipant(id, {
+        user_id: parseInt(addForm.user_id),
+        role_name: addForm.role_name || null,
+        side: addForm.side || null,
+      })
+      setAddForm({ user_id: '', role_name: '', side: '' })
+      const res = await getSession(id)
+      setSession(res.data)
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to add participant')
+    } finally {
+      setParticipantLoading(false)
+    }
   }
 
   const handleReplaceParticipant = async (participant) => {
     if (!replaceUserId) return
-    await updateParticipant(id, participant.id, {
-      user_id: parseInt(replaceUserId),
-      role_name: participant.role_name,
-      side: participant.side,
-    })
-    setReplacingId(null)
-    setReplaceUserId('')
-    const res = await getSession(id)
-    setSession(res.data)
+    setParticipantLoading(true)
+    try {
+      await updateParticipant(id, participant.id, {
+        user_id: parseInt(replaceUserId),
+        role_name: participant.role_name,
+        side: participant.side,
+      })
+      setReplacingId(null)
+      setReplaceUserId('')
+      const res = await getSession(id)
+      setSession(res.data)
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to replace participant')
+    } finally {
+      setParticipantLoading(false)
+    }
+  }
+
+  const handleUpdateParticipant = async (participant, field, value) => {
+    setParticipantLoading(true)
+    try {
+      await updateParticipant(id, participant.id, {
+        user_id: participant.user_id,
+        role_name: field === 'role_name' ? (value || null) : participant.role_name,
+        side:      field === 'side'      ? (value || null) : participant.side,
+      })
+      const res = await getSession(id)
+      setSession(res.data)
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to update participant')
+    } finally {
+      setParticipantLoading(false)
+    }
   }
 
   const buildIcsUrl = () => {
@@ -176,11 +228,24 @@ export default function SessionDetail() {
   }
 
   const handleAttendance = async (participantId, attended) => {
-    await updateAttendance(id, participantId, attended)
-    setSession(s => ({
-      ...s,
-      participants: s.participants.map(p => p.id === participantId ? { ...p, attended } : p),
-    }))
+    try {
+      await updateAttendance(id, participantId, attended)
+      setSession(s => ({
+        ...s,
+        participants: s.participants.map(p => p.id === participantId ? { ...p, attended } : p),
+      }))
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to update attendance')
+    }
+  }
+
+  const handleNotifyParticipants = async () => {
+    try {
+      await notifyCalendar(id)
+      toast.success('Calendar notifications sent to all participants.')
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to send notifications')
+    }
   }
 
   const handleCreateScore = async (e) => {
@@ -211,10 +276,11 @@ export default function SessionDetail() {
 
   const isAdmin = user?.role === 'admin'
   const gcalUrl = buildIcsUrl()
+  const myParticipant = session.participants?.find(p => p.user_id === user?.id)
 
   return (
     <div className="page-container">
-      <PageHero title="Session" subtitle="Session detail" color="#1040C0">
+      <PageHero title="Session" subtitle={session.title} color="#1040C0">
         <svg viewBox="0 0 400 88" preserveAspectRatio="xMidYMid slice">
           <circle cx="60" cy="44" r="65" fill="white" opacity="0.06"/>
           <rect x="140" y="10" width="55" height="55" fill="#F0C020" opacity="0.18" transform="rotate(10 167 37)"/>
@@ -238,7 +304,7 @@ export default function SessionDetail() {
               <h2 className="session-sidebar-title">{session.title}</h2>
             )}
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
-              <span className="badge badge-blue">{session.status}</span>
+              <span className={`badge ${STATUS_COLORS[session.status] ?? 'badge-gray'}`}>{session.status}</span>
               <span className={`badge ${session.mode === 'online' ? 'badge-purple' : 'badge-orange'}`}>{session.mode}</span>
             </div>
           </div>
@@ -303,10 +369,10 @@ export default function SessionDetail() {
             </Link>
           </nav>
 
-          {isAdmin && session.status !== 'completed' && !recordingResult && (
+          {isAdmin && (session.status === 'scheduled' || session.status === 'completed') && !recordingResult && (
             <button className="btn btn-yellow" style={{ width: '100%', justifyContent: 'center' }}
               onClick={() => setRecordingResult(true)}>
-              <Trophy size={15} /> Record Result
+              <Trophy size={15}/> {session.winner_team ? 'Edit Result' : 'Record Result'}
             </button>
           )}
 
@@ -316,11 +382,8 @@ export default function SessionDetail() {
                 <Calendar size={14} /> Add to Calendar
               </a>
               {isAdmin && (
-                <button className="btn btn-ghost" style={{ justifyContent: 'center' }} onClick={async () => {
-                  await notifyCalendar(id)
-                  toast.success('Calendar notifications sent to all participants.')
-                }}>
-                  <Calendar size={14} /> Notify Participants
+                <button className="btn btn-ghost" style={{ justifyContent: 'center' }} onClick={handleNotifyParticipants}>
+                  <Calendar size={14}/> Notify Participants
                 </button>
               )}
             </div>
@@ -450,6 +513,21 @@ export default function SessionDetail() {
       )}
 
       <div className="participants-section">
+        {myParticipant && (
+          <div className="my-role-callout">
+            <span className="my-role-label">Your role</span>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+              {myParticipant.role_name
+                ? <span className="badge badge-yellow">{myParticipant.role_name}</span>
+                : <span className="badge badge-gray">No role assigned</span>}
+              {myParticipant.side === 'proposition' && <span className="badge badge-blue">Proposition</span>}
+              {myParticipant.side === 'opposition'  && <span className="badge badge-red">Opposition</span>}
+              {myParticipant.side && !['proposition','opposition'].includes(myParticipant.side) && (
+                <span className="badge badge-gray">{myParticipant.side}</span>
+              )}
+            </div>
+          </div>
+        )}
         {format && (() => {
           const count = session.participants?.length ?? 0
           const { min_participants, max_participants } = format
@@ -493,6 +571,7 @@ export default function SessionDetail() {
         {session.participants?.length === 0 && !editingParticipants ? (
           <p className="text-muted">No participants assigned yet.</p>
         ) : (
+          <div style={{ position: 'relative', opacity: participantLoading ? 0.5 : 1, pointerEvents: participantLoading ? 'none' : 'auto', transition: 'opacity 0.15s' }}>
           <table className="participants-table">
             <thead>
               <tr>
@@ -527,8 +606,35 @@ export default function SessionDetail() {
                       p.user?.name ?? `User #${p.user_id}`
                     )}
                   </td>
-                  <td>{p.role_name ?? '—'}</td>
-                  <td>{p.side ?? '—'}</td>
+                  <td>
+                    {editingParticipants ? (
+                      <select
+                        value={p.role_name ?? ''}
+                        onChange={e => handleUpdateParticipant(p, 'role_name', e.target.value)}
+                        disabled={participantLoading}
+                        style={{ fontSize: 12, padding: '2px 4px', width: '100%' }}
+                      >
+                        <option value="">— none —</option>
+                        {format?.roles?.map(r => <option key={r.name} value={r.name}>{r.name}</option>)}
+                      </select>
+                    ) : (p.role_name ?? '—')}
+                  </td>
+                  <td>
+                    {editingParticipants ? (
+                      <select
+                        value={p.side ?? ''}
+                        onChange={e => handleUpdateParticipant(p, 'side', e.target.value)}
+                        disabled={participantLoading}
+                        style={{ fontSize: 12, padding: '2px 4px' }}
+                      >
+                        <option value="">— none —</option>
+                        <option value="proposition">proposition</option>
+                        <option value="opposition">opposition</option>
+                        <option value="government">government</option>
+                        <option value="neutral">neutral</option>
+                      </select>
+                    ) : (p.side ?? '—')}
+                  </td>
                   <td style={{ textAlign: 'center' }}>
                     {isAdmin ? (
                       <input type="checkbox"
@@ -600,6 +706,7 @@ export default function SessionDetail() {
               )}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 

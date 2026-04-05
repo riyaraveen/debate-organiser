@@ -805,6 +805,24 @@ input:focus, select:focus, textarea:focus {
 }
 .detail-section p, .detail-section span { font-size: 14px; }
 .detail-section input, .detail-section select { margin-top: 4px; }
+.my-role-callout {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #FFFBEA;
+  border: var(--border-w) solid var(--black);
+  padding: 10px 16px;
+  margin-bottom: 14px;
+}
+.my-role-label {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
 .result-banner {
   background: #CCFFD8;
   border: var(--border-w) solid var(--black);
