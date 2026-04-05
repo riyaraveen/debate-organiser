@@ -109,20 +109,26 @@ _seed_default_topics()
 
 
 def _seed_default_schools():
-    """Insert 3 sample schools into any club that has no schools yet."""
+    """Insert sample schools for each club, skipping any that already exist by name."""
     from app.models.school import School
     _DEFAULT_SCHOOLS = [
-        {"name": "Oakridge Academy", "city": "London", "contact_email": "debate@oakridge.ac.uk", "description": "Strong parliamentary tradition"},
-        {"name": "Westfield High", "city": "Manchester", "contact_email": "debate@westfield.sch.uk", "description": None},
-        {"name": "St. Catherine's College", "city": "Oxford", "contact_email": "debate@stcatherines.ox.ac.uk", "description": "Annual inter-collegiate champions"},
+        {"name": "Oakridge Academy",        "city": "London",     "contact_email": "debate@oakridge.ac.uk",        "description": "Strong parliamentary tradition"},
+        {"name": "Westfield High",           "city": "Manchester", "contact_email": "debate@westfield.sch.uk",      "description": None},
+        {"name": "St. Catherine's College",  "city": "Oxford",     "contact_email": "debate@stcatherines.ox.ac.uk", "description": "Annual inter-collegiate champions"},
+        {"name": "Greenhaven Grammar",       "city": "Bristol",    "contact_email": "debate@greenhavengrammar.ac.uk","description": "Regional finalist 2024"},
+        {"name": "King's Cross Academy",     "city": "London",     "contact_email": "debate@kca.sch.uk",            "description": None},
+        {"name": "Riverdale Sixth Form",     "city": "Leeds",      "contact_email": "debate@riverdale.sch.uk",      "description": "Strong WSDC record"},
+        {"name": "The Pemberton School",     "city": "Edinburgh",  "contact_email": "debate@pemberton.ac.uk",       "description": None},
+        {"name": "Hartwell College",         "city": "Cambridge",  "contact_email": "debate@hartwell.ac.uk",        "description": "BP format specialists"},
+        {"name": "Ashford International",    "city": "Birmingham", "contact_email": "debate@ashfordinternational.ac.uk", "description": None},
     ]
     with DBSession(bind=engine) as db:
         clubs = db.query(Club).all()
         for club in clubs:
-            if db.query(School).filter(School.club_id == club.id).count() > 0:
-                continue
+            existing_names = {s.name for s in db.query(School).filter(School.club_id == club.id).all()}
             for s in _DEFAULT_SCHOOLS:
-                db.add(School(club_id=club.id, **s))
+                if s["name"] not in existing_names:
+                    db.add(School(club_id=club.id, **s))
         db.commit()
 
 _seed_default_schools()
