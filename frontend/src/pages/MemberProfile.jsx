@@ -150,7 +150,7 @@ export default function MemberProfile() {
 
   return (
     <div className="page-container">
-      <PageHero title={member.name} subtitle={`${member.role} · ${member.proficiency || 'beginner'}`} color={color}>
+      <PageHero title="Profile" color={color}>
         <svg viewBox="0 0 400 88" preserveAspectRatio="xMidYMid slice">
           <circle cx="60" cy="44" r="36" fill="white" opacity="0.12"/>
           <circle cx="60" cy="30" r="14" fill="white" opacity="0.30"/>
@@ -161,6 +161,8 @@ export default function MemberProfile() {
           <polygon points="360,12 390,60 330,60" fill="white" opacity="0.15"/>
         </svg>
       </PageHero>
+
+      <button className="back-btn" onClick={() => navigate(-1)}>← Back</button>
 
       <div className="profile-layout">
 
