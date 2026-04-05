@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { getSession, getFormat } from '../api'
-import { ArrowLeft, Play, Square, SkipForward, Timer, Clock } from 'lucide-react'
+import { ArrowLeft, Play, Square, SkipForward, SkipBack, RotateCcw, Clock, Timer } from 'lucide-react'
 import PageHero from '../components/ui/PageHero'
 
 function PrepTimer({ playBeep }) {
@@ -60,6 +60,7 @@ function PrepTimer({ playBeep }) {
   useEffect(() => {
     if (!prepRunning) {
       setPrepRemaining(prepMinutes * 60 * 1000)
+      setPrepDone(false)
       prepPauseRef.current = 0
     }
   }, [prepMinutes]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -156,6 +157,7 @@ export default function SessionTimer() {
   const [running, setRunning] = useState(false)
   const [elapsed, setElapsed] = useState(0)        // ms for current slot
   const [log, setLog] = useState([])               // { role, description, allotted, actual }
+  const [countDown, setCountDown] = useState(false) // toggle elapsed vs countdown display
 
   const intervalRef = useRef(null)
   const startTimeRef = useRef(null)
@@ -252,6 +254,25 @@ export default function SessionTimer() {
     elapsedAtPauseRef.current = 0
   }
 
+  const prevSpeaker = () => {
+    if (currentIdx === 0) return
+    clearInterval(intervalRef.current)
+    setRunning(false)
+    setElapsed(0)
+    elapsedAtPauseRef.current = 0
+    setLog(l => l.slice(0, -1))
+    setCurrentIdx(i => i - 1)
+  }
+
+  const restartDebate = () => {
+    clearInterval(intervalRef.current)
+    setRunning(false)
+    setElapsed(0)
+    elapsedAtPauseRef.current = 0
+    setCurrentIdx(0)
+    setLog([])
+  }
+
   const done = speakingOrder.length > 0 && currentIdx >= speakingOrder.length
 
   if (loading) return <div className="loading">Loading…</div>
@@ -287,13 +308,25 @@ export default function SessionTimer() {
       </PageHero>
 
       {/* top bar */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 10 }}>
         <button className="back-btn" onClick={() => navigate(`/sessions/${id}`)}>
           <ArrowLeft size={15} /> Back to Session
         </button>
-        <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-muted)' }}>
-          {completedCount} of {totalCount} speeches done
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-muted)' }}>
+            {completedCount} of {totalCount} speeches done
+          </span>
+          <button className="btn btn-ghost" style={{ fontSize: 12, padding: '5px 12px', display: 'flex', alignItems: 'center', gap: 5 }}
+            onClick={() => setCountDown(c => !c)} title="Toggle elapsed / countdown">
+            <Timer size={13}/> {countDown ? 'Countdown' : 'Elapsed'}
+          </button>
+          {(currentIdx > 0 || log.length > 0) && (
+            <button className="btn btn-ghost" style={{ fontSize: 12, padding: '5px 12px', display: 'flex', alignItems: 'center', gap: 5 }}
+              onClick={restartDebate} title="Restart from the beginning">
+              <RotateCcw size={13}/> Restart
+            </button>
+          )}
+        </div>
       </div>
 
       {/* progress strip */}
@@ -377,12 +410,17 @@ export default function SessionTimer() {
               </div>
 
               <div style={{ padding: '32px 28px 28px', textAlign: 'center', background: currentColor.light }}>
+                <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#888', marginBottom: 4 }}>
+                  {countDown && allottedMs > 0 ? 'Time Remaining' : 'Elapsed'}
+                </div>
                 <div style={{
                   fontSize: 96, fontWeight: 900, letterSpacing: 4, fontVariantNumeric: 'tabular-nums',
                   color: overtime ? '#C01820' : '#121212', lineHeight: 1, marginBottom: 4,
                   textShadow: overtime ? '0 0 30px rgba(192,24,32,0.15)' : 'none',
                 }}>
-                  {formatTime(elapsed)}
+                  {countDown && allottedMs > 0
+                    ? formatTime(Math.max(0, allottedMs - elapsed))
+                    : formatTime(elapsed)}
                 </div>
 
                 {allottedMs > 0 && (
@@ -407,7 +445,12 @@ export default function SessionTimer() {
                   </div>
                 )}
 
-                <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 20 }}>
+                <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 20, flexWrap: 'wrap' }}>
+                  {currentIdx > 0 && (
+                    <button className="btn btn-ghost" onClick={prevSpeaker} style={{ fontSize: 14, padding: '10px 18px', display: 'flex', alignItems: 'center', gap: 6 }} title="Go back to previous speaker">
+                      <SkipBack size={15} /> Prev
+                    </button>
+                  )}
                   {!running ? (
                     <button style={{ background: currentColor.bg, color: currentColor.text, border: '3px solid #121212', padding: '12px 28px', fontSize: 15, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }} onClick={start}>
                       <Play size={17} /> Start

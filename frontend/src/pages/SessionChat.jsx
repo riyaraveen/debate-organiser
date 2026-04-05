@@ -5,6 +5,10 @@ import { useAuth } from '../context/AuthContext'
 import { ArrowLeft, Send, Users, MessageCircle } from 'lucide-react'
 import PageHero from '../components/ui/PageHero'
 
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const WS_BASE  = API_BASE.replace(/^http/, 'ws')
+const MAX_CHARS = 2000
+
 const SIDE_LABELS = {
   proposition: 'Proposition',
   opposition:  'Opposition',
@@ -61,7 +65,7 @@ export default function SessionChat() {
     const token = localStorage.getItem('token')
     if (!token) { setStatus('error'); return }
 
-    const wsUrl = `ws://localhost:8000/api/sessions/${id}/chat/ws?token=${encodeURIComponent(token)}`
+    const wsUrl = `${WS_BASE}/api/sessions/${id}/chat/ws?token=${encodeURIComponent(token)}`
     const ws = new WebSocket(wsUrl)
     wsRef.current = ws
 
@@ -102,12 +106,21 @@ export default function SessionChat() {
 
   const handleSend = () => {
     if (!input.trim() || !wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return
+    if (input.length > MAX_CHARS) return
     wsRef.current.send(JSON.stringify({ content: input.trim() }))
     setInput('')
   }
 
   const handleKey = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() }
+  }
+
+  const handleInputChange = (e) => {
+    const val = e.target.value
+    if (val.length <= MAX_CHARS) setInput(val)
+    // Auto-grow
+    e.target.style.height = 'auto'
+    e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`
   }
 
   const sideColor = side ? SIDE_COLORS[side] : 'var(--black)'
@@ -198,6 +211,12 @@ export default function SessionChat() {
 
           {/* Message list */}
           <div className="chat-messages">
+            {status === 'connecting' && (
+              <div className="chat-empty">
+                <div style={{ width: 28, height: 28, border: '3px solid #e5e5e5', borderTopColor: 'var(--blue)', borderRadius: '50%', animation: 'spin 0.8s linear infinite', marginBottom: 8 }} />
+                Connecting to chat…
+              </div>
+            )}
             {messages.length === 0 && status === 'open' && (
               <div className="chat-empty">
                 <MessageCircle size={32} style={{ opacity: 0.25, marginBottom: 8 }} />
@@ -234,22 +253,31 @@ export default function SessionChat() {
 
           {/* Input — hidden once removed or session closed */}
           {status === 'open' && (
-            <div className="chat-input-row">
-              <textarea
-                className="chat-input"
-                rows={1}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKey}
-                placeholder="Message your team… (Enter to send)"
-              />
-              <button
-                className="btn btn-primary chat-send-btn"
-                onClick={handleSend}
-                disabled={!input.trim()}
-              >
-                <Send size={15} />
-              </button>
+            <div className="chat-input-row" style={{ flexDirection: 'column', gap: 6 }}>
+              <div style={{ display: 'flex', gap: 8, width: '100%' }}>
+                <textarea
+                  className="chat-input"
+                  rows={1}
+                  value={input}
+                  onChange={handleInputChange}
+                  onKeyDown={handleKey}
+                  placeholder="Message your team… (Enter to send, Shift+Enter for newline)"
+                  style={{ resize: 'none', overflow: 'hidden' }}
+                />
+                <button
+                  className="btn btn-primary chat-send-btn"
+                  onClick={handleSend}
+                  disabled={!input.trim()}
+                  style={{ alignSelf: 'flex-end' }}
+                >
+                  <Send size={15} />
+                </button>
+              </div>
+              {input.length > MAX_CHARS * 0.8 && (
+                <div style={{ fontSize: 11, color: input.length >= MAX_CHARS ? 'var(--red)' : 'var(--text-muted)', textAlign: 'right', marginRight: 48 }}>
+                  {input.length}/{MAX_CHARS}
+                </div>
+              )}
             </div>
           )}
         </div>

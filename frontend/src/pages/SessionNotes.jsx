@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { getSession, getMyNote, saveMyNote, getNoteVersions, getTeamNotes, getWebSources } from '../api'
 import { useAuth } from '../context/AuthContext'
+import { useToast } from '../context/ToastContext'
 import { ArrowLeft, Search, ExternalLink, Users, RefreshCw, FileText, ChevronRight, Lock, Eye, History } from 'lucide-react'
 import RichEditor from '../components/ui/RichEditor'
 import PageHero from '../components/ui/PageHero'
@@ -11,7 +12,7 @@ const AUTOSAVE_DELAY = 2000 // ms
 function wordCount(html) {
   if (!html) return 0
   const text = html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
-  return text ? text.split(' ').length : 0
+  return text ? text.split(/\s+/).filter(Boolean).length : 0
 }
 
 const SIDE_STYLE = {
@@ -23,6 +24,7 @@ const SIDE_STYLE = {
 export default function SessionNotes() {
   const { id } = useParams()
   const { user } = useAuth()
+  const toast = useToast()
   const navigate = useNavigate()
 
   const [session, setSession] = useState(null)
@@ -64,9 +66,10 @@ export default function SessionNotes() {
         setTimeout(() => setSaveStatus('idle'), 2000)
       } catch {
         setSaveStatus('idle')
+        toast.error('Autosave failed — please save manually.')
       }
     }, AUTOSAVE_DELAY)
-  }, [id])
+  }, [id, toast])
 
   const handleEditorChange = useCallback((html) => {
     setNoteContent(html)
@@ -85,7 +88,7 @@ export default function SessionNotes() {
     setTimeout(() => setSaveStatus('idle'), 2000)
   }
 
-  const handleManualSave = async () => {
+  const handleManualSave = useCallback(async () => {
     clearTimeout(autosaveTimer.current)
     setSaveStatus('saving')
     try {
@@ -94,8 +97,21 @@ export default function SessionNotes() {
       setTimeout(() => setSaveStatus('idle'), 2500)
     } catch {
       setSaveStatus('idle')
+      toast.error('Failed to save notes.')
     }
-  }
+  }, [id, toast])
+
+  // Ctrl/Cmd+S to save
+  useEffect(() => {
+    const handler = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault()
+        handleManualSave()
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [handleManualSave])
 
   const handleOpenHistory = async () => {
     const res = await getNoteVersions(id)
@@ -238,7 +254,8 @@ export default function SessionNotes() {
               {isPrivate ? 'Private' : 'Visible to team'}
             </button>
 
-            <button className="btn btn-primary" onClick={handleManualSave} disabled={saveStatus === 'saving'}>
+            <button className="btn btn-primary" onClick={handleManualSave} disabled={saveStatus === 'saving'}
+              title="Save (Ctrl+S / ⌘S)">
               {saveLabel || 'Save'}
             </button>
 

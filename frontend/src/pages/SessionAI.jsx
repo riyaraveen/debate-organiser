@@ -1,32 +1,91 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { getSession, getCounterargument, evaluateArgument, getResearchSuggestions, detectFallacies } from '../api'
-import { ArrowLeft, Sparkles, Target, BarChart2, BookOpen, AlertTriangle } from 'lucide-react'
+import { ArrowLeft, Sparkles, Target, BarChart2, BookOpen, AlertTriangle, Copy, Check } from 'lucide-react'
 import PageHero from '../components/ui/PageHero'
 
 const TABS = [
-  { key: 'counter',  label: 'Counterarguments', icon: Target,        accentColor: 'var(--red)',   desc: 'Enter your own argument — see the strongest counterarguments an opponent could make, so you can prepare your defence.' },
-  { key: 'eval',     label: 'Evaluate',          icon: BarChart2,     accentColor: 'var(--blue)',  desc: 'Get your argument scored 1–10 by an AI debate judge with specific strengths, weaknesses, and improvement tips.' },
-  { key: 'research', label: 'Research Tips',     icon: BookOpen,      accentColor: '#22c55e',      desc: 'Enter a topic to get structured research guidance: key argument frameworks, evidence types, and what to avoid.' },
+  { key: 'counter',  label: 'Counterarguments', icon: Target,        accentColor: 'var(--red)',    desc: 'Enter your own argument — see the strongest counterarguments an opponent could make, so you can prepare your defence.' },
+  { key: 'eval',     label: 'Evaluate',          icon: BarChart2,     accentColor: 'var(--blue)',   desc: 'Get your argument scored 1–10 by an AI debate judge with specific strengths, weaknesses, and improvement tips.' },
+  { key: 'research', label: 'Research Tips',     icon: BookOpen,      accentColor: '#22c55e',       desc: 'Enter a topic to get structured research guidance: key argument frameworks, evidence types, and what to avoid.' },
   { key: 'fallacy',  label: 'Fallacies',         icon: AlertTriangle, accentColor: 'var(--yellow)', desc: 'Paste any argument to identify logical fallacies with name, explanation, and the exact offending quote.' },
 ]
+
+function CopyButton({ getText }) {
+  const [copied, setCopied] = useState(false)
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(getText())
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {}
+  }
+  return (
+    <button onClick={handleCopy} title="Copy to clipboard"
+      style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'none', border: '1px solid rgba(255,255,255,0.2)', padding: '3px 8px', cursor: 'pointer', color: copied ? '#4ADE80' : 'rgba(255,255,255,0.6)', fontSize: 11, fontWeight: 700, borderRadius: 3 }}>
+      {copied ? <Check size={11}/> : <Copy size={11}/>} {copied ? 'Copied' : 'Copy'}
+    </button>
+  )
+}
+
+function resultToText(result) {
+  if (!result) return ''
+  if (result.type === 'counter') {
+    return [result.data.counterargument, '', 'Rebuttal tips:', ...(result.data.rebuttal_tips ?? []).map(t => `• ${t}`)].join('\n')
+  }
+  if (result.type === 'eval') {
+    const d = result.data
+    return [`Score: ${d.score}/10`, d.summary, '', 'Strengths:', ...(d.strengths ?? []).map(s => `• ${s}`), '', 'Weaknesses:', ...(d.weaknesses ?? []).map(w => `• ${w}`), '', 'Suggestions:', ...(d.suggestions ?? []).map(s => `• ${s}`)].join('\n')
+  }
+  if (result.type === 'research') {
+    const d = result.data
+    return ['Key Arguments:', ...(d.key_arguments ?? []).map(a => `• ${a}`), '', 'Evidence Types:', ...(d.evidence_types ?? []).map(e => `• ${e}`), '', 'Search Queries:', ...(d.search_queries ?? []).map(q => `• ${q}`), '', 'Watch Out For:', ...(d.pitfalls ?? []).map(p => `• ${p}`)].join('\n')
+  }
+  if (result.type === 'fallacy') {
+    return [result.data.overall, '', ...(result.data.fallacies ?? []).flatMap(f => [f.name, f.explanation, f.quote ? `"${f.quote}"` : '', ''])].join('\n')
+  }
+  return ''
+}
 
 export default function SessionAI() {
   const { id } = useParams()
   const [session, setSession] = useState(null)
   const [tab, setTab] = useState('counter')
-  const [input, setInput] = useState('')
-  const [result, setResult] = useState(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+
+  // Per-tab state so switching tabs doesn't lose work
+  const [tabInputs,   setTabInputs]   = useState({ counter: '', eval: '', research: '', fallacy: '' })
+  const [tabResults,  setTabResults]  = useState({ counter: null, eval: null, research: null, fallacy: null })
+  const [tabErrors,   setTabErrors]   = useState({ counter: '', eval: '', research: '', fallacy: '' })
+  const [tabLoading,  setTabLoading]  = useState({ counter: false, eval: false, research: false, fallacy: false })
+
+  const textareaRef = useRef(null)
 
   useEffect(() => {
-    getSession(id).then((r) => setSession(r.data)).catch(() => {})
+    getSession(id).then((r) => {
+      setSession(r.data)
+      // Auto-fill research tab with session topic
+      if (r.data.topic_text) {
+        setTabInputs(prev => ({ ...prev, research: prev.research || r.data.topic_text }))
+      }
+    }).catch(() => {})
   }, [id])
 
-  const switchTab = (t) => { setTab(t); setResult(null); setError(''); setInput('') }
+  const activeTab  = TABS.find(t => t.key === tab)
+  const input      = tabInputs[tab]
+  const result     = tabResults[tab]
+  const error      = tabErrors[tab]
+  const loading    = tabLoading[tab]
 
-  const activeTab = TABS.find(t => t.key === tab)
+  const setInput  = (v) => setTabInputs(p => ({ ...p, [tab]: v }))
+  const setResult = (v) => setTabResults(p => ({ ...p, [tab]: v }))
+  const setError  = (v) => setTabErrors(p => ({ ...p, [tab]: v }))
+  const setLoading = (v) => setTabLoading(p => ({ ...p, [tab]: v }))
+
+  const switchTab = (t) => {
+    setTab(t)
+    // Focus textarea after tab switch
+    setTimeout(() => textareaRef.current?.focus(), 50)
+  }
 
   const handleRun = async () => {
     if (!input.trim()) return
@@ -51,6 +110,13 @@ export default function SessionAI() {
       setError(err.response?.data?.detail || 'AI request failed')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleKey = (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault()
+      handleRun()
     }
   }
 
@@ -118,6 +184,9 @@ export default function SessionAI() {
               >
                 <Icon size={13} />
                 {label}
+                {tabResults[key] && tab !== key && (
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: accentColor === 'var(--yellow)' ? '#888' : accentColor, display: 'inline-block', marginLeft: 2, flexShrink: 0 }} />
+                )}
               </button>
             ))}
           </div>
@@ -128,27 +197,35 @@ export default function SessionAI() {
           </div>
 
           <textarea
+            ref={textareaRef}
             className="ai-input-area"
             rows={5}
             value={input}
             onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKey}
             placeholder={placeholder}
           />
 
           {error && <div className="alert alert-error" style={{ marginTop: 8 }}>{error}</div>}
 
-          <button
-            className="btn btn-primary"
-            style={{ marginTop: 10, background: activeTab.accentColor, borderColor: activeTab.accentColor === 'var(--yellow)' ? 'var(--black)' : activeTab.accentColor, color: activeTab.accentColor === 'var(--yellow)' ? 'var(--black)' : 'white' }}
-            onClick={handleRun}
-            disabled={loading || !input.trim()}
-          >
-            {loading ? 'Thinking…' : btnLabel}
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10 }}>
+            <button
+              className="btn btn-primary"
+              style={{ background: activeTab.accentColor, borderColor: activeTab.accentColor === 'var(--yellow)' ? 'var(--black)' : activeTab.accentColor, color: activeTab.accentColor === 'var(--yellow)' ? 'var(--black)' : 'white' }}
+              onClick={handleRun}
+              disabled={loading || !input.trim()}
+            >
+              {loading ? 'Thinking…' : btnLabel}
+            </button>
+            <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>Ctrl+Enter to run</span>
+          </div>
 
           {/* ── Results ── */}
           {result?.type === 'counter' && (
             <div className="ai-result">
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+                <CopyButton getText={() => resultToText(result)} />
+              </div>
               <div className="ai-result-section">
                 <span className="ai-result-label" style={{ color: 'var(--red)' }}>What opponents could say against your argument</span>
                 <p>{result.data.counterargument}</p>
@@ -164,6 +241,9 @@ export default function SessionAI() {
 
           {result?.type === 'eval' && (
             <div className="ai-result">
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+                <CopyButton getText={() => resultToText(result)} />
+              </div>
               <div className="ai-score-row">
                 <div className="ai-score-badge" style={{
                   background: result.data.score >= 7 ? 'var(--blue)' : result.data.score >= 5 ? 'var(--yellow)' : 'var(--red)',
@@ -188,6 +268,9 @@ export default function SessionAI() {
 
           {result?.type === 'research' && (
             <div className="ai-result">
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+                <CopyButton getText={() => resultToText(result)} />
+              </div>
               {[
                 { label: 'Key Arguments',  key: 'key_arguments'  },
                 { label: 'Evidence Types', key: 'evidence_types'  },
@@ -204,6 +287,9 @@ export default function SessionAI() {
 
           {result?.type === 'fallacy' && (
             <div className="ai-result">
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+                <CopyButton getText={() => resultToText(result)} />
+              </div>
               <div className="ai-result-section">
                 <span className="ai-result-label">Overall</span>
                 <p>{result.data.overall}</p>
