@@ -819,7 +819,7 @@ input:focus, select:focus, textarea:focus {
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: var(--text-muted);
+  color: var(--black);
   flex-shrink: 0;
 }
 
