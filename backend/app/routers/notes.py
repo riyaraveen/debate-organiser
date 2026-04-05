@@ -5,7 +5,7 @@ from typing import Optional
 from datetime import datetime
 from app.db.database import get_db
 from app.models.session_note import SessionNote, SessionNoteVersion
-from app.models.session import Session as SessionModel
+from app.models.session import Session as SessionModel, SessionParticipant
 from app.models.user import User
 from app.services.auth import get_current_user, get_club_membership
 from app.models.club import ClubMembership
@@ -86,8 +86,14 @@ def save_my_note(session_id: int, body: NoteUpsert, db: Session = Depends(get_db
             for old in versions[:len(versions) - MAX_VERSIONS]:
                 db.delete(old)
 
+    # Stamp the side the user is on at the moment they save
+    participant = db.query(SessionParticipant).filter(
+        SessionParticipant.session_id == session_id,
+        SessionParticipant.user_id == current_user.id,
+    ).first()
     note.content = body.content
     note.is_private = body.is_private
+    note.side_at_save = participant.side if participant else None
     db.commit()
     db.refresh(note)
     return note

@@ -10,6 +10,7 @@ class SessionNote(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     content = Column(Text, default="")
     is_private = Column(Boolean, default=False, nullable=False)
+    side_at_save = Column(Text, nullable=True)   # 'proposition' | 'opposition' — stamped on each save
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
 

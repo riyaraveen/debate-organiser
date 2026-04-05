@@ -177,19 +177,12 @@ def get_team_notes(session_id: int, db: DBSession = Depends(get_db), membership:
 
     my_side = my_participant.side
 
-    # Collect user IDs on the same debating side
-    same_side_ids = {
-        p.user_id for p in db.query(SessionParticipant).filter(
-            SessionParticipant.session_id == session_id,
-            SessionParticipant.side == my_side,
-        ).all()
-    }
-
-    # Return non-empty, same-side notes; still respect individual privacy flag
+    # Filter notes by the side they were written under (side_at_save), not the
+    # author's current side — so notes survive role reassignments intact.
     notes = db.query(SessionNote).filter(
         SessionNote.session_id == session_id,
         SessionNote.content != "",
-        SessionNote.user_id.in_(same_side_ids),
+        SessionNote.side_at_save == my_side,
         (SessionNote.is_private == False) | (SessionNote.user_id == current_user.id),
     ).all()
 
@@ -229,10 +222,17 @@ def get_user_note(session_id: int, user_id: int, db: DBSession = Depends(get_db)
         SessionParticipant.user_id == user_id,
     ).first()
 
-    # Block access unless both are on the same debating side
     my_side = my_participant.side if my_participant else None
-    target_side = target_participant.side if target_participant else None
-    if my_side not in DEBATING_SIDES or target_side not in DEBATING_SIDES or my_side != target_side:
+    if my_side not in DEBATING_SIDES:
+        raise HTTPException(status_code=403, detail="You can only view notes from members on your team")
+
+    # Check the note's recorded side — not the author's current side
+    note = db.query(SessionNote).filter(
+        SessionNote.session_id == session_id,
+        SessionNote.user_id == user_id,
+    ).first()
+    note_side = note.side_at_save if note else None
+    if note_side not in DEBATING_SIDES or note_side != my_side:
         raise HTTPException(status_code=403, detail="You can only view notes from members on your team")
 
     note = db.query(SessionNote).filter(
@@ -250,7 +250,7 @@ def get_user_note(session_id: int, user_id: int, db: DBSession = Depends(get_db)
         "content": note.content if note else "",
         "updated_at": str(note.updated_at) if note else None,
         "role": target_participant.role_name if target_participant else None,
-        "side": target_side,
+        "side": note_side,
     }
 
 
