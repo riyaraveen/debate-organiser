@@ -553,7 +553,8 @@ input:focus, select:focus, textarea:focus {
   background: none;
 }
 .badge-blue   { background: var(--blue);   color: white; }
-.badge-green  { background: #1A8040;       color: white; }
+.badge-green    { background: #1A8040;   color: white; }
+.badge-advanced { background: #C01020;   color: white; }
 .badge-red    { background: var(--red);    color: white; }
 .badge-gray   { background: #888;          color: white; }
 .badge-purple { background: #7030D0;       color: white; }

@@ -146,7 +146,7 @@ export default function Profile() {
             <h2 className="profile-sidebar-name">{user?.name}</h2>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
               <span className={`badge ${user?.role === 'admin' ? 'badge-red' : 'badge-blue'}`}>{user?.role}</span>
-              <span className="badge badge-gray">{user?.proficiency || 'beginner'}</span>
+              <span className={`badge ${{ beginner: 'badge-green', intermediate: 'badge-blue', advanced: 'badge-advanced' }[user?.proficiency] ?? 'badge-green'}`}>{user?.proficiency || 'beginner'}</span>
             </div>
             <div style={{ fontSize: 13, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
               <Mail size={12}/> {user?.email}

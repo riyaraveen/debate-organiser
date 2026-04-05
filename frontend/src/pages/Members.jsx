@@ -16,7 +16,7 @@ function avatarColor(name) {
 const PROFICIENCY_BADGE = {
   beginner:     'badge-green',
   intermediate: 'badge-blue',
-  advanced:     'badge-red',
+  advanced:     'badge-advanced',
 }
 
 function MemberModal({ member, me, onClose, onRoleChange }) {

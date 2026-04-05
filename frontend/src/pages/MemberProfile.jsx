@@ -178,7 +178,7 @@ export default function MemberProfile() {
             </h2>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
               <span className={`badge ${member.role === 'admin' ? 'badge-red' : 'badge-blue'}`}>{member.role}</span>
-              <span className="badge badge-gray">{member.proficiency || 'beginner'}</span>
+              <span className={`badge ${{ beginner: 'badge-green', intermediate: 'badge-blue', advanced: 'badge-advanced' }[member.proficiency] ?? 'badge-green'}`}>{member.proficiency || 'beginner'}</span>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
               <div style={{ fontSize: 13, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
