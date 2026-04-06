@@ -426,21 +426,45 @@ const RESOURCES = [
   },
 ]
 
+function toggle(set, key) {
+  const next = new Set(set)
+  next.has(key) ? next.delete(key) : next.add(key)
+  return next
+}
+
 export default function Learn() {
-  const [activeTab, setActiveTab] = useState('fallacies')
-  const [expandedFallacy, setExpandedFallacy] = useState(null)
+  const [activeTab, setActiveTab] = useState(() => sessionStorage.getItem('learn_tab') || 'fallacies')
+  const [fallacySearch, setFallacySearch] = useState('')
+  const [expandedFallacies, setExpandedFallacies] = useState(new Set())
   const [expandedFormat, setExpandedFormat] = useState(null)
   const [expandedRebuttal, setExpandedRebuttal] = useState(null)
   const [expandedFramework, setExpandedFramework] = useState(null)
+  const [expandedSpeaking, setExpandedSpeaking] = useState(new Set())
+  const [expandedResources, setExpandedResources] = useState(new Set())
+
+  const switchTab = (id) => {
+    setActiveTab(id)
+    sessionStorage.setItem('learn_tab', id)
+  }
+
+  const filteredFallacies = fallacySearch.trim()
+    ? FALLACIES.filter(f =>
+        f.name.toLowerCase().includes(fallacySearch.toLowerCase()) ||
+        f.short.toLowerCase().includes(fallacySearch.toLowerCase())
+      )
+    : FALLACIES
+
+  const allFallaciesExpanded = filteredFallacies.length > 0 &&
+    filteredFallacies.every(f => expandedFallacies.has(f.name))
 
   const tabs = [
-    { id: 'fallacies', label: 'Logical Fallacies', icon: AlertTriangle },
-    { id: 'formats', label: 'Debate Formats', icon: BookOpen },
-    { id: 'research', label: 'Research Tips', icon: Search },
-    { id: 'speaking', label: 'Speaking & Delivery', icon: Mic },
-    { id: 'rebuttal', label: 'Rebuttal Techniques', icon: RefreshCw },
-    { id: 'frameworks', label: 'Argument Structure', icon: Layers },
-    { id: 'resources', label: 'Resources & Links', icon: ExternalLink },
+    { id: 'fallacies',   label: 'Logical Fallacies',   icon: AlertTriangle, count: FALLACIES.length },
+    { id: 'formats',     label: 'Debate Formats',       icon: BookOpen,      count: FORMATS.length },
+    { id: 'research',    label: 'Research Tips',         icon: Search,        count: RESEARCH_TIPS.length },
+    { id: 'speaking',    label: 'Speaking & Delivery',   icon: Mic,           count: SPEAKING_TIPS.length },
+    { id: 'rebuttal',    label: 'Rebuttal Techniques',   icon: RefreshCw,     count: REBUTTAL_TECHNIQUES.length },
+    { id: 'frameworks',  label: 'Argument Structure',    icon: Layers,        count: ARGUMENT_FRAMEWORKS.length },
+    { id: 'resources',   label: 'Resources & Links',     icon: ExternalLink,  count: RESOURCES.reduce((n, c) => n + c.items.length, 0) },
   ]
 
   return (
@@ -456,13 +480,14 @@ export default function Learn() {
       </PageHero>
       <div className="learn-body">
       <div className="learn-tabs">
-        {tabs.map(({ id, label, icon: Icon }) => (
+        {tabs.map(({ id, label, icon: Icon, count }) => (
           <button
             key={id}
             className={`learn-tab ${activeTab === id ? 'active' : ''}`}
-            onClick={() => setActiveTab(id)}
+            onClick={() => switchTab(id)}
           >
-            <Icon size={16} /> {label}
+            <Icon size={14} /> {label}
+            <span className="learn-tab-count">{count}</span>
           </button>
         ))}
       </div>
@@ -472,34 +497,64 @@ export default function Learn() {
         <div className="fallacies-section">
           <p className="learn-intro">
             Logical fallacies are errors in reasoning that weaken an argument.
-            Learning to <strong>spot</strong> and <strong>counter</strong> them is a core debate skill. {FALLACIES.length} fallacies listed.
+            Learning to <strong>spot</strong> and <strong>counter</strong> them is a core debate skill.
           </p>
+          <div className="learn-toolbar">
+            <div className="learn-search-wrap">
+              <Search size={13} className="learn-search-icon" />
+              <input
+                className="learn-search"
+                placeholder="Search fallacies…"
+                value={fallacySearch}
+                onChange={e => setFallacySearch(e.target.value)}
+              />
+              {fallacySearch && (
+                <button className="learn-search-clear" onClick={() => setFallacySearch('')}>✕</button>
+              )}
+            </div>
+            <button className="btn btn-ghost" style={{ fontSize: 12, padding: '5px 12px' }}
+              onClick={() => {
+                if (allFallaciesExpanded) {
+                  setExpandedFallacies(new Set())
+                } else {
+                  setExpandedFallacies(new Set(filteredFallacies.map(f => f.name)))
+                }
+              }}>
+              {allFallaciesExpanded ? 'Collapse All' : 'Expand All'}
+            </button>
+          </div>
+          {filteredFallacies.length === 0 && (
+            <p style={{ color: 'var(--text-muted)', fontSize: 14, padding: '12px 0' }}>No fallacies match "{fallacySearch}".</p>
+          )}
           <div className="fallacies-list">
-            {FALLACIES.map((f) => (
-              <div key={f.name} className={`fallacy-card ${expandedFallacy === f.name ? 'expanded' : ''}`}>
-                <button className="fallacy-header" onClick={() => setExpandedFallacy(expandedFallacy === f.name ? null : f.name)}>
-                  <strong>{f.name}</strong>
-                  <span className="text-muted">{f.short}</span>
-                  <span className="chevron">{expandedFallacy === f.name ? '▲' : '▼'}</span>
-                </button>
-                {expandedFallacy === f.name && (
-                  <div className="fallacy-body">
-                    <div className="fallacy-section">
-                      <h5>Example</h5>
-                      <blockquote>{f.example}</blockquote>
+            {filteredFallacies.map((f) => {
+              const open = expandedFallacies.has(f.name)
+              return (
+                <div key={f.name} className={`fallacy-card ${open ? 'expanded' : ''}`}>
+                  <button className="fallacy-header" onClick={() => setExpandedFallacies(s => toggle(s, f.name))}>
+                    <strong>{f.name}</strong>
+                    <span className="text-muted">{f.short}</span>
+                    <span className="chevron">{open ? '▲' : '▼'}</span>
+                  </button>
+                  {open && (
+                    <div className="fallacy-body">
+                      <div className="fallacy-section">
+                        <h5>Example</h5>
+                        <blockquote>{f.example}</blockquote>
+                      </div>
+                      <div className="fallacy-section">
+                        <h5>How to spot it</h5>
+                        <p>{f.howToSpot}</p>
+                      </div>
+                      <div className="fallacy-section">
+                        <h5>How to counter it</h5>
+                        <p>{f.howToCounter}</p>
+                      </div>
                     </div>
-                    <div className="fallacy-section">
-                      <h5>How to spot it</h5>
-                      <p>{f.howToSpot}</p>
-                    </div>
-                    <div className="fallacy-section">
-                      <h5>How to counter it</h5>
-                      <p>{f.howToCounter}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
+                  )}
+                </div>
+              )
+            })}
           </div>
         </div>
       )}
@@ -579,21 +634,28 @@ export default function Learn() {
             Strong arguments poorly delivered lose debates. Master these skills to make your content land with maximum impact.
           </p>
           <div className="fallacies-list">
-            {SPEAKING_TIPS.map((cat) => (
-              <div key={cat.category} className="fallacy-card expanded">
-                <div className="fallacy-header" style={{ cursor: 'default' }}>
-                  <strong>{cat.icon} {cat.category}</strong>
-                </div>
-                <div className="fallacy-body">
-                  {cat.tips.map((tip) => (
-                    <div key={tip.title} className="fallacy-section">
-                      <h5>{tip.title}</h5>
-                      <p>{tip.body}</p>
+            {SPEAKING_TIPS.map((cat) => {
+              const open = expandedSpeaking.has(cat.category)
+              return (
+                <div key={cat.category} className={`fallacy-card ${open ? 'expanded' : ''}`}>
+                  <button className="fallacy-header" onClick={() => setExpandedSpeaking(s => toggle(s, cat.category))}>
+                    <strong>{cat.icon} {cat.category}</strong>
+                    <span className="text-muted" style={{ fontSize: 12 }}>{cat.tips.length} tips</span>
+                    <span className="chevron">{open ? '▲' : '▼'}</span>
+                  </button>
+                  {open && (
+                    <div className="fallacy-body">
+                      {cat.tips.map((tip) => (
+                        <div key={tip.title} className="fallacy-section">
+                          <h5>{tip.title}</h5>
+                          <p>{tip.body}</p>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  )}
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       )}
@@ -680,27 +742,39 @@ export default function Learn() {
             The best debaters never stop learning. These resources will sharpen your research, argumentation, and delivery — curated for school and competitive debaters.
           </p>
           <div className="fallacies-list">
-            {RESOURCES.map((cat) => (
-              <div key={cat.category} className="fallacy-card expanded">
-                <div className="fallacy-header" style={{ cursor: 'default' }}>
-                  <strong>{cat.icon} {cat.category}</strong>
-                </div>
-                <div className="fallacy-body">
-                  {cat.items.map((item) => (
-                    <div key={item.name} className="fallacy-section">
-                      <h5 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        {item.url ? (
-                          <a href={item.url} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            {item.name} <ExternalLink size={13} />
-                          </a>
-                        ) : item.name}
-                      </h5>
-                      <p>{item.desc}</p>
+            {RESOURCES.map((cat) => {
+              const open = expandedResources.has(cat.category)
+              return (
+                <div key={cat.category} className={`fallacy-card ${open ? 'expanded' : ''}`}>
+                  <button className="fallacy-header" onClick={() => setExpandedResources(s => toggle(s, cat.category))}>
+                    <strong>{cat.icon} {cat.category}</strong>
+                    <span className="text-muted" style={{ fontSize: 12 }}>{cat.items.length} items</span>
+                    <span className="chevron">{open ? '▲' : '▼'}</span>
+                  </button>
+                  {open && (
+                    <div className="fallacy-body">
+                      {cat.items.map((item) => (
+                        <div key={item.name} className="fallacy-section">
+                          <h5 style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                            {item.url ? (
+                              <a href={item.url} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                {item.name} <ExternalLink size={13} />
+                              </a>
+                            ) : (
+                              <>
+                                {item.name}
+                                <span style={{ fontSize: 10, fontWeight: 800, background: '#FEF3C7', color: '#92400E', border: '1px solid #F0C020', padding: '1px 6px', letterSpacing: '0.05em' }}>BOOK</span>
+                              </>
+                            )}
+                          </h5>
+                          <p>{item.desc}</p>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  )}
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       )}
