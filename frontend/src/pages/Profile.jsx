@@ -154,6 +154,14 @@ export default function Profile() {
             </div>
           </div>
 
+          {/* Bio preview */}
+          {user?.bio && (
+            <div>
+              <div className="profile-sidebar-section-label" style={{ marginBottom: 6 }}>Bio</div>
+              <p style={{ fontSize: 13, margin: 0, color: 'var(--text-muted)', lineHeight: 1.6 }}>{user.bio}</p>
+            </div>
+          )}
+
           {/* Quick stats */}
           {stats && (
             <div className="profile-sidebar-stats">
@@ -196,13 +204,6 @@ export default function Profile() {
             </div>
           )}
 
-          {/* Bio preview */}
-          {user?.bio && (
-            <div>
-              <div className="profile-sidebar-section-label" style={{ marginBottom: 6 }}>Bio</div>
-              <p style={{ fontSize: 13, margin: 0, color: 'var(--text-muted)', lineHeight: 1.6 }}>{user.bio}</p>
-            </div>
-          )}
         </aside>
 
         {/* ── Main panel ── */}
