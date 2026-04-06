@@ -2696,15 +2696,141 @@ label > span,
 .practice-message.user .practice-message-content { background: var(--brand-light); }
 .practice-message.assistant .practice-message-content { background: white; }
 .practice-thinking { color: var(--text-muted); font-style: italic; }
-.practice-feedback {
+/* collapsible coach tip card */
+.practice-feedback-card {
+  margin-top: 8px;
+  border: 1.5px solid #E8C010;
   background: #FFFCE8;
-  border: 1.5px solid var(--black);
-  padding: 8px 12px;
   font-size: 12px;
-  line-height: 1.5;
-  color: var(--text-muted);
 }
-.practice-feedback-label { font-weight: 800; text-transform: uppercase; font-size: 10px; letter-spacing: 0.08em; color: var(--yellow); }
+.practice-feedback-toggle {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+  padding: 6px 10px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #92400E;
+}
+.practice-feedback-toggle:hover { background: #FEF3C7; }
+.practice-feedback-body {
+  padding: 6px 12px 10px;
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.5;
+  border-top: 1px solid #F0C020;
+}
+
+/* topic suggestion chips */
+.practice-topic-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-top: -4px;
+}
+.practice-chips-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  flex-shrink: 0;
+}
+.practice-topic-chip {
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border: 1.5px solid #D0D0D0;
+  background: white;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: border-color 0.12s, color 0.12s;
+  text-align: left;
+}
+.practice-topic-chip:hover { border-color: var(--black); color: var(--black); }
+
+/* difficulty buttons */
+.practice-difficulty-btn {
+  flex: 1;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 7px 10px;
+  border: var(--border-w) solid #D0D0D0;
+  background: white;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: border-color 0.12s, background 0.12s, color 0.12s;
+}
+.practice-difficulty-btn.active {
+  background: var(--black);
+  color: white;
+  border-color: var(--black);
+}
+
+/* word count overlay */
+.practice-wordcount {
+  position: absolute;
+  bottom: 8px;
+  right: 12px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+/* error retry row */
+.practice-error-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: #FDE8E8;
+  border: 1.5px solid var(--red);
+  font-size: 13px;
+  color: var(--red);
+  font-weight: 600;
+  margin: 4px 0;
+}
+
+/* performance summary card */
+.practice-summary {
+  border: 3px solid #1A8040;
+  background: white;
+  overflow: hidden;
+  margin-top: 8px;
+}
+.practice-summary-header {
+  background: #1A8040;
+  color: white;
+  padding: 12px 20px;
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.practice-summary-body {
+  padding: 20px;
+  font-size: 14px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  color: var(--text);
+}
+
 .practice-input-row {
   display: flex;
   gap: 0;

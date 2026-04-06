@@ -79,6 +79,8 @@ class PracticeRequest(BaseModel):
     side: str           # "proposition" or "opposition" (user's side)
     messages: list      # list of PracticeMessage dicts
     format_name: Optional[str] = None
+    difficulty: Optional[str] = "intermediate"  # "beginner" | "intermediate" | "expert"
+    summarise: Optional[bool] = False
 
 
 class PracticeResponse(BaseModel):
@@ -252,10 +254,34 @@ def practice_debate(body: PracticeRequest, _: User = Depends(get_current_user)):
             feedback="Configure ANTHROPIC_API_KEY to enable live feedback."
         )
 
+    difficulty_ctx = {
+        "beginner":     "Use simple language, straightforward arguments, and be encouraging. Avoid jargon.",
+        "intermediate": "Use clear, well-structured arguments with evidence. Be assertive but fair.",
+        "expert":       "Use advanced rhetoric, complex evidence chains, and technical debate terminology. Be rigorous and relentless.",
+    }.get(body.difficulty or "intermediate", "")
+
+    if body.summarise:
+        system = (
+            f"You are a debate coach. The human just finished a practice debate on the motion: \"{body.topic}\". "
+            f"They argued the {body.side} side. Review the conversation and give a concise performance summary: "
+            "overall rating (1-10), 2-3 strengths, 2-3 areas to improve, and one specific drill to practise. "
+            "Be direct and constructive."
+        )
+        messages = [{"role": m["role"], "content": m["content"]} for m in body.messages]
+        try:
+            msg = client.messages.create(
+                model="claude-haiku-4-5-20251001", max_tokens=500,
+                system=system, messages=messages,
+            )
+            return PracticeResponse(reply=msg.content[0].text.strip(), feedback=None)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"AI error: {str(e)}")
+
     system = (
         f"You are a skilled debater arguing from the {ai_side} side.{format_ctx} "
         f"The motion is: \"{body.topic}\". "
         f"The human is arguing from the {body.side} side. "
+        f"Difficulty: {difficulty_ctx} "
         "Keep responses concise (2-4 sentences), debate-style. "
         "After your argument, add a short '---FEEDBACK---' line with one coaching tip for the human's last point."
     )
