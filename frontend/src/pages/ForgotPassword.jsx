@@ -1,13 +1,14 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { forgotPassword } from '../api'
-import { BookOpen } from 'lucide-react'
+import { BookOpen, Copy, Check } from 'lucide-react'
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('')
   const [token, setToken] = useState(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [copied, setCopied] = useState(false)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -25,6 +26,16 @@ export default function ForgotPassword() {
 
   const resetUrl = token ? `${window.location.origin}/reset-password?token=${token}` : null
 
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(resetUrl)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      setError('Could not copy — please copy the link manually.')
+    }
+  }
+
   return (
     <div className="auth-page">
       <div className="auth-card">
@@ -39,12 +50,12 @@ export default function ForgotPassword() {
             <div className="alert" style={{ background: '#d4edda', border: '2px solid #121212', marginBottom: 12 }}>
               Reset link generated. Share it with the user or open it yourself.
             </div>
-            <div style={{ background: '#f5f5f5', border: '2px solid #121212', borderRadius: 4, padding: '10px 12px', wordBreak: 'break-all', fontSize: 13, marginBottom: 12 }}>
+            <div style={{ background: 'var(--off-white)', color: 'var(--text)', border: '2px solid #121212', borderRadius: 4, padding: '10px 12px', wordBreak: 'break-all', fontSize: 13, marginBottom: 12 }}>
               {resetUrl}
             </div>
-            <button className="btn btn-ghost" style={{ width: '100%' }}
-              onClick={() => navigator.clipboard.writeText(resetUrl)}>
-              Copy link
+            {error && <div className="alert alert-error" style={{ marginBottom: 8 }}>{error}</div>}
+            <button className="btn btn-ghost" style={{ width: '100%', gap: 6 }} onClick={handleCopy}>
+              {copied ? <><Check size={15} /> Copied!</> : <><Copy size={15} /> Copy link</>}
             </button>
           </div>
         ) : (
@@ -52,7 +63,7 @@ export default function ForgotPassword() {
             {error && <div className="alert alert-error">{error}</div>}
             <form onSubmit={handleSubmit} className="auth-form">
               <label>Email
-                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                <input type="email" value={email} onChange={(e) => { setEmail(e.target.value); setError('') }} required autoComplete="email" />
               </label>
               <button type="submit" className="btn btn-primary" disabled={loading}>
                 {loading ? 'Generating…' : 'Generate reset link'}

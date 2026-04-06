@@ -57,6 +57,19 @@ def update_format(format_id: int, body: FormatUpdate, db: Session = Depends(get_
     return fmt
 
 
+@router.delete("/{format_id}", status_code=204)
+def delete_format(format_id: int, db: Session = Depends(get_db), membership: ClubMembership = Depends(require_club_admin)):
+    fmt = db.query(DebateFormat).filter(DebateFormat.id == format_id).first()
+    if not fmt:
+        raise HTTPException(status_code=404, detail="Format not found")
+    if fmt.is_builtin:
+        raise HTTPException(status_code=403, detail="Built-in formats cannot be deleted")
+    if fmt.club_id != membership.club_id:
+        raise HTTPException(status_code=403, detail="Not your club's format")
+    db.delete(fmt)
+    db.commit()
+
+
 @router.patch("/{format_id}/toggle", response_model=FormatOut)
 def toggle_format(format_id: int, db: Session = Depends(get_db), membership: ClubMembership = Depends(require_club_admin)):
     fmt = db.query(DebateFormat).filter(DebateFormat.id == format_id).first()

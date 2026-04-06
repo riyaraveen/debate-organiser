@@ -231,7 +231,7 @@ export default function SessionNotes() {
                 </div>
               )}
               {previewVersion && (
-                <div style={{ padding: '10px 14px', borderTop: '2px solid #c7d2fe', background: '#fff' }}>
+                <div style={{ padding: '10px 14px', borderTop: '2px solid #c7d2fe', background: 'var(--bg-card)' }}>
                   <div style={{ fontSize: 11, fontWeight: 700, color: '#1040C0', marginBottom: 6, textTransform: 'uppercase' }}>Preview</div>
                   <div className="re-content-readonly" dangerouslySetInnerHTML={{ __html: previewVersion.content }}
                     style={{ fontSize: 13, maxHeight: 160, overflowY: 'auto' }} />
@@ -249,7 +249,7 @@ export default function SessionNotes() {
             {/* Privacy toggle */}
             <button
               onClick={handlePrivacyToggle}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, background: isPrivate ? '#1e293b' : '#f1f5f9', border: `2px solid ${isPrivate ? '#334155' : '#cbd5e1'}`, borderRadius: 4, padding: '5px 12px', cursor: 'pointer', fontSize: 12, fontWeight: 700, color: isPrivate ? 'white' : '#475569' }}>
+              style={{ display: 'flex', alignItems: 'center', gap: 6, background: isPrivate ? '#1e293b' : 'var(--off-white)', border: `2px solid ${isPrivate ? '#334155' : '#cbd5e1'}`, borderRadius: 4, padding: '5px 12px', cursor: 'pointer', fontSize: 12, fontWeight: 700, color: isPrivate ? 'white' : 'var(--text-muted)' }}>
               {isPrivate ? <Lock size={13} /> : <Eye size={13} />}
               {isPrivate ? 'Private' : 'Visible to team'}
             </button>

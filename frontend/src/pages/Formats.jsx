@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
-import { getFormats, toggleFormat, createFormat, updateFormat } from '../api'
-import { Plus, ToggleLeft, ToggleRight, Users, Clock, ChevronDown, ChevronUp, UserCheck, Scale, GripVertical, Trash2, Edit2, Check, X, BarChart2 } from 'lucide-react'
+import { getFormats, toggleFormat, createFormat, updateFormat, deleteFormat } from '../api'
+import { Plus, ToggleLeft, ToggleRight, Users, Clock, ChevronDown, ChevronUp, UserCheck, Scale, GripVertical, Trash2, Edit2, Check, X, BarChart2, Search } from 'lucide-react'
 import PageHero from '../components/ui/PageHero'
+import { useToast } from '../context/ToastContext'
 
 const SIDE_COLORS = {
   proposition:  { bg: '#1040C0', color: 'white',        label: 'Prop'  },
@@ -28,8 +29,11 @@ function parseJSON(val) {
   try { return JSON.parse(val) } catch { return [] }
 }
 
+// ── Speaking Order Editor ────────────────────────────────────────────────────
+
 function SpeakingOrderEditor({ fmt, onSave, onCancel }) {
   const [speeches, setSpeeches] = useState(parseJSON(fmt.speaking_order).map((s, i) => ({ ...s, _id: i })))
+  const [saveError, setSaveError] = useState('')
   const dragIdx = useRef(null)
   const allRoles = parseJSON(fmt.roles).map(r => r.name)
 
@@ -53,19 +57,29 @@ function SpeakingOrderEditor({ fmt, onSave, onCancel }) {
 
   const totalSec = speeches.reduce((a, s) => a + (Number(s.duration_seconds) || 0), 0)
 
+  const handleSave = () => {
+    const empty = speeches.find(s => !s.role)
+    if (empty) { setSaveError('All speeches must have a role selected.'); return }
+    const clamped = speeches.map(({ _id, ...s }) => ({ ...s, duration_seconds: Math.max(30, Number(s.duration_seconds) || 30) }))
+    onSave(clamped)
+  }
+
   return (
     <div style={{ border: '2px solid #121212', marginTop: 16, background: '#fafafa' }}>
       <div style={{ background: '#121212', color: '#fff', padding: '8px 14px', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, display: 'flex', justifyContent: 'space-between' }}>
         <span>Edit Speaking Order — {speeches.length} speech{speeches.length !== 1 ? 'es' : ''} · {fmtTime(totalSec)} total</span>
         <span style={{ opacity: 0.6, fontWeight: 400 }}>Drag to reorder</span>
       </div>
+      {saveError && (
+        <div style={{ padding: '6px 12px', background: '#FFF0F0', borderBottom: '1px solid #fcc', fontSize: 12, color: 'var(--red)', fontWeight: 600 }}>{saveError}</div>
+      )}
       <div>
         {speeches.map((s, i) => (
           <div key={s._id} draggable onDragStart={() => onDragStart(i)} onDragOver={e => onDragOver(e, i)} onDrop={onDrop}
-            style={{ display: 'grid', gridTemplateColumns: '24px 1fr 1fr 80px 32px', gap: 6, padding: '8px 10px', borderBottom: '1px solid #e5e5e5', alignItems: 'center', cursor: 'grab', background: '#fff' }}>
+            style={{ display: 'grid', gridTemplateColumns: '24px 1fr 1fr 80px 32px', gap: 6, padding: '8px 10px', borderBottom: '1px solid #e5e5e5', alignItems: 'center', cursor: 'grab', background: 'var(--bg-card)' }}>
             <GripVertical size={14} style={{ opacity: 0.4 }} />
-            <select value={s.role} onChange={e => update(i, 'role', e.target.value)}
-              style={{ border: '1.5px solid #ccc', padding: '4px 6px', font: 'inherit', fontSize: 12 }}>
+            <select value={s.role} onChange={e => { update(i, 'role', e.target.value); setSaveError('') }}
+              style={{ border: s.role ? '1.5px solid #ccc' : '1.5px solid var(--red)', padding: '4px 6px', font: 'inherit', fontSize: 12 }}>
               <option value="">— Role —</option>
               {allRoles.map(r => <option key={r} value={r}>{r}</option>)}
               <option value="POI">POI</option>
@@ -75,7 +89,7 @@ function SpeakingOrderEditor({ fmt, onSave, onCancel }) {
               style={{ border: '1.5px solid #ccc', padding: '4px 6px', font: 'inherit', fontSize: 12 }} />
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
               <input type="number" min={30} step={30} value={s.duration_seconds}
-                onChange={e => update(i, 'duration_seconds', +e.target.value)}
+                onChange={e => update(i, 'duration_seconds', Math.max(30, +e.target.value || 30))}
                 style={{ border: '1.5px solid #ccc', padding: '4px 6px', font: 'inherit', fontSize: 12, width: '100%' }} />
               <span style={{ fontSize: 10, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>sec</span>
             </div>
@@ -88,7 +102,7 @@ function SpeakingOrderEditor({ fmt, onSave, onCancel }) {
       <div style={{ padding: '10px 12px', display: 'flex', gap: 8, alignItems: 'center' }}>
         <button className="btn btn-ghost" style={{ fontSize: 12 }} onClick={add}><Plus size={13} /> Add Speech</button>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
-          <button className="btn btn-primary" style={{ fontSize: 12 }} onClick={() => onSave(speeches.map(({ _id, ...s }) => s))}><Check size={13} /> Save</button>
+          <button className="btn btn-primary" style={{ fontSize: 12 }} onClick={handleSave}><Check size={13} /> Save</button>
           <button className="btn btn-ghost" style={{ fontSize: 12 }} onClick={onCancel}><X size={13} /> Cancel</button>
         </div>
       </div>
@@ -96,9 +110,80 @@ function SpeakingOrderEditor({ fmt, onSave, onCancel }) {
   )
 }
 
-function FormatCard({ fmt, onToggle, onUpdate }) {
+// ── Roles Editor ─────────────────────────────────────────────────────────────
+
+const SIDE_OPTIONS = ['proposition', 'opposition', 'government', 'affirmative', 'negative', 'neutral']
+
+function RolesEditor({ fmt, onSave, onCancel }) {
+  const [roles, setRoles] = useState(parseJSON(fmt.roles).map((r, i) => ({ ...r, _id: i })))
+  const [saveError, setSaveError] = useState('')
+
+  const update = (idx, field, val) => setRoles(r => r.map((x, i) => i === idx ? { ...x, [field]: val } : x))
+  const remove = (idx) => setRoles(r => r.filter((_, i) => i !== idx))
+  const add = () => setRoles(r => [...r, { name: '', side: 'proposition', description: '', decides: false, min_count: null, _id: Date.now() }])
+
+  const handleSave = () => {
+    const empty = roles.find(r => !r.name.trim())
+    if (empty) { setSaveError('All roles must have a name.'); return }
+    onSave(roles.map(({ _id, ...r }) => r))
+  }
+
+  return (
+    <div style={{ border: '2px solid #121212', marginTop: 16, background: '#fafafa' }}>
+      <div style={{ background: '#1040C0', color: '#fff', padding: '8px 14px', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, display: 'flex', justifyContent: 'space-between' }}>
+        <span>Edit Roles — {roles.length} role{roles.length !== 1 ? 's' : ''}</span>
+      </div>
+      {saveError && (
+        <div style={{ padding: '6px 12px', background: '#FFF0F0', borderBottom: '1px solid #fcc', fontSize: 12, color: 'var(--red)', fontWeight: 600 }}>{saveError}</div>
+      )}
+      <div>
+        {roles.map((r, i) => (
+          <div key={r._id} style={{ display: 'grid', gridTemplateColumns: '1fr 120px 1fr 80px 90px 32px', gap: 6, padding: '8px 10px', borderBottom: '1px solid #e5e5e5', alignItems: 'center', background: 'var(--bg-card)' }}>
+            <input placeholder="Role name *" value={r.name}
+              onChange={e => { update(i, 'name', e.target.value); setSaveError('') }}
+              style={{ border: r.name ? '1.5px solid #ccc' : '1.5px solid var(--red)', padding: '4px 6px', font: 'inherit', fontSize: 12 }} />
+            <select value={r.side} onChange={e => update(i, 'side', e.target.value)}
+              style={{ border: '1.5px solid #ccc', padding: '4px 6px', font: 'inherit', fontSize: 12 }}>
+              {SIDE_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+              <option value="audience">audience</option>
+            </select>
+            <input placeholder="Description" value={r.description || ''}
+              onChange={e => update(i, 'description', e.target.value)}
+              style={{ border: '1.5px solid #ccc', padding: '4px 6px', font: 'inherit', fontSize: 12 }} />
+            <input type="number" placeholder="Count" min={1} value={r.min_count || ''}
+              onChange={e => update(i, 'min_count', e.target.value ? +e.target.value : null)}
+              style={{ border: '1.5px solid #ccc', padding: '4px 6px', font: 'inherit', fontSize: 12 }} />
+            <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+              <input type="checkbox" checked={!!r.decides} onChange={e => update(i, 'decides', e.target.checked)} />
+              Decides
+            </label>
+            <button onClick={() => remove(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--red)', padding: 0 }}>
+              <Trash2 size={14} />
+            </button>
+          </div>
+        ))}
+        {roles.length === 0 && (
+          <p style={{ padding: '12px 14px', fontSize: 12, color: 'var(--text-muted)', margin: 0 }}>No roles yet. Click "Add Role" to get started.</p>
+        )}
+      </div>
+      <div style={{ padding: '10px 12px', display: 'flex', gap: 8, alignItems: 'center' }}>
+        <button className="btn btn-ghost" style={{ fontSize: 12 }} onClick={add}><Plus size={13} /> Add Role</button>
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+          <button className="btn btn-primary" style={{ fontSize: 12 }} onClick={handleSave}><Check size={13} /> Save</button>
+          <button className="btn btn-ghost" style={{ fontSize: 12 }} onClick={onCancel}><X size={13} /> Cancel</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Format Card ──────────────────────────────────────────────────────────────
+
+function FormatCard({ fmt, onToggle, onUpdate, onDelete }) {
   const [expanded, setExpanded] = useState(false)
   const [editingOrder, setEditingOrder] = useState(false)
+  const [editingRoles, setEditingRoles] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
   const roles = parseJSON(fmt.roles)
   const speakingOrder = parseJSON(fmt.speaking_order)
 
@@ -130,13 +215,35 @@ function FormatCard({ fmt, onToggle, onUpdate }) {
             </div>
           </div>
         </div>
-        <button
-          className={`btn ${fmt.is_active ? 'btn-ghost' : 'btn-primary'}`}
-          style={{ fontSize: 11, padding: '5px 12px', flexShrink: 0 }}
-          onClick={() => onToggle(fmt.id)}
-        >
-          {fmt.is_active ? <><ToggleRight size={13} /> Disable</> : <><ToggleLeft size={13} /> Enable</>}
-        </button>
+        <div style={{ display: 'flex', gap: 6, flexShrink: 0, alignItems: 'center' }}>
+          <button
+            className={`btn ${fmt.is_active ? 'btn-ghost' : 'btn-primary'}`}
+            style={{ fontSize: 11, padding: '5px 12px' }}
+            onClick={() => onToggle(fmt.id)}
+          >
+            {fmt.is_active ? <><ToggleRight size={13} /> Disable</> : <><ToggleLeft size={13} /> Enable</>}
+          </button>
+          {!fmt.is_builtin && (
+            confirmDelete ? (
+              <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                <span style={{ fontSize: 11, color: 'var(--red)', fontWeight: 700 }}>Delete?</span>
+                <button className="btn btn-primary" style={{ fontSize: 11, padding: '4px 10px', background: 'var(--red)', borderColor: 'var(--red)' }}
+                  onClick={() => onDelete(fmt.id)}>
+                  <Check size={12} /> Yes
+                </button>
+                <button className="btn btn-ghost" style={{ fontSize: 11, padding: '4px 10px' }}
+                  onClick={() => setConfirmDelete(false)}>
+                  <X size={12} />
+                </button>
+              </div>
+            ) : (
+              <button className="btn btn-ghost" style={{ fontSize: 11, padding: '5px 8px', color: 'var(--red)' }}
+                onClick={() => setConfirmDelete(true)} title="Delete format">
+                <Trash2 size={13} />
+              </button>
+            )
+          )}
+        </div>
       </div>
 
       {/* ── Description ── */}
@@ -239,6 +346,25 @@ function FormatCard({ fmt, onToggle, onUpdate }) {
         </div>
       )}
 
+      {/* ── Roles editor (custom only) ── */}
+      {!fmt.is_builtin && (
+        <div style={{ padding: '8px 14px 0', display: 'flex', justifyContent: 'flex-end' }}>
+          <button className="btn btn-ghost" style={{ fontSize: 11, padding: '4px 10px' }}
+            onClick={() => { setEditingRoles(e => !e); setEditingOrder(false) }}>
+            <Edit2 size={11} /> {editingRoles ? 'Cancel Roles Edit' : 'Edit Roles'}
+          </button>
+        </div>
+      )}
+      {editingRoles && (
+        <div style={{ padding: '0 14px 14px' }}>
+          <RolesEditor fmt={fmt} onCancel={() => setEditingRoles(false)}
+            onSave={async (newRoles) => {
+              await onUpdate(fmt.id, { roles: newRoles })
+              setEditingRoles(false)
+            }} />
+        </div>
+      )}
+
       {/* ── Speaking order (expandable) ── */}
       <div className="format-speaking-section">
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -249,7 +375,7 @@ function FormatCard({ fmt, onToggle, onUpdate }) {
           </button>
           {!fmt.is_builtin && (
             <button className="btn btn-ghost" style={{ fontSize: 11, padding: '4px 10px' }}
-              onClick={() => { setEditingOrder(e => !e); setExpanded(true) }}>
+              onClick={() => { setEditingOrder(e => !e); setExpanded(true); setEditingRoles(false) }}>
               <Edit2 size={11} /> {editingOrder ? 'Cancel Edit' : 'Edit Order'}
             </button>
           )}
@@ -287,67 +413,101 @@ function FormatCard({ fmt, onToggle, onUpdate }) {
   )
 }
 
+// ── Compare View ─────────────────────────────────────────────────────────────
+
 function CompareView({ formats }) {
-  const allFormats = formats
+  const [showInactive, setShowInactive] = useState(false)
+  const visible = showInactive ? formats : formats.filter(f => f.is_active)
   const totalTime = (fmt) => parseJSON(fmt.speaking_order).reduce((a, s) => a + (s.duration_seconds || 0), 0)
   const sides = (fmt) => [...new Set(parseJSON(fmt.roles).filter(r => r.side && r.side !== 'neutral' && r.side !== 'audience').map(r => r.side))]
 
   return (
-    <div style={{ overflowX: 'auto', border: '3px solid #121212' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-        <thead>
-          <tr style={{ background: '#121212', color: '#fff' }}>
-            <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, fontSize: 11 }}>Attribute</th>
-            {allFormats.map(f => (
-              <th key={f.id} style={{ padding: '10px 16px', textAlign: 'center', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, fontSize: 11 }}>
-                {f.name}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {[
-            { label: 'Participants', fn: f => f.min_participants === f.max_participants ? `${f.min_participants}` : `${f.min_participants}–${f.max_participants}` },
-            { label: 'Total Speaking Time', fn: f => fmtTime(totalTime(f)) || '—' },
-            { label: 'Speeches', fn: f => parseJSON(f.speaking_order).length || '—' },
-            { label: 'Sides', fn: f => sides(f).join(', ') || '—' },
-            { label: 'Judges', fn: f => { const d = parseJSON(f.roles).filter(r => r.decides); return d.length ? `${d[0].name} ×${d[0].min_count ?? 1}` : 'None' } },
-            { label: 'Audience Required', fn: f => parseJSON(f.roles).some(r => r.side === 'audience') ? '✓ Yes' : 'No' },
-            { label: 'Status', fn: f => f.is_active ? 'Active' : 'Inactive' },
-          ].map(({ label, fn }, ri) => (
-            <tr key={label} style={{ background: ri % 2 === 0 ? '#fff' : '#f9f9f9', borderBottom: '1px solid #e5e5e5' }}>
-              <td style={{ padding: '10px 16px', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</td>
-              {allFormats.map(f => (
-                <td key={f.id} style={{ padding: '10px 16px', textAlign: 'center' }}>{fn(f)}</td>
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, cursor: 'pointer', color: 'var(--text-muted)' }}>
+          <input type="checkbox" checked={showInactive} onChange={e => setShowInactive(e.target.checked)} />
+          Show inactive formats
+        </label>
+      </div>
+      {visible.length === 0 ? (
+        <p style={{ fontSize: 13, color: 'var(--text-muted)', padding: 20, textAlign: 'center' }}>No active formats to compare. Enable at least one format or check "Show inactive".</p>
+      ) : (
+        <div style={{ overflowX: 'auto', border: '3px solid #121212' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+            <thead>
+              <tr style={{ background: '#121212', color: '#fff' }}>
+                <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, fontSize: 11 }}>Attribute</th>
+                {visible.map(f => (
+                  <th key={f.id} style={{ padding: '10px 16px', textAlign: 'center', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, fontSize: 11 }}>
+                    {f.name}
+                    {!f.is_active && <span style={{ display: 'block', fontSize: 9, fontWeight: 400, opacity: 0.6 }}>INACTIVE</span>}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                { label: 'Participants', fn: f => f.min_participants === f.max_participants ? `${f.min_participants}` : `${f.min_participants}–${f.max_participants}` },
+                { label: 'Total Speaking Time', fn: f => fmtTime(totalTime(f)) || '—' },
+                { label: 'Speeches', fn: f => parseJSON(f.speaking_order).length || '—' },
+                { label: 'Sides', fn: f => sides(f).join(', ') || '—' },
+                { label: 'Judges', fn: f => { const d = parseJSON(f.roles).filter(r => r.decides); return d.length ? `${d[0].name} ×${d[0].min_count ?? 1}` : 'None' } },
+                { label: 'Audience Required', fn: f => parseJSON(f.roles).some(r => r.side === 'audience') ? '✓ Yes' : 'No' },
+                { label: 'Status', fn: f => f.is_active ? 'Active' : 'Inactive' },
+              ].map(({ label, fn }, ri) => (
+                <tr key={label} style={{ background: ri % 2 === 0 ? 'var(--bg-card)' : 'var(--off-white)', borderBottom: '1px solid #e5e5e5' }}>
+                  <td style={{ padding: '10px 16px', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</td>
+                  {visible.map(f => (
+                    <td key={f.id} style={{ padding: '10px 16px', textAlign: 'center' }}>{fn(f)}</td>
+                  ))}
+                </tr>
               ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   )
 }
 
+// ── Main Formats Page ────────────────────────────────────────────────────────
+
 export default function Formats() {
+  const toast = useToast()
   const [formats, setFormats] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
-  const [compareMode, setCompareMode] = useState(false)
+  const [compareMode, setCompareMode] = useState(() => sessionStorage.getItem('formats_view') === 'compare')
+  const [search, setSearch] = useState('')
   const [form, setForm] = useState({
     name: '', description: '', min_participants: 2, max_participants: 8,
     decider_type: 'none', decider_count: 1,
     requires_audience: false, min_audience: 20,
   })
+  const [formError, setFormError] = useState('')
   const [error, setError] = useState('')
+
+  // Auto-clear transient error banner after 4 s
+  useEffect(() => {
+    if (!error) return
+    const t = setTimeout(() => setError(''), 4000)
+    return () => clearTimeout(t)
+  }, [error])
 
   useEffect(() => {
     getFormats(true).then((res) => setFormats(res.data)).finally(() => setLoading(false))
   }, [])
 
+  const switchView = (isCompare) => {
+    setCompareMode(isCompare)
+    sessionStorage.setItem('formats_view', isCompare ? 'compare' : 'cards')
+  }
+
   const handleToggle = async (id) => {
     try {
       const res = await toggleFormat(id)
       setFormats((prev) => prev.map((f) => f.id === id ? res.data : f))
+      toast.success(`Format ${res.data.is_active ? 'enabled' : 'disabled'}`)
     } catch {
       setError('Failed to toggle format')
     }
@@ -357,14 +517,35 @@ export default function Formats() {
     try {
       const res = await updateFormat(id, data)
       setFormats((prev) => prev.map((f) => f.id === id ? res.data : f))
+      toast.success('Format saved')
     } catch {
       setError('Failed to save changes')
+      throw new Error('update failed')
+    }
+  }
+
+  const handleDelete = async (id) => {
+    try {
+      await deleteFormat(id)
+      setFormats((prev) => prev.filter((f) => f.id !== id))
+      toast.success('Format deleted')
+    } catch {
+      setError('Failed to delete format')
     }
   }
 
   const handleCreate = async (e) => {
     e.preventDefault()
-    setError('')
+    setFormError('')
+
+    if (form.min_participants > form.max_participants) {
+      setFormError('Min participants cannot exceed max participants.')
+      return
+    }
+    if (!form.name.trim()) {
+      setFormError('Format name is required.')
+      return
+    }
 
     const roles = []
     if (form.decider_type !== 'none') {
@@ -386,10 +567,13 @@ export default function Formats() {
       setFormats((prev) => [...prev, res.data])
       setForm({ name: '', description: '', min_participants: 2, max_participants: 8, decider_type: 'none', decider_count: 1, requires_audience: false, min_audience: 20 })
       setShowForm(false)
+      toast.success('Format created')
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to create format')
+      setFormError(err.response?.data?.detail || 'Failed to create format')
     }
   }
+
+  const filtered = formats.filter(f => f.name.toLowerCase().includes(search.toLowerCase()))
 
   if (loading) return <div className="loading">Loading…</div>
 
@@ -397,20 +581,15 @@ export default function Formats() {
     <div className="page-container">
       <PageHero title="Debate Formats" subtitle={`${formats.length} formats available`} color="#1040C0">
         <svg viewBox="0 0 400 88" preserveAspectRatio="xMidYMid slice">
-          {/* Podium/lectern shapes */}
           <rect x="20" y="30" width="30" height="44" fill="white" opacity="0.18"/>
           <rect x="14" y="26" width="42" height="8" fill="white" opacity="0.24"/>
-          {/* Left figure at podium */}
           <circle cx="35" cy="16" r="9" fill="white" opacity="0.30"/>
-          {/* Right podium */}
           <rect x="350" y="30" width="30" height="44" fill="white" opacity="0.18"/>
           <rect x="344" y="26" width="42" height="8" fill="white" opacity="0.24"/>
           <circle cx="365" cy="16" r="9" fill="white" opacity="0.30"/>
-          {/* Center decorative shapes */}
           <circle cx="200" cy="44" r="48" fill="white" opacity="0.06"/>
           <circle cx="200" cy="44" r="28" fill="white" opacity="0.06"/>
           <polygon points="200,18 212,42 200,50 188,42" fill="#F0C020" opacity="0.35"/>
-          {/* Scattered shapes */}
           <rect x="100" y="18" width="32" height="32" fill="#F0C020" opacity="0.18" transform="rotate(14 116 34)"/>
           <rect x="268" y="18" width="32" height="32" fill="white" opacity="0.10" transform="rotate(-10 284 34)"/>
           <circle cx="140" cy="66" r="18" fill="white" opacity="0.07"/>
@@ -421,10 +600,10 @@ export default function Formats() {
       <div className="page-top-bar">
         <span className="text-muted" style={{ fontSize: 13 }}>{formats.filter(f => f.is_active).length} active · {formats.filter(f => !f.is_active).length} inactive</span>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button className={`btn ${compareMode ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setCompareMode(m => !m)}>
+          <button className={`btn ${compareMode ? 'btn-primary' : 'btn-ghost'}`} onClick={() => switchView(!compareMode)}>
             <BarChart2 size={15} /> {compareMode ? 'Back to Cards' : 'Compare Formats'}
           </button>
-          <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>
+          <button className="btn btn-primary" onClick={() => { setShowForm(!showForm); setFormError('') }}>
             <Plus size={15} /> Add Custom Format
           </button>
         </div>
@@ -444,13 +623,15 @@ export default function Formats() {
             </p>
           </div>
 
+          {formError && <div className="alert alert-error" style={{ margin: 0 }}>{formError}</div>}
+
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4, width: '100%' }}>
             <span style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               Format Name <span style={{ color: 'var(--red)' }}>*</span>
             </span>
             <input className="input" placeholder="e.g. British Parliamentary, Lincoln-Douglas, WSDC…"
               value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
-              required style={{ width: '100%', boxSizing: 'border-box' }} />
+              style={{ width: '100%', boxSizing: 'border-box' }} />
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, width: '100%' }}>
@@ -465,8 +646,10 @@ export default function Formats() {
               <span style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Max Participants</span>
               <input type="number" className="input" value={form.max_participants}
                 onChange={(e) => setForm({ ...form, max_participants: +e.target.value })}
-                min={2} style={{ width: '100%', boxSizing: 'border-box' }} />
-              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Upper limit for session planning</span>
+                min={form.min_participants} style={{ width: '100%', boxSizing: 'border-box' }} />
+              <span style={{ fontSize: 11, color: form.max_participants < form.min_participants ? 'var(--red)' : 'var(--text-muted)' }}>
+                {form.max_participants < form.min_participants ? 'Must be ≥ min participants' : 'Upper limit for session planning'}
+              </span>
             </div>
           </div>
 
@@ -531,20 +714,39 @@ export default function Formats() {
 
           <div style={{ display: 'flex', gap: 10 }}>
             <button type="submit" className="btn btn-primary">Create Format</button>
-            <button type="button" className="btn btn-ghost" onClick={() => setShowForm(false)}>Cancel</button>
+            <button type="button" className="btn btn-ghost" onClick={() => { setShowForm(false); setFormError('') }}>Cancel</button>
           </div>
         </form>
       )}
 
+      {!compareMode && (
+        <div className="learn-search-wrap" style={{ marginBottom: 16 }}>
+          <Search size={14} className="learn-search-icon" />
+          <input
+            className="learn-search"
+            placeholder="Search formats…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+          {search && (
+            <button className="learn-search-clear" onClick={() => setSearch('')}><X size={13} /></button>
+          )}
+        </div>
+      )}
+
       {compareMode
         ? <CompareView formats={formats} />
-        : (
-          <div className="formats-grid">
-            {formats.map((f) => (
-              <FormatCard key={f.id} fmt={f} onToggle={handleToggle} onUpdate={handleUpdate} />
-            ))}
-          </div>
-        )
+        : filtered.length === 0
+          ? <p style={{ color: 'var(--text-muted)', fontSize: 13, padding: 20, textAlign: 'center' }}>
+              {search ? `No formats match "${search}"` : 'No formats found.'}
+            </p>
+          : (
+            <div className="formats-grid">
+              {filtered.map((f) => (
+                <FormatCard key={f.id} fmt={f} onToggle={handleToggle} onUpdate={handleUpdate} onDelete={handleDelete} />
+              ))}
+            </div>
+          )
       }
     </div>
   )

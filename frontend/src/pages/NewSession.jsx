@@ -293,16 +293,16 @@ export default function NewSession() {
                 <button onClick={() => switchMode(true)} style={{
                   padding: '7px 18px', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em',
                   border: 'none', cursor: 'pointer',
-                  background: form.auto_assign_roles ? '#121212' : '#fff',
-                  color: form.auto_assign_roles ? '#fff' : '#121212',
+                  background: form.auto_assign_roles ? '#121212' : 'var(--bg-card)',
+                  color: form.auto_assign_roles ? '#fff' : 'var(--text)',
                 }}>
                   ⚡ Auto-assign
                 </button>
                 <button onClick={() => switchMode(false)} style={{
                   padding: '7px 18px', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em',
                   border: 'none', borderLeft: '2px solid #121212', cursor: 'pointer',
-                  background: !form.auto_assign_roles ? '#121212' : '#fff',
-                  color: !form.auto_assign_roles ? '#fff' : '#121212',
+                  background: !form.auto_assign_roles ? '#121212' : 'var(--bg-card)',
+                  color: !form.auto_assign_roles ? '#fff' : 'var(--text)',
                 }}>
                   ✎ Manual
                 </button>

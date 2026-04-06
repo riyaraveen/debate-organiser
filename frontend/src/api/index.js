@@ -29,6 +29,7 @@ export const getFormat = (id) => api.get(`/api/formats/${id}`)
 export const createFormat = (data) => api.post('/api/formats/', data)
 export const updateFormat = (id, data) => api.patch(`/api/formats/${id}`, data)
 export const toggleFormat = (id) => api.patch(`/api/formats/${id}/toggle`)
+export const deleteFormat = (id) => api.delete(`/api/formats/${id}`)
 
 // Topics
 export const getTopics = (params) => api.get('/api/topics/', { params })

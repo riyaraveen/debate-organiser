@@ -97,7 +97,7 @@ export default function Tournaments() {
               ].map(f => (
                 <button key={f.value} type="button"
                   onClick={() => setForm({ ...form, format: f.value })}
-                  style={{ flex: 1, minWidth: 200, textAlign: 'left', padding: '12px 14px', border: `2px solid ${form.format === f.value ? '#b45309' : '#ccc'}`, borderRadius: 6, background: form.format === f.value ? '#fffbf0' : 'white', cursor: 'pointer', boxShadow: form.format === f.value ? '3px 3px 0 #f0c020' : 'none', transition: 'all 0.1s' }}>
+                  style={{ flex: 1, minWidth: 200, textAlign: 'left', padding: '12px 14px', border: `2px solid ${form.format === f.value ? '#b45309' : '#ccc'}`, borderRadius: 6, background: form.format === f.value ? '#fffbf0' : 'var(--bg-card)', color: 'var(--text)', cursor: 'pointer', boxShadow: form.format === f.value ? '3px 3px 0 #f0c020' : 'none', transition: 'all 0.1s' }}>
                   <div style={{ fontWeight: 800, fontSize: 14, marginBottom: 4 }}>{f.icon} {f.label}</div>
                   <div style={{ fontSize: 12, color: '#666', lineHeight: 1.4 }}>{f.desc}</div>
                 </button>

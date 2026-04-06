@@ -99,7 +99,7 @@ function PrepTimer({ playBeep }) {
         <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, color: 'var(--text-muted)', marginBottom: 4 }}>
           {side} · Remaining
         </div>
-        <div style={{ fontSize: 52, fontWeight: 900, letterSpacing: 2, fontVariantNumeric: 'tabular-nums', color: prepDone ? 'var(--red)' : '#121212' }}>
+        <div style={{ fontSize: 52, fontWeight: 900, letterSpacing: 2, fontVariantNumeric: 'tabular-nums', color: prepDone ? 'var(--red)' : 'var(--text)' }}>
           {prepDone ? '00:00' : formatTime(prepRemaining)}
         </div>
         <div style={{ height: 8, background: '#e5e5e5', border: '2px solid #121212', margin: '10px 0' }}>
@@ -415,7 +415,7 @@ export default function SessionTimer() {
                 </div>
                 <div style={{
                   fontSize: 96, fontWeight: 900, letterSpacing: 4, fontVariantNumeric: 'tabular-nums',
-                  color: overtime ? '#C01820' : '#121212', lineHeight: 1, marginBottom: 4,
+                  color: overtime ? '#C01820' : 'var(--text)', lineHeight: 1, marginBottom: 4,
                   textShadow: overtime ? '0 0 30px rgba(192,24,32,0.15)' : 'none',
                 }}>
                   {countDown && allottedMs > 0

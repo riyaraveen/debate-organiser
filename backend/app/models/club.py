@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, UniqueConstraint
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, UniqueConstraint, Boolean
 from sqlalchemy.sql import func
 from app.db.database import Base
 
@@ -21,5 +21,7 @@ class ClubMembership(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     role = Column(String, default="member")  # owner, admin, member
     joined_at = Column(DateTime(timezone=True), server_default=func.now())
+    wins = Column(Integer, nullable=False, default=0, server_default="0")
+    losses = Column(Integer, nullable=False, default=0, server_default="0")
 
     __table_args__ = (UniqueConstraint("club_id", "user_id", name="uq_club_user"),)

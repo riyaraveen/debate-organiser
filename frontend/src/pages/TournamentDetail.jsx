@@ -118,9 +118,9 @@ function MatchCard({ match, schools, sessions, topics, canEdit, onPickWinner, on
               {topics.filter(t => !topicDraft || t.text.toLowerCase().includes(topicDraft.toLowerCase())).slice(0, 12).map(t => (
                 <button key={t.id} type="button"
                   onClick={() => saveTopic(t.text)}
-                  style={{ textAlign: 'left', background: 'white', border: '1px solid #e5e7eb', borderRadius: 3, padding: '4px 8px', fontSize: 11, color: '#374151', cursor: 'pointer' }}
+                  style={{ textAlign: 'left', background: 'var(--bg-card)', border: '1px solid #e5e7eb', borderRadius: 3, padding: '4px 8px', fontSize: 11, color: 'var(--text)', cursor: 'pointer' }}
                   onMouseOver={e => e.currentTarget.style.background = '#fef3c7'}
-                  onMouseOut={e => e.currentTarget.style.background = 'white'}>
+                  onMouseOut={e => e.currentTarget.style.background = 'var(--bg-card)'}>
                   {t.text}
                 </button>
               ))}

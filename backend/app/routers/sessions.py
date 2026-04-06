@@ -16,6 +16,8 @@ from app.routers.team_chat import manager as chat_manager
 
 router = APIRouter(prefix="/api/sessions", tags=["sessions"])
 
+DEBATING_SIDES = {'proposition', 'opposition'}
+
 
 def _enrich_session(session: Session, db: DBSession) -> dict:
     """Attach participant + user info to a session object."""
@@ -117,6 +119,7 @@ async def update_session(
         raise HTTPException(status_code=404, detail="Session not found")
 
     was_completed = session.status == "completed"
+    old_winner_team = session.winner_team
     changed_fields = []
     for field, value in body.model_dump(exclude_none=True).items():
         if getattr(session, field) != value:
@@ -127,6 +130,36 @@ async def update_session(
     now_completed = session.status == "completed"
     if not was_completed and now_completed:
         db.query(TeamMessage).filter(TeamMessage.session_id == session_id).delete()
+
+    # Update win/loss records for debating participants when winner_team changes
+    if "winner_team" in changed_fields:
+        debating_participants = (
+            db.query(SessionParticipant)
+            .filter(
+                SessionParticipant.session_id == session_id,
+                SessionParticipant.side.in_(DEBATING_SIDES),
+            )
+            .all()
+        )
+        for p in debating_participants:
+            membership = db.query(ClubMembership).filter(
+                ClubMembership.user_id == p.user_id,
+                ClubMembership.club_id == membership.club_id,
+            ).first()
+            if not membership:
+                continue
+            # Reverse the old result if one was previously recorded
+            if old_winner_team in DEBATING_SIDES:
+                if p.side == old_winner_team:
+                    membership.wins = max(0, membership.wins - 1)
+                else:
+                    membership.losses = max(0, membership.losses - 1)
+            # Apply the new result
+            if session.winner_team in DEBATING_SIDES:
+                if p.side == session.winner_team:
+                    membership.wins += 1
+                else:
+                    membership.losses += 1
 
     db.commit()
     db.refresh(session)
@@ -156,9 +189,6 @@ async def update_session(
             )
 
     return _enrich_session(session, db)
-
-
-DEBATING_SIDES = {'proposition', 'opposition'}
 
 
 @router.get("/{session_id}/team-notes")

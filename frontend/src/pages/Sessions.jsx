@@ -103,11 +103,11 @@ export default function Sessions() {
               placeholder="Search sessions…"
               value={search}
               onChange={e => setSearch(e.target.value)}
-              style={{ paddingLeft: 28, fontSize: 13, maxWidth: 200 }}
+              style={{ paddingLeft: 28, fontSize: 13, width: 220 }}
             />
           </div>
           <select value={sort} onChange={e => setSort(e.target.value)}
-            style={{ fontSize: 13, padding: '6px 10px', border: '2px solid #121212', background: '#fff', cursor: 'pointer' }}>
+            style={{ fontSize: 13, padding: '6px 10px', border: '2px solid #121212', background: 'var(--bg-card)', color: 'var(--text)', cursor: 'pointer' }}>
             <option value="newest">Newest first</option>
             <option value="oldest">Oldest first</option>
           </select>

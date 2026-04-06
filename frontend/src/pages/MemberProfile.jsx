@@ -409,7 +409,7 @@ export default function MemberProfile() {
                   Available
                 </span>
                 <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ width: 14, height: 14, background: 'white', border: '2px solid #ccc', display: 'inline-block' }}/>
+                  <span style={{ width: 14, height: 14, background: 'var(--bg-card)', border: '2px solid #ccc', display: 'inline-block' }}/>
                   Not marked
                 </span>
               </div>

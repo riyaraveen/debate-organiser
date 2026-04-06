@@ -1,13 +1,14 @@
-import { Navigate } from 'react-router-dom'
+import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useClub } from '../../context/ClubContext'
 
 export function ProtectedRoute({ children, adminOnly = false }) {
   const { user, loading } = useAuth()
   const { activeClub } = useClub()
+  const location = useLocation()
 
   if (loading) return <div className="loading-screen">Loading...</div>
-  if (!user) return <Navigate to="/login" replace />
+  if (!user) return <Navigate to="/login" state={{ from: location }} replace />
   if (adminOnly) {
     // Club owner/admin check: club role takes priority over global user.role
     const clubRole = activeClub?.role

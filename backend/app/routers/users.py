@@ -103,10 +103,17 @@ def get_user_stats(
     )
     avg_score = round(float(avg_score_result), 1) if avg_score_result is not None else None
 
+    member_record = db.query(ClubMembership).filter(
+        ClubMembership.user_id == user_id,
+        ClubMembership.club_id == membership.club_id,
+    ).first()
+
     return {
         "sessions_attended": sessions_attended,
         "total_sessions": total_sessions,
         "roles_played": roles_played,
         "sides_played": sides_played,
         "avg_score": avg_score,
+        "wins": member_record.wins if member_record else 0,
+        "losses": member_record.losses if member_record else 0,
     }
