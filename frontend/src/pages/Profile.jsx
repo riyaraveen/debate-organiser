@@ -61,6 +61,7 @@ export default function Profile() {
     phone: user?.phone || '',
     school: user?.school || '',
     proficiency: user?.proficiency || 'beginner',
+    bio: user?.bio || '',
   })
   const [saving, setSaving] = useState(false)
 
@@ -194,6 +195,14 @@ export default function Profile() {
               })}
             </div>
           )}
+
+          {/* Bio preview */}
+          {user?.bio && (
+            <div>
+              <div className="profile-sidebar-section-label" style={{ marginBottom: 6 }}>Bio</div>
+              <p style={{ fontSize: 13, margin: 0, color: 'var(--text-muted)', lineHeight: 1.6 }}>{user.bio}</p>
+            </div>
+          )}
         </aside>
 
         {/* ── Main panel ── */}
@@ -230,6 +239,17 @@ export default function Profile() {
                 <div className="profile-field">
                   <span className="profile-field-label"><School size={13}/> School / Institution</span>
                   <input className="input" value={form.school} onChange={e => setForm({ ...form, school: e.target.value })} placeholder="e.g. Westminster School"/>
+                </div>
+                <div className="profile-field">
+                  <span className="profile-field-label">Bio</span>
+                  <textarea
+                    className="input"
+                    rows={3}
+                    value={form.bio}
+                    onChange={e => setForm({ ...form, bio: e.target.value })}
+                    placeholder="Tell your club about yourself…"
+                    style={{ resize: 'vertical', fontFamily: 'inherit', fontSize: 14 }}
+                  />
                 </div>
                 <div className="profile-field">
                   <span className="profile-field-label"><Shield size={13}/> Proficiency Level</span>
